@@ -7,7 +7,10 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Testing", "Other"],
+  "categories": [
+    "Testing",
+    "Other"
+  ],
   "activationEvents": [
     "onLanguage:typescript",
     "workspaceContains:**/slng.config.mts"
@@ -50,6 +53,7 @@
     "@slng/config": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^25.2.1",
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.0.0",
     "tsup": "^8.0.0",

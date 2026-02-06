@@ -7,7 +7,6 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   banner: {
-    // The bin entry needs a shebang
-    js: "",
+    js: "#!/usr/bin/env node",
   },
 });

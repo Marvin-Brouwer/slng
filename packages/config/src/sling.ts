@@ -46,35 +46,16 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
   // Run all plugin setup functions synchronously where possible.
   // If any are async, we store the promise and it must be awaited
   // before execution (the CLI/extension handles this).
-  let setupComplete = false;
   let setupPromise: Promise<void> | undefined;
 
-  const runSetup = async (): Promise<void> => {
-    if (setupComplete) return;
-    for (const plugin of plugins) {
-      await plugin.setup(context);
-    }
-    setupComplete = true;
-  };
-
-  // Attempt synchronous setup (works for dotenv and most plugins)
-  try {
-    const results = plugins.map((p) => p.setup(context));
-    const hasAsync = results.some(
-      (r) => r !== undefined && typeof (r as Promise<void>).then === "function",
-    );
-    if (hasAsync) {
-      setupPromise = Promise.all(results.filter(Boolean) as Promise<void>[]).then(
-        () => {
-          setupComplete = true;
-        },
-      );
-    } else {
-      setupComplete = true;
-    }
-  } catch {
-    // If sync setup fails, fall back to lazy async
-    setupPromise = runSetup();
+  const results = plugins.map((p) => p.setup(context));
+  const hasAsync = results.some(
+    (r) => r !== undefined && typeof (r as Promise<void>).then === "function",
+  );
+  if (hasAsync) {
+    setupPromise = Promise.all(
+      results.filter(Boolean) as Promise<void>[],
+    ).then(() => {});
   }
 
   const templateFn = function slingTemplate(

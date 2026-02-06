@@ -11,7 +11,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "clean": "rm -rf dist",
@@ -21,6 +23,7 @@
     "dotenv": "^16.4.0"
   },
   "devDependencies": {
+    "@types/node": "^25.2.1",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0"
   },

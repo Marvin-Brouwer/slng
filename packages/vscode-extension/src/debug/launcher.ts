@@ -77,19 +77,20 @@ function buildRunnerScript(
     import { pathToFileURL } from 'node:url';
     import { writeFileSync } from 'node:fs';
 
+    const exportName = ${JSON.stringify(exportName)};
     const fileUrl = pathToFileURL(${JSON.stringify(filePath)}).href;
     const mod = await import(fileUrl);
-    const definition = mod[${JSON.stringify(exportName)}];
+    const definition = mod[exportName];
 
     if (!definition || !definition.__sling) {
-      console.error('Export "${exportName}" is not a sling definition');
+      console.error('Export "' + exportName + '" is not a sling definition');
       process.exit(1);
     }
 
     try {
       const response = await definition.execute({ verbose: true, maskOutput: true });
       const result = {
-        name: ${JSON.stringify(exportName)},
+        name: exportName,
         status: response.status,
         statusText: response.statusText,
         headers: response.headers,

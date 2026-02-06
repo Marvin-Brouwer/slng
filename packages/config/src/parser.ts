@@ -109,7 +109,7 @@ export function parseHttpText(raw: string): ParsedHttpRequest {
         // Peek ahead to see if more headers follow.
         const remaining = lines.slice(i + 1);
         const nextNonEmpty = remaining.find((l) => l.trim().length > 0);
-        if (nextNonEmpty && /^[\w-]+\s*:/.test(nextNonEmpty)) {
+        if (nextNonEmpty && /^\s*[\w-]+\s*:/.test(nextNonEmpty)) {
           // More headers coming, skip this blank line
           continue;
         }
@@ -118,7 +118,7 @@ export function parseHttpText(raw: string): ParsedHttpRequest {
         continue;
       }
 
-      const headerMatch = /^([\w-]+)\s*:\s*(.*)$/.exec(line);
+      const headerMatch = /^\s*([\w-]+)\s*:\s*(.*)$/.exec(line);
       if (headerMatch) {
         headers[headerMatch[1]!] = headerMatch[2]!.trim();
       }
