@@ -33,11 +33,18 @@ export function useDotEnv(...environments: string[]): SlingPlugin {
       const baseEnv = loadEnvFile(resolve(cwd, ".env"));
 
       for (const env of environments) {
+        const currentEnv = context.envSets.get(env) 
+
         const envFile = resolve(cwd, `.env.${env}`);
         const envVars = loadEnvFile(envFile);
+        // Convert numbers and bools on read
+        const concreteEnvVars = Object.fromEntries(Object.entries(envVars)
+          .map(([key, value]) => [key, JSON.stringify(value)])
+        )
+
 
         // Merge: base .env values are overridden by .env.<name>
-        const merged = { ...baseEnv, ...envVars };
+        const merged = { ...currentEnv, ...baseEnv, ...concreteEnvVars };
         context.envSets.set(env, merged);
         context.environments.push(env);
       }
@@ -46,9 +53,6 @@ export function useDotEnv(...environments: string[]): SlingPlugin {
       if (environments.length > 0 && context.activeEnvironment === undefined) {
         context.activeEnvironment = environments[0];
       }
-
-      // Apply the active environment to process.env
-      applyToProcessEnv(context);
     },
   };
 }
@@ -59,21 +63,4 @@ function loadEnvFile(filePath: string): Record<string, string> {
   }
   const content = readFileSync(filePath, "utf-8");
   return parse(content);
-}
-
-/**
- * Apply the active environment's variables to `process.env`.
- * Existing process.env values take precedence (they're not overwritten).
- */
-function applyToProcessEnv(context: { envSets: Map<string, Record<string, string>>; activeEnvironment: string | undefined }): void {
-  if (!context.activeEnvironment) return;
-
-  const vars = context.envSets.get(context.activeEnvironment);
-  if (!vars) return;
-
-  for (const [key, value] of Object.entries(vars)) {
-    if (process.env[key] === undefined) {
-      process.env[key] = value;
-    }
-  }
 }

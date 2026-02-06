@@ -2,13 +2,12 @@ import sling from "../slng.config.mjs";
 import { secret, sensitive } from "@slng/config";
 
 const apiHost = "api.example.com";
-const apiToken = process.env.TOKEN ?? "demo-token";
+const apiToken = sling.parameters.getRequired('TOKEN');
 
 // Step 1: Authenticate
 // CodeLens: ▶ Send | 🐛 Debug
 export const authenticate = sling`
   POST https://${apiHost}/auth HTTP/1.1
-
   Content-Type: application/json
 
   {
@@ -27,7 +26,6 @@ const getAuthToken = async () => {
 // CodeLens: ▶ Send | 🐛 Debug
 export const getProfile = sling`
   GET https://${apiHost}/profile HTTP/1.1
-
   Authorization: Bearer ${getAuthToken}
   Accept: application/json
 `;
@@ -36,7 +34,6 @@ export const getProfile = sling`
 // CodeLens: ▶ Send | 🐛 Debug
 export const updateEmail = sling`
   PATCH https://${apiHost}/profile HTTP/1.1
-
   Authorization: Bearer ${getAuthToken}
   Content-Type: application/json
 

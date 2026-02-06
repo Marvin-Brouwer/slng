@@ -1,3 +1,5 @@
+import type { ParameterType, SlingParameters } from "./parameters.js";
+
 /**
  * A value that should be masked in logs and UI.
  */
@@ -100,11 +102,12 @@ export interface SlingDefinition {
  */
 export interface SlingContext {
   /** All loaded environment variables, keyed by environment name. */
-  readonly envSets: Map<string, Record<string, string>>;
+  readonly envSets: Map<string, Record<string, ParameterType | undefined>>;
   /** Names of available environments. */
   readonly environments: string[];
   /** The currently active environment. */
   activeEnvironment: string | undefined;
+  /** Set parameter value  */
 }
 
 /**
@@ -129,4 +132,5 @@ export interface ConfiguredSling {
   ): SlingDefinition;
   /** The resolved configuration context. */
   readonly context: SlingContext;
+  readonly parameters: SlingParameters
 }

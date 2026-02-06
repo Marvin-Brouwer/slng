@@ -1,10 +1,11 @@
-import type {
-  ConfiguredSling,
-  SlingContext,
-  SlingPlugin,
-  SlingInterpolation,
+import {
+  type ConfiguredSling,
+  type SlingContext,
+  type SlingPlugin,
+  type SlingInterpolation,
 } from "./types.js";
 import { createDefinition } from "./definition.js";
+import { createSlingParameters } from "./parameters.js";
 
 /**
  * Create a configured sling instance.
@@ -28,6 +29,7 @@ import { createDefinition } from "./definition.js";
  * ```ts
  * // some-api/requests.mts
  * import sling from '../slng.config.mjs'
+import { SlingParameters } from './types';
  *
  * export const getUsers = sling`
  *   GET https://api.example.com/users HTTP/1.1
@@ -37,16 +39,17 @@ import { createDefinition } from "./definition.js";
  * ```
  */
 export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
-  const context: SlingContext = {
-    envSets: new Map(),
-    environments: [],
-    activeEnvironment: undefined,
-  };
 
   // Run all plugin setup functions synchronously where possible.
   // If any are async, we store the promise and it must be awaited
   // before execution (the CLI/extension handles this).
   let setupPromise: Promise<void> | undefined;
+
+  const context: SlingContext = {
+    envSets: new Map(),
+    environments: [],
+    activeEnvironment: undefined
+  };
 
   const results = plugins.map((p) => p.setup(context));
   const hasAsync = results.some(
@@ -65,9 +68,18 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
     return createDefinition(strings, values, context);
   } as ConfiguredSling;
 
-  // Attach context
+  // Attach parameters
   Object.defineProperty(templateFn, "context", {
     value: context,
+    writable: false,
+    enumerable: true,
+  });
+
+  Object.defineProperty(templateFn, "parameters", {
+    // TODO verify this changes when the plugin changes environments
+    value: !context.activeEnvironment || !context.envSets.has(context.activeEnvironment) 
+      ? createSlingParameters() 
+      : createSlingParameters(context.envSets.get(context.activeEnvironment)),
     writable: false,
     enumerable: true,
   });
