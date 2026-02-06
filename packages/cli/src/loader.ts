@@ -1,0 +1,60 @@
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { glob } from "glob";
+import { isSlingDefinition } from "@slng/config";
+import type { SlingDefinition } from "@slng/config";
+
+export interface LoadedDefinition {
+  name: string;
+  definition: SlingDefinition;
+  sourcePath: string;
+}
+
+/**
+ * Load all sling definitions from a single file.
+ */
+export async function loadFile(filePath: string): Promise<LoadedDefinition[]> {
+  const absolutePath = resolve(filePath);
+  const fileUrl = pathToFileURL(absolutePath).href;
+
+  const mod = (await import(fileUrl)) as Record<string, unknown>;
+  const definitions: LoadedDefinition[] = [];
+
+  for (const [key, value] of Object.entries(mod)) {
+    if (key === "default") continue; // Skip the config export
+    if (isSlingDefinition(value)) {
+      value.name = key;
+      value.sourcePath = absolutePath;
+      definitions.push({
+        name: key,
+        definition: value,
+        sourcePath: absolutePath,
+      });
+    }
+  }
+
+  return definitions;
+}
+
+/**
+ * Load all sling definitions from files matching a glob pattern.
+ */
+export async function loadGlob(pattern: string): Promise<LoadedDefinition[]> {
+  const files = await glob(pattern, { absolute: true });
+  const allDefinitions: LoadedDefinition[] = [];
+
+  for (const file of files.sort()) {
+    const definitions = await loadFile(file);
+    allDefinitions.push(...definitions);
+  }
+
+  return allDefinitions;
+}
+
+/**
+ * Auto-discover sling files in the current directory.
+ * Looks for: any .mts file that is not a slng.config.mts
+ */
+export async function autoDiscover(): Promise<LoadedDefinition[]> {
+  return loadGlob("./**/*.mts");
+}

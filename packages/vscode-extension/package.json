@@ -1,0 +1,64 @@
+{
+  "name": "@slng/vscode-extension",
+  "displayName": "Sling — HTTP Client",
+  "description": "Send HTTP requests directly from TypeScript definition files with CodeLens integration",
+  "version": "0.1.0",
+  "publisher": "slng",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Testing", "Other"],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "workspaceContains:**/slng.config.mts"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "slng.send",
+        "title": "Sling: Send Request"
+      },
+      {
+        "command": "slng.debug",
+        "title": "Sling: Debug Request"
+      }
+    ],
+    "configuration": {
+      "title": "Sling",
+      "properties": {
+        "slng.defaultEnvironment": {
+          "type": "string",
+          "default": "",
+          "description": "Default environment to use when sending requests"
+        },
+        "slng.maskSecrets": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mask secret and sensitive values in the response panel"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "@slng/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/slng/sling",
+    "directory": "packages/vscode-extension"
+  }
+}
