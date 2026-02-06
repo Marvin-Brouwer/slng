@@ -107,7 +107,6 @@ export interface SlingContext {
   readonly environments: string[];
   /** The currently active environment. */
   activeEnvironment: string | undefined;
-  /** Set parameter value  */
 }
 
 /**

@@ -29,7 +29,6 @@ import { createSlingParameters } from "./parameters.js";
  * ```ts
  * // some-api/requests.mts
  * import sling from '../slng.config.mjs'
-import { SlingParameters } from './types';
  *
  * export const getUsers = sling`
  *   GET https://api.example.com/users HTTP/1.1
@@ -75,12 +74,15 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
     enumerable: true,
   });
 
+  // Parameters are derived from the active environment via a getter so
+  // they automatically reflect environment switches at any point in time.
   Object.defineProperty(templateFn, "parameters", {
-    // TODO verify this changes when the plugin changes environments
-    value: !context.activeEnvironment || !context.envSets.has(context.activeEnvironment) 
-      ? createSlingParameters() 
-      : createSlingParameters(context.envSets.get(context.activeEnvironment)),
-    writable: false,
+    get() {
+      if (!context.activeEnvironment || !context.envSets.has(context.activeEnvironment)) {
+        return createSlingParameters();
+      }
+      return createSlingParameters(context.envSets.get(context.activeEnvironment));
+    },
     enumerable: true,
   });
 
