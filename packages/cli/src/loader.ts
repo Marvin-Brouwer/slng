@@ -39,8 +39,14 @@ export async function loadFile(filePath: string): Promise<LoadedDefinition[]> {
 /**
  * Load all sling definitions from files matching a glob pattern.
  */
-export async function loadGlob(pattern: string): Promise<LoadedDefinition[]> {
-  const files = await glob(pattern, { absolute: true });
+export async function loadGlob(
+  pattern: string,
+  options?: { ignore?: string[] },
+): Promise<LoadedDefinition[]> {
+  const files = await glob(pattern, {
+    absolute: true,
+    ignore: options?.ignore,
+  });
   const allDefinitions: LoadedDefinition[] = [];
 
   for (const file of files.sort()) {
@@ -53,8 +59,10 @@ export async function loadGlob(pattern: string): Promise<LoadedDefinition[]> {
 
 /**
  * Auto-discover sling files in the current directory.
- * Looks for: any .mts file that is not a slng.config.mts
+ * Excludes node_modules, config files, and dist directories.
  */
 export async function autoDiscover(): Promise<LoadedDefinition[]> {
-  return loadGlob("./**/*.mts");
+  return loadGlob("./**/*.mts", {
+    ignore: ["**/node_modules/**", "**/*.config.mts", "**/dist/**"],
+  });
 }

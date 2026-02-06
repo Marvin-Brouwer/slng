@@ -10,7 +10,6 @@ import type {
 import {
   parseTemplatePreview,
   parseTemplateResolved,
-  resolveInterpolation,
   assembleTemplate,
   resolveInterpolationDisplay,
 } from "./parser.js";
@@ -124,19 +123,17 @@ function logRequest(
   response: SlingResponse,
   mask?: boolean,
 ): void {
-  const displayValues = mask
+  // When mask is true, show display values (with secrets masked).
+  // When mask is false, show the resolved (real) values.
+  const displayValues = mask !== false
     ? values.map(resolveInterpolationDisplay)
-    : undefined;
+    : values.map((v) => String(v));
 
-  const displayText = displayValues
-    ? assembleTemplate(strings, displayValues)
-    : undefined;
+  const displayText = assembleTemplate(strings, displayValues);
 
   console.warn("─".repeat(60));
   console.warn(`→ ${parsed.method} ${parsed.url}`);
-  if (displayText) {
-    console.warn(displayText.trim());
-  }
+  console.warn(displayText.trim());
   console.warn(`← ${response.status} ${response.statusText} (${Math.round(response.duration)}ms)`);
   console.warn("─".repeat(60));
 }

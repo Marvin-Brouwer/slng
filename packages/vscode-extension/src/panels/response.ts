@@ -9,7 +9,7 @@ interface ResponseData {
   headers: Record<string, string>;
   body: string;
   duration: number;
-  maskedValues?: Array<{ displayValue: string }>;
+  maskedValues?: Array<{ value: string; displayValue: string }>;
 }
 
 export class ResponsePanel {
@@ -60,9 +60,8 @@ export class ResponsePanel {
     // Mask sensitive values in the response body for the viewer
     if (maskSecrets && data.maskedValues) {
       for (const mv of data.maskedValues) {
-        body = body.replace(/./g, () => "●");
-        // This is a simplified approach — real masking would track positions
-        // For now we just show the body as-is with a note
+        const uiDisplay = mv.displayValue.replace(/\*/g, "●");
+        body = body.replaceAll(mv.value, uiDisplay);
       }
     }
 

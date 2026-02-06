@@ -26,14 +26,14 @@ describe("sensitive", () => {
     expect(result.__masked).toBe(true);
     expect(result.type).toBe("sensitive");
     expect(result.value).toBe("marvin.brouwer@gmail.com");
-    expect(result.displayValue).toBe("marvin.*****************");
-    // "marvin." = 6 chars visible, rest = 17 stars
+    expect(result.displayValue).toBe("marvin******************");
+    // "marvin" = 6 chars visible, rest = 18 stars
   });
 
   it("accepts custom visible character count", () => {
     const result = sensitive("marvin.brouwer@gmail.com", 3);
 
-    expect(result.displayValue).toBe("mar********************");
+    expect(result.displayValue).toBe("mar*********************");
   });
 
   it("handles value shorter than visible count", () => {
