@@ -16,11 +16,7 @@ export const authenticate = sling`
 `;
 
 // Helper: extract auth token from the authenticate response
-const getAuthToken = async () => {
-  const res = await authenticate.response;
-  const body = res.json<{ auth_token: string }>();
-  return body.auth_token;
-};
+const getAuthToken = () => authenticate.json("auth_token");
 
 // Step 2: Use the auth token in a subsequent request
 // CodeLens: ▶ Send | 🐛 Debug

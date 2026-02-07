@@ -1,11 +1,14 @@
-import type {
-  SlingDefinition,
-  SlingInterpolation,
-  SlingResponse,
-  SlingContext,
-  MaskedValue,
-  ExecuteOptions,
-  ParsedHttpRequest,
+import {
+  sling,
+  type SlingDefinition,
+  type SlingInternals,
+  type SlingInterpolation,
+  type SlingResponse,
+  type SlingContext,
+  type MaskedValue,
+  type ExecuteOptions,
+  type JsonOptions,
+  type ParsedHttpRequest,
 } from "./types.js";
 import {
   parseTemplatePreview,
@@ -13,6 +16,11 @@ import {
   assembleTemplate,
   resolveInterpolationDisplay,
 } from "./parser.js";
+
+interface CachedResponse {
+  response: SlingResponse;
+  timestamp: number;
+}
 
 /**
  * Create a SlingDefinition from a tagged template invocation.
@@ -31,30 +39,114 @@ export function createDefinition(
   // Parse a preview (with deferred values as placeholders)
   const parsed = parseTemplatePreview(strings, values);
 
-  // Lazy response (cached)
-  let cachedResponse: Promise<SlingResponse> | undefined;
+  // Response cache (shared across execute/json calls)
+  let cached: CachedResponse | undefined;
 
-  const definition: SlingDefinition = {
-    __sling: true,
+  const internals: SlingInternals = {
+    version: "v1",
+    name: undefined,
+    sourcePath: undefined,
     template: { strings: [...strings], values },
     parsed,
     maskedValues,
-    name: undefined,
-    sourcePath: undefined,
+  };
+
+  const definition: SlingDefinition = {
+    [sling]: internals,
 
     async execute(options?: ExecuteOptions): Promise<SlingResponse> {
-      return executeRequest(strings, values, options);
+      const readFromCache = options?.readFromCache !== false;
+      const cacheTime = options?.cacheTime;
+      const cachingDisabled = cacheTime === false || cacheTime === 0;
+
+      // Check cache
+      if (readFromCache && cached && !cachingDisabled) {
+        const effectiveCacheTime = cacheTime ?? Infinity;
+        const age = Date.now() - cached.timestamp;
+        if (effectiveCacheTime === Infinity || age < effectiveCacheTime) {
+          return cached.response;
+        }
+      }
+
+      const response = await executeRequest(strings, values, options);
+
+      // Store in cache (unless caching is explicitly disabled)
+      if (!cachingDisabled) {
+        cached = { response, timestamp: Date.now() };
+      }
+
+      return response;
     },
 
-    get response(): Promise<SlingResponse> {
-      if (!cachedResponse) {
-        cachedResponse = this.execute();
+    async json(jsonPath: string, options?: JsonOptions): Promise<string> {
+      const validCodes = options?.validResponseCodes;
+      const response = await this.execute(options);
+
+      // Validate response status
+      if (validCodes && validCodes.length > 0) {
+        if (!validCodes.includes(response.status)) {
+          throw new Error(
+            `Request failed with status ${response.status} ${response.statusText}. ` +
+              `Expected one of: ${validCodes.join(", ")}`,
+          );
+        }
+      } else if (response.status < 200 || response.status >= 300) {
+        throw new Error(
+          `Request failed with status ${response.status} ${response.statusText}`,
+        );
       }
-      return cachedResponse;
+
+      const body = JSON.parse(response.body);
+      const value = resolveJsonPath(body, jsonPath);
+
+      // Convert to string for template interpolation
+      if (typeof value === "string") return value;
+      if (value === null || value === undefined) return String(value);
+      if (typeof value === "object") return JSON.stringify(value);
+      return String(value);
     },
   };
 
   return definition;
+}
+
+/**
+ * Resolve a value from a parsed JSON object using a simple path expression.
+ *
+ * Supports dot-notation (`user.name`) and bracket indexing (`users[0]`).
+ * Returns `undefined` when the path cannot be fully traversed.
+ */
+function resolveJsonPath(obj: unknown, path: string): unknown {
+  if (!path) return obj;
+
+  // Parse "data.users[0].name" → ["data", "users", "0", "name"]
+  const segments = path
+    .split(".")
+    .flatMap((part) => {
+      if (!part.includes("[")) return [part];
+      // "users[0]" → ["users", "0"]
+      return part.split("[").map((s) => s.replace("]", ""));
+    })
+    .filter(Boolean);
+
+  let current: unknown = obj;
+
+  for (const segment of segments) {
+    if (current === null || current === undefined) return undefined;
+    if (typeof current !== "object") return undefined;
+
+    if (Array.isArray(current)) {
+      const index = Number(segment);
+      if (Number.isNaN(index) || index < 0 || index >= current.length) {
+        return undefined;
+      }
+      current = current[index];
+    } else {
+      current = (current as Record<string, unknown>)[segment];
+    }
+  }
+
+  return current;
 }
 
 /**
@@ -86,7 +178,6 @@ async function executeRequest(
     statusText: fetchResponse.statusText,
     headers: responseHeaders,
     body: responseBody,
-    json: <T = unknown>(): T => JSON.parse(responseBody) as T,
     raw: fetchResponse,
     duration,
   };
@@ -131,11 +222,11 @@ function logRequest(
 
   const displayText = assembleTemplate(strings, displayValues);
 
-  console.warn("─".repeat(60));
-  console.warn(`→ ${parsed.method} ${parsed.url}`);
+  console.warn("\u2500".repeat(60));
+  console.warn(`\u2192 ${parsed.method} ${parsed.url}`);
   console.warn(displayText.trim());
-  console.warn(`← ${response.status} ${response.statusText} (${Math.round(response.duration)}ms)`);
-  console.warn("─".repeat(60));
+  console.warn(`\u2190 ${response.status} ${response.statusText} (${Math.round(response.duration)}ms)`);
+  console.warn("\u2500".repeat(60));
 }
 
 /**
@@ -145,7 +236,7 @@ export function isSlingDefinition(value: unknown): value is SlingDefinition {
   return (
     typeof value === "object" &&
     value !== null &&
-    "__sling" in value &&
-    (value as SlingDefinition).__sling === true
+    sling in value &&
+    (value as SlingDefinition)[sling].version === "v1"
   );
 }

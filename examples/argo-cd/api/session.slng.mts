@@ -16,8 +16,6 @@ export const session = sling`
   }
 `
 
-export async function getSessionToken() {
-  const response = await session.response;
-  const body = response.json<{ token: string }>();
-  return body.token
+export function getSessionToken() {
+  return session.json('token')
 }
