@@ -77,12 +77,13 @@ function buildRunnerScript(
     import { pathToFileURL } from 'node:url';
     import { writeFileSync } from 'node:fs';
 
+    const slingKey = Symbol.for('sling');
     const exportName = ${JSON.stringify(exportName)};
     const fileUrl = pathToFileURL(${JSON.stringify(filePath)}).href;
     const mod = await import(fileUrl);
     const definition = mod[exportName];
 
-    if (!definition || !definition.__sling) {
+    if (!definition || !definition[slingKey]) {
       console.error('Export "' + exportName + '" is not a sling definition');
       process.exit(1);
     }
@@ -98,7 +99,7 @@ function buildRunnerScript(
         duration: response.duration,
       };
       writeFileSync(${JSON.stringify(resultFile)}, JSON.stringify(result, null, 2));
-      console.log('\\n✓ Response written to result file');
+      console.log('\\n\\u2713 Response written to result file');
     } catch (err) {
       console.error('Request failed:', err);
       process.exit(1);

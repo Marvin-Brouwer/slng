@@ -16,8 +16,5 @@ export const session = sling`
   }
 `
 
-export async function getSessionToken() {
-  const response = await session.response;
-  const body = response.json<{ token: string }>();
-  return body.token
-}
+// json() returns a callable Accessor — use directly in templates
+export const getSessionToken = session.json('token')

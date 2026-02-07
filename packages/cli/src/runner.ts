@@ -1,4 +1,4 @@
-import type { SlingResponse, ExecuteOptions } from "@slng/config";
+import { slingBrand, type SlingResponse, type ExecuteOptions } from "@slng/config";
 import type { LoadedDefinition } from "./loader.js";
 
 interface RunOptions {
@@ -46,7 +46,8 @@ export async function runDefinitions(
   const results: RunResult[] = [];
 
   for (const { name, definition, sourcePath } of toRun) {
-    printHeader(name, definition.parsed.method, definition.parsed.url, sourcePath);
+    const internals = definition[slingBrand];
+    printHeader(name, internals.parsed.method, internals.parsed.url, sourcePath);
 
     const executeOptions: ExecuteOptions = {
       verbose: options.verbose,

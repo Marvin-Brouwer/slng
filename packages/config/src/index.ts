@@ -13,6 +13,7 @@ export { sensitive } from "./masking/sensitive.js";
 
 // Runtime utilities (for CLI / extensions)
 export { isSlingDefinition } from "./definition.js";
+export { sling as slingBrand } from "./types.js";
 export {
   parseHttpText,
   resolveInterpolation,
@@ -23,7 +24,9 @@ export {
 
 // Types
 export type {
+  Accessor,
   SlingDefinition,
+  SlingInternals,
   SlingResponse,
   SlingInterpolation,
   SlingContext,
@@ -31,5 +34,7 @@ export type {
   ConfiguredSling,
   MaskedValue,
   ExecuteOptions,
+  CacheOptions,
+  JsonOptions,
   ParsedHttpRequest,
 } from "./types.js";

@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { glob } from "glob";
-import { isSlingDefinition } from "@slng/config";
+import { isSlingDefinition, slingBrand } from "@slng/config";
 import type { SlingDefinition } from "@slng/config";
 
 export interface LoadedDefinition {
@@ -23,8 +23,8 @@ export async function loadFile(filePath: string): Promise<LoadedDefinition[]> {
   for (const [key, value] of Object.entries(mod)) {
     if (key === "default") continue; // Skip the config export
     if (isSlingDefinition(value)) {
-      value.name = key;
-      value.sourcePath = absolutePath;
+      value[slingBrand].name = key;
+      value[slingBrand].sourcePath = absolutePath;
       definitions.push({
         name: key,
         definition: value,

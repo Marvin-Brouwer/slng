@@ -41,21 +41,23 @@ export async function sendRequest(
     import { pathToFileURL } from 'node:url';
     import { writeFileSync } from 'node:fs';
 
+    const slingKey = Symbol.for('sling');
     const exportName = ${JSON.stringify(exportName)};
     const fileUrl = pathToFileURL(${JSON.stringify(filePath)}).href;
     const mod = await import(fileUrl);
     const definition = mod[exportName];
 
-    if (!definition || !definition.__sling) {
+    if (!definition || !definition[slingKey]) {
       process.stderr.write('Export "' + exportName + '" is not a sling definition\\n');
       process.exit(1);
     }
 
+    const internals = definition[slingKey];
     const response = await definition.execute({ maskOutput: true });
     const result = {
       name: exportName,
-      method: definition.parsed.method,
-      url: definition.parsed.url,
+      method: internals.parsed.method,
+      url: internals.parsed.url,
       status: response.status,
       statusText: response.statusText,
       headers: response.headers,
