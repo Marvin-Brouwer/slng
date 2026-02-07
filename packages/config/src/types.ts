@@ -103,6 +103,45 @@ export type JsonOptions = CacheOptions & {
 };
 
 /**
+ * A lazy accessor for extracting values from a JSON response.
+ *
+ * Returned by {@link SlingDefinition.json}. The accessor is callable,
+ * so it can be used directly as a template interpolation value
+ * without needing a wrapper function.
+ *
+ * When called as a function it resolves to a `string`, making it
+ * compatible with {@link SlingInterpolation}.
+ *
+ * @example
+ * ```ts
+ * // Direct use in template interpolation — no wrapper needed
+ * export const getUsers = sling`
+ *   GET https://api.example.com/users
+ *   Authorization: Bearer ${session.json('token')}
+ * `
+ *
+ * // Explicit typed extraction
+ * const token = await session.json('token').get<string>();
+ *
+ * // Safe extraction (returns undefined on failure)
+ * const maybe = await session.json('token').tryGet<string>();
+ *
+ * // Validation check
+ * if (await session.json('token').validate()) { ... }
+ * ```
+ */
+export interface Accessor {
+  /** Resolve to a string value (for template interpolation). */
+  (): Promise<string>;
+  /** Execute and return the extracted value. Throws on invalid status or missing path. */
+  get<T = unknown>(): Promise<T>;
+  /** Check if the extraction would succeed (valid status + path exists). */
+  validate(): Promise<boolean>;
+  /** Execute and return the value, or `undefined` on any failure. */
+  tryGet<T = unknown>(): Promise<T | undefined>;
+}
+
+/**
  * Options for executing a sling request.
  */
 export interface ExecuteOptions extends CacheOptions {
@@ -143,18 +182,17 @@ export interface SlingDefinition {
   /** Execute the request, resolving all lazy interpolations. */
   execute: (options?: ExecuteOptions) => Promise<SlingResponse>;
   /**
-   * Execute the request and extract a value from the JSON response body
+   * Create a lazy accessor that extracts a value from the JSON response body
    * using a simple path expression.
+   *
+   * The returned {@link Accessor} is **callable** — it satisfies
+   * `() => Promise<string>`, so it can be used directly as a sling
+   * template interpolation value without a wrapper function.
    *
    * Supports dot-notation and bracket indexing:
    * - `"user.name"` — access nested properties
    * - `"users[0].email"` — index into arrays
    * - `"data.items[2].tags[0]"` — mix freely
-   *
-   * Returns a `Promise<string>` so the result can be interpolated directly
-   * into other sling templates without extra quoting. String values are
-   * returned as-is; numbers and booleans are stringified; objects/arrays
-   * are JSON-serialized.
    *
    * Limitations:
    * - No wildcard or recursive descent (`..`, `*`).
@@ -164,17 +202,20 @@ export interface SlingDefinition {
    * @param jsonPath  A dot/bracket path into the response body.
    * @param options   Cache and validation options.
    *
-   * @throws {Error} If the response status is not in `validResponseCodes`
-   *                 (defaults to 2xx).
-   * @throws {SyntaxError} If the response body is not valid JSON.
-   *
    * @example
    * ```ts
-   * const getToken = () => session.json('token');
-   * const getFirstUser = () => session.json('data.users[0].name');
+   * // Use directly in template — no wrapper function needed
+   * export const getUsers = sling`
+   *   GET https://api.example.com/users
+   *   Authorization: Bearer ${session.json('token')}
+   * `
+   *
+   * // Or extract the value explicitly
+   * const token = await session.json('token').get<string>();
+   * const maybe = await session.json('token').tryGet<number>();
    * ```
    */
-  json(jsonPath: string, options?: JsonOptions): Promise<string>;
+  json(jsonPath: string, options?: JsonOptions): Accessor;
 }
 
 /**

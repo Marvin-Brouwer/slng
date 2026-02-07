@@ -15,14 +15,12 @@ export const authenticate = sling`
   }
 `;
 
-// Helper: extract auth token from the authenticate response
-const getAuthToken = () => authenticate.json("auth_token");
-
 // Step 2: Use the auth token in a subsequent request
+// json() returns a callable Accessor — no wrapper function needed
 // CodeLens: ▶ Send | 🐛 Debug
 export const getProfile = sling`
   GET https://${apiHost}/profile HTTP/1.1
-  Authorization: Bearer ${getAuthToken}
+  Authorization: Bearer ${authenticate.json("auth_token")}
   Accept: application/json
 `;
 
@@ -30,7 +28,7 @@ export const getProfile = sling`
 // CodeLens: ▶ Send | 🐛 Debug
 export const updateEmail = sling`
   PATCH https://${apiHost}/profile HTTP/1.1
-  Authorization: Bearer ${getAuthToken}
+  Authorization: Bearer ${authenticate.json("auth_token")}
   Content-Type: application/json
 
   {

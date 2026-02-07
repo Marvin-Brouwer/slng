@@ -1,5 +1,6 @@
 import {
   sling,
+  type Accessor,
   type SlingDefinition,
   type SlingInternals,
   type SlingInterpolation,
@@ -78,32 +79,8 @@ export function createDefinition(
       return response;
     },
 
-    async json(jsonPath: string, options?: JsonOptions): Promise<string> {
-      const validCodes = options?.validResponseCodes;
-      const response = await this.execute(options);
-
-      // Validate response status
-      if (validCodes && validCodes.length > 0) {
-        if (!validCodes.includes(response.status)) {
-          throw new Error(
-            `Request failed with status ${response.status} ${response.statusText}. ` +
-              `Expected one of: ${validCodes.join(", ")}`,
-          );
-        }
-      } else if (response.status < 200 || response.status >= 300) {
-        throw new Error(
-          `Request failed with status ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const body = JSON.parse(response.body);
-      const value = resolveJsonPath(body, jsonPath);
-
-      // Convert to string for template interpolation
-      if (typeof value === "string") return value;
-      if (value === null || value === undefined) return String(value);
-      if (typeof value === "object") return JSON.stringify(value);
-      return String(value);
+    json(jsonPath: string, options?: JsonOptions): Accessor {
+      return createAccessor(this, jsonPath, options);
     },
   };
 
@@ -147,6 +124,87 @@ function resolveJsonPath(obj: unknown, path: string): unknown {
   }
 
   return current;
+}
+
+/**
+ * Create a callable Accessor for a JSON path on a definition.
+ *
+ * The returned function satisfies `() => Promise<string>` so it
+ * can be used directly as a `SlingInterpolation` value in templates.
+ * It also exposes `.get()`, `.tryGet()`, and `.validate()` for
+ * explicit value extraction.
+ */
+function createAccessor(
+  definition: SlingDefinition,
+  jsonPath: string,
+  options?: JsonOptions,
+): Accessor {
+  const validCodes = options?.validResponseCodes;
+
+  /** Shared extraction logic: execute, validate status, parse, traverse. */
+  async function extract(): Promise<{ value: unknown; found: boolean }> {
+    const response = await definition.execute(options);
+
+    // Validate response status
+    if (validCodes && validCodes.length > 0) {
+      if (!validCodes.includes(response.status)) {
+        throw new Error(
+          `Request failed with status ${response.status} ${response.statusText}. ` +
+            `Expected one of: ${validCodes.join(", ")}`,
+        );
+      }
+    } else if (response.status < 200 || response.status >= 300) {
+      throw new Error(
+        `Request failed with status ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const body = JSON.parse(response.body);
+    const value = resolveJsonPath(body, jsonPath);
+    return { value, found: value !== undefined };
+  }
+
+  // The callable itself — resolves to string for template interpolation
+  const fn = async (): Promise<string> => {
+    const { value } = await extract();
+    return stringifyForInterpolation(value);
+  };
+
+  fn.get = async <T = unknown>(): Promise<T> => {
+    const { value, found } = await extract();
+    if (!found) {
+      throw new Error(`Path "${jsonPath}" not found in response body`);
+    }
+    return value as T;
+  };
+
+  fn.validate = async (): Promise<boolean> => {
+    try {
+      const { found } = await extract();
+      return found;
+    } catch {
+      return false;
+    }
+  };
+
+  fn.tryGet = async <T = unknown>(): Promise<T | undefined> => {
+    try {
+      const { value, found } = await extract();
+      return found ? (value as T) : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
+  return fn as Accessor;
+}
+
+/** Convert an extracted JSON value to a string for template interpolation. */
+function stringifyForInterpolation(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return String(value);
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
 }
 
 /**

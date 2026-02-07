@@ -24,6 +24,7 @@ export {
 
 // Types
 export type {
+  Accessor,
   SlingDefinition,
   SlingInternals,
   SlingResponse,
