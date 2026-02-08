@@ -10,9 +10,9 @@ coverage/
 .env.*.local
 
 # IDE
-.vscode/settings.json
 .idea/
 
 # OS
 .DS_Store
 Thumbs.db
+.envrc

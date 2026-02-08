@@ -1,0 +1,19 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"allowSyntheticDefaultImports": true,
+		"allowImportingTsExtensions": true,
+		"useDefineForClassFields": true,
+		"emitDeclarationOnly": true,
+		"declaration": true,
+		"esModuleInterop": true,
+		"isolatedModules": true,
+		"allowJs": true,
+		"strict": true,
+	},
+	"include": [
+		"eslint.*.ts",
+		"tsup.config.mts",
+		"vitest.config.mts",
+	]
+}

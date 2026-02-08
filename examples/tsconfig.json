@@ -1,8 +1,13 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "."
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2022"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
   },
-  "include": ["."]
+  "exclude": ["node_modules", "dist"]
 }
