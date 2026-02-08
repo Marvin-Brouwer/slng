@@ -1,4 +1,34 @@
-{
+{"eslint.codeActionsOnSave.mode": "all",
+	"eslint.format.enable": true,
+	"eslint.validate": [
+		"javascript",
+		"javascriptreact",
+		"typescript",
+		"typescriptreact"
+	],
+	"prettier.enable": false,
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "explicit",
+	},
+	"[typescript][typescriptreact][javascript][javascriptreact][json][jsonc][yaml][github-actions-workflow]": {
+		"editor.defaultFormatter": "dbaeumer.vscode-eslint",
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": "explicit"
+		},
+	},
+	"typescript.preferences.importModuleSpecifierEnding": "auto",
+	"typescript.format.semicolons": "remove",
+	"typescript.preferences.quoteStyle": "single",
+	"typescript.preferences.organizeImports": {
+		"accentCollation": true,
+		"unicodeCollation": "unicode",
+		"caseFirst": "upper",
+		"typeOrder": "inline",
+		"caseSensitivity": "caseSensitive",
+		"numericCollation": true,
+	},
+	"typescript.format.enable": true,
 	"explorer.fileNesting.enabled": true,
 	"explorer.fileNesting.patterns": {
 		"*.ts": "${capture}.js",
@@ -8,5 +38,11 @@
 		"tsconfig.json": "tsconfig.*.json",
 		"package.json": "package-lock.json, yarn.lock, pnpm-lock.yaml, bun.lockb, bun.lock",
 		"eslint.config.ts": "eslint.preset.*.ts"
-	}
+	},
+	// These options search the repo recursively and slow down
+	// the build task menu. We define our own in tasks.json.
+	"javascript.format.insertSpaceAfterOpeningAndBeforeClosingEmptyBraces": false,
+	"typescript.format.insertSpaceAfterOpeningAndBeforeClosingEmptyBraces": false,
+	"typescript.tsc.autoDetect": "off",
+	"npm.autoDetect": "off"
 }
