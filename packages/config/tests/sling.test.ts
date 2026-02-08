@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { sling as slingFactory } from "../src/sling.js";
 import { sling as slingBrand } from "../src/types.js";
+import type { DataAccessor, SlingInterpolation } from "../src/types.js";
 import { secret, sensitive } from "../src/index.js";
 import { isSlingDefinition } from "../src/definition.js";
 
@@ -62,9 +63,13 @@ describe("sling", () => {
     expect(def[slingBrand].maskedValues[0]!.type).toBe("sensitive");
   });
 
-  it("handles function interpolations as <deferred> in preview", () => {
+  it("handles ResponseDataAccessor interpolations as <deferred> in preview", () => {
     const s = slingFactory();
-    const getToken = () => "dynamic-token";
+    const getToken: SlingInterpolation = Promise.resolve({
+      async value() { return "dynamic-token"; },
+      async validate() { return true; },
+      async tryValue() { return "dynamic-token"; },
+    } satisfies DataAccessor);
     const def = s`
       GET https://api.example.com/users HTTP/1.1
 

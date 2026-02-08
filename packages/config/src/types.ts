@@ -16,6 +16,36 @@ import type { ParameterType, SlingParameters } from "./parameters.js";
  */
 export const sling = Symbol.for("sling");
 
+// ── Error types ──────────────────────────────────────────────
+
+/**
+ * An HTTP-level error. Returned (not thrown) by {@link DataAccessor}
+ * methods when the request fails or returns an unexpected status code.
+ */
+export class HttpError extends Error {
+  readonly name = "HttpError";
+  constructor(
+    readonly status: number,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+  }
+}
+
+/**
+ * Returned (not thrown) by {@link DataAccessor.value} when the
+ * requested JSON path does not exist in the response body.
+ */
+export class InvalidJsonPathError extends Error {
+  readonly name = "InvalidJsonPathError";
+  constructor(readonly path: string) {
+    super(`Path "${path}" not found in response body`);
+  }
+}
+
+// ── Masked values ────────────────────────────────────────────
+
 /**
  * A value that should be masked in logs and UI.
  */
@@ -28,18 +58,80 @@ export interface MaskedValue {
   readonly displayValue: string;
 }
 
+// ── Data accessor ────────────────────────────────────────────
+
+/**
+ * A data accessor for extracting values from a JSON response.
+ *
+ * Returned (inside a Promise) by {@link SlingDefinition.json}.
+ * Methods return error types as values rather than throwing,
+ * so callers can choose how to handle failures.
+ *
+ * @example
+ * ```ts
+ * const accessor = await session.json('token');
+ *
+ * // Strict — returns the value, or an error
+ * const result = await accessor.value<string>();
+ * if (result instanceof HttpError) { ... }
+ *
+ * // Safe — returns undefined for missing paths
+ * const maybe = await accessor.tryValue<string>();
+ *
+ * // Boolean check
+ * if (await accessor.validate()) { ... }
+ * ```
+ */
+export interface DataAccessor {
+  /**
+   * Extract the value at the JSON path.
+   * Returns the value on success, or an error type on failure.
+   */
+  value<T = string>(): Promise<T | HttpError | InvalidJsonPathError>;
+  /** Check if the extraction would succeed (valid status + path exists). */
+  validate(): Promise<boolean>;
+  /**
+   * Extract the value, returning `undefined` for missing paths.
+   * HTTP errors are still returned as {@link HttpError}.
+   */
+  tryValue<T = string>(): Promise<T | HttpError | undefined>;
+}
+
+/**
+ * A promised {@link DataAccessor}. The promise resolves immediately
+ * to a DataAccessor whose methods lazily trigger the HTTP request.
+ *
+ * Can be used directly as a sling template interpolation value —
+ * the template resolver awaits the promise, then calls `.value()`.
+ */
+export type ResponseDataAccessor = Promise<DataAccessor>;
+
+/**
+ * Alias for {@link ResponseDataAccessor}.
+ * Returned by {@link SlingDefinition.json}.
+ */
+export type ResponseJsonAccessor = ResponseDataAccessor;
+
+// ── Interpolation types ──────────────────────────────────────
+
+/**
+ * Primitive values that can be inlined directly into a template.
+ */
+export type PrimitiveValue = string | number | boolean;
+
 /**
  * Valid interpolation values inside a sling tagged template.
  *
- * - `string | number` — inlined as-is
+ * - `PrimitiveValue` — inlined as-is (`string`, `number`, `boolean`)
  * - `MaskedValue` — inlined but masked in output
- * - `() => string | Promise<string>` — resolved lazily at execution time (for chaining)
+ * - `ResponseDataAccessor` — resolved lazily at execution time (for chaining)
  */
 export type SlingInterpolation =
-  | string
-  | number
+  | PrimitiveValue
   | MaskedValue
-  | (() => string | Promise<string>);
+  | ResponseDataAccessor;
+
+// ── HTTP types ───────────────────────────────────────────────
 
 /**
  * Parsed HTTP request components extracted from the template literal.
@@ -72,6 +164,8 @@ export type SlingInternals = {
   readonly maskedValues: ReadonlyArray<MaskedValue>;
 };
 
+// ── Options ──────────────────────────────────────────────────
+
 /**
  * Options for controlling response caching.
  */
@@ -103,45 +197,6 @@ export type JsonOptions = CacheOptions & {
 };
 
 /**
- * A lazy accessor for extracting values from a JSON response.
- *
- * Returned by {@link SlingDefinition.json}. The accessor is callable,
- * so it can be used directly as a template interpolation value
- * without needing a wrapper function.
- *
- * When called as a function it resolves to a `string`, making it
- * compatible with {@link SlingInterpolation}.
- *
- * @example
- * ```ts
- * // Direct use in template interpolation — no wrapper needed
- * export const getUsers = sling`
- *   GET https://api.example.com/users
- *   Authorization: Bearer ${session.json('token')}
- * `
- *
- * // Explicit typed extraction
- * const token = await session.json('token').get<string>();
- *
- * // Safe extraction (returns undefined on failure)
- * const maybe = await session.json('token').tryGet<string>();
- *
- * // Validation check
- * if (await session.json('token').validate()) { ... }
- * ```
- */
-export interface Accessor {
-  /** Resolve to a string value (for template interpolation). */
-  (): Promise<string>;
-  /** Execute and return the extracted value. Throws on invalid status or missing path. */
-  get<T = unknown>(): Promise<T>;
-  /** Check if the extraction would succeed (valid status + path exists). */
-  validate(): Promise<boolean>;
-  /** Execute and return the value, or `undefined` on any failure. */
-  tryGet<T = unknown>(): Promise<T | undefined>;
-}
-
-/**
  * Options for executing a sling request.
  */
 export interface ExecuteOptions extends CacheOptions {
@@ -154,6 +209,8 @@ export interface ExecuteOptions extends CacheOptions {
   /** If true, mask secret/sensitive values in the returned response metadata. */
   maskOutput?: boolean;
 }
+
+// ── Response & definition ────────────────────────────────────
 
 /**
  * The response from executing a sling request.
@@ -182,12 +239,16 @@ export interface SlingDefinition {
   /** Execute the request, resolving all lazy interpolations. */
   execute: (options?: ExecuteOptions) => Promise<SlingResponse>;
   /**
-   * Create a lazy accessor that extracts a value from the JSON response body
+   * Create a data accessor that extracts a value from the JSON response body
    * using a simple path expression.
    *
-   * The returned {@link Accessor} is **callable** — it satisfies
-   * `() => Promise<string>`, so it can be used directly as a sling
-   * template interpolation value without a wrapper function.
+   * Returns a `Promise<DataAccessor>` ({@link ResponseJsonAccessor}).
+   * The promise resolves immediately — the actual HTTP request is
+   * deferred until a method on the accessor is called.
+   *
+   * Can be used directly as a template interpolation value:
+   * the template resolver awaits the promise, then calls `.value()`
+   * to obtain a string for interpolation.
    *
    * Supports dot-notation and bracket indexing:
    * - `"user.name"` — access nested properties
@@ -211,12 +272,15 @@ export interface SlingDefinition {
    * `
    *
    * // Or extract the value explicitly
-   * const token = await session.json('token').get<string>();
-   * const maybe = await session.json('token').tryGet<number>();
+   * const accessor = await session.json('token');
+   * const token = await accessor.value<string>();
+   * const maybe = await accessor.tryValue<number>();
    * ```
    */
-  json(jsonPath: string, options?: JsonOptions): Accessor;
+  json(jsonPath: string, options?: JsonOptions): ResponseJsonAccessor;
 }
+
+// ── Config & plugins ─────────────────────────────────────────
 
 /**
  * The sling context, modified by plugins during setup.

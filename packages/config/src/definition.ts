@@ -1,6 +1,9 @@
 import {
   sling,
-  type Accessor,
+  HttpError,
+  InvalidJsonPathError,
+  type DataAccessor,
+  type ResponseJsonAccessor,
   type SlingDefinition,
   type SlingInternals,
   type SlingInterpolation,
@@ -79,8 +82,8 @@ export function createDefinition(
       return response;
     },
 
-    json(jsonPath: string, options?: JsonOptions): Accessor {
-      return createAccessor(this, jsonPath, options);
+    json(jsonPath: string, options?: JsonOptions): ResponseJsonAccessor {
+      return Promise.resolve(createDataAccessor(this, jsonPath, options));
     },
   };
 
@@ -127,84 +130,83 @@ function resolveJsonPath(obj: unknown, path: string): unknown {
 }
 
 /**
- * Create a callable Accessor for a JSON path on a definition.
+ * Create a {@link DataAccessor} for a JSON path on a definition.
  *
- * The returned function satisfies `() => Promise<string>` so it
- * can be used directly as a `SlingInterpolation` value in templates.
- * It also exposes `.get()`, `.tryGet()`, and `.validate()` for
- * explicit value extraction.
+ * The accessor's methods lazily trigger the HTTP request via
+ * `definition.execute()` and extract the value at the given path.
+ * Errors are returned as values ({@link HttpError}, {@link InvalidJsonPathError})
+ * rather than thrown.
  */
-function createAccessor(
+function createDataAccessor(
   definition: SlingDefinition,
   jsonPath: string,
   options?: JsonOptions,
-): Accessor {
+): DataAccessor {
   const validCodes = options?.validResponseCodes;
 
   /** Shared extraction logic: execute, validate status, parse, traverse. */
-  async function extract(): Promise<{ value: unknown; found: boolean }> {
-    const response = await definition.execute(options);
+  async function extract(): Promise<
+    { value: unknown; found: boolean } | HttpError
+  > {
+    let response: SlingResponse;
+    try {
+      response = await definition.execute(options);
+    } catch (err) {
+      return new HttpError(
+        0,
+        "Request failed",
+        err instanceof Error ? { cause: err } : undefined,
+      );
+    }
 
     // Validate response status
     if (validCodes && validCodes.length > 0) {
       if (!validCodes.includes(response.status)) {
-        throw new Error(
+        return new HttpError(
+          response.status,
           `Request failed with status ${response.status} ${response.statusText}. ` +
             `Expected one of: ${validCodes.join(", ")}`,
         );
       }
     } else if (response.status < 200 || response.status >= 300) {
-      throw new Error(
+      return new HttpError(
+        response.status,
         `Request failed with status ${response.status} ${response.statusText}`,
       );
     }
 
-    const body = JSON.parse(response.body);
-    const value = resolveJsonPath(body, jsonPath);
-    return { value, found: value !== undefined };
+    try {
+      const body = JSON.parse(response.body);
+      const value = resolveJsonPath(body, jsonPath);
+      return { value, found: value !== undefined };
+    } catch {
+      return new HttpError(
+        response.status,
+        "Response body is not valid JSON",
+      );
+    }
   }
 
-  // The callable itself — resolves to string for template interpolation
-  const fn = async (): Promise<string> => {
-    const { value } = await extract();
-    return stringifyForInterpolation(value);
+  return {
+    async value<T = string>(): Promise<T | HttpError | InvalidJsonPathError> {
+      const result = await extract();
+      if (result instanceof HttpError) return result;
+      if (!result.found) return new InvalidJsonPathError(jsonPath);
+      return result.value as T;
+    },
+
+    async validate(): Promise<boolean> {
+      const result = await extract();
+      if (result instanceof HttpError) return false;
+      return result.found;
+    },
+
+    async tryValue<T = string>(): Promise<T | HttpError | undefined> {
+      const result = await extract();
+      if (result instanceof HttpError) return result;
+      return result.found ? (result.value as T) : undefined;
+    },
   };
-
-  fn.get = async <T = unknown>(): Promise<T> => {
-    const { value, found } = await extract();
-    if (!found) {
-      throw new Error(`Path "${jsonPath}" not found in response body`);
-    }
-    return value as T;
-  };
-
-  fn.validate = async (): Promise<boolean> => {
-    try {
-      const { found } = await extract();
-      return found;
-    } catch {
-      return false;
-    }
-  };
-
-  fn.tryGet = async <T = unknown>(): Promise<T | undefined> => {
-    try {
-      const { value, found } = await extract();
-      return found ? (value as T) : undefined;
-    } catch {
-      return undefined;
-    }
-  };
-
-  return fn as Accessor;
-}
-
-/** Convert an extracted JSON value to a string for template interpolation. */
-function stringifyForInterpolation(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value === null || value === undefined) return String(value);
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
 }
 
 /**
@@ -217,7 +219,7 @@ async function executeRequest(
 ): Promise<SlingResponse> {
   const startTime = performance.now();
 
-  // Resolve all interpolations (including async functions for chaining)
+  // Resolve all interpolations (including async accessors for chaining)
   const resolved = await parseTemplateResolved(strings, values);
 
   const fetchResponse = await performFetch(resolved, options);

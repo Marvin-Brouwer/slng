@@ -22,9 +22,15 @@ export {
   SlingParseError,
 } from "./parser.js";
 
+// Error types
+export { HttpError, InvalidJsonPathError } from "./types.js";
+
 // Types
 export type {
-  Accessor,
+  DataAccessor,
+  ResponseDataAccessor,
+  ResponseJsonAccessor,
+  PrimitiveValue,
   SlingDefinition,
   SlingInternals,
   SlingResponse,

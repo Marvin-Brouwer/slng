@@ -16,5 +16,5 @@ export const session = sling`
   }
 `
 
-// json() returns a callable Accessor — use directly in templates
+// json() returns a ResponseDataAccessor — use directly in templates
 export const getSessionToken = session.json('token')
