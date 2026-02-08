@@ -1,19 +1,58 @@
-import type { ParsedHttpRequest, SlingInterpolation, MaskedValue } from "./types.js";
+import {
+  HttpError,
+  InvalidJsonPathError,
+  type ParsedHttpRequest,
+  type SlingInterpolation,
+  type MaskedValue,
+  type DataAccessor,
+} from "./types.js";
 
 const REQUEST_LINE_RE = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)\s+(\S+)(?:\s+(HTTP\/[\d.]+))?$/;
 
 /**
+ * Check whether a value looks like a thenable (Promise / ResponseDataAccessor).
+ */
+function isThenable(value: unknown): value is PromiseLike<DataAccessor> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "then" in value &&
+    typeof (value as Record<string, unknown>).then === "function"
+  );
+}
+
+/**
+ * Convert an extracted JSON value to a string for template interpolation.
+ */
+function stringifyForInterpolation(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return String(value);
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+/**
  * Resolve a single interpolation value to a string.
- * Async functions are awaited; MaskedValues use their real value.
+ *
+ * - `PrimitiveValue` — stringified directly
+ * - `MaskedValue` — uses the real value
+ * - `ResponseDataAccessor` (Promise) — awaited to get a {@link DataAccessor},
+ *   then `.value()` is called. Errors are re-thrown so the request fails.
  */
 export async function resolveInterpolation(
   value: SlingInterpolation,
 ): Promise<string> {
-  if (typeof value === "function") {
-    return String(await value());
-  }
-  if (typeof value === "object" && value !== null && "__masked" in value) {
-    return (value as MaskedValue).value;
+  if (typeof value === "object" && value !== null) {
+    if ("__masked" in value) {
+      return (value as MaskedValue).value;
+    }
+    if (isThenable(value)) {
+      const accessor = await value;
+      const result = await accessor.value();
+      if (result instanceof HttpError) throw result;
+      if (result instanceof InvalidJsonPathError) throw result;
+      return stringifyForInterpolation(result);
+    }
   }
   return String(value);
 }
@@ -24,11 +63,13 @@ export async function resolveInterpolation(
 export function resolveInterpolationDisplay(
   value: SlingInterpolation,
 ): string {
-  if (typeof value === "object" && value !== null && "__masked" in value) {
-    return (value as MaskedValue).displayValue;
-  }
-  if (typeof value === "function") {
-    return "<deferred>";
+  if (typeof value === "object" && value !== null) {
+    if ("__masked" in value) {
+      return (value as MaskedValue).displayValue;
+    }
+    if (isThenable(value)) {
+      return "<deferred>";
+    }
   }
   return String(value);
 }
@@ -136,7 +177,7 @@ export function parseHttpText(raw: string): ParsedHttpRequest {
 
 /**
  * Parse the template at definition time using display values (for preview).
- * Async/function interpolations show as `<deferred>`.
+ * Async/promise interpolations show as `<deferred>`.
  */
 export function parseTemplatePreview(
   strings: ReadonlyArray<string>,

@@ -16,7 +16,7 @@ export const authenticate = sling`
 `;
 
 // Step 2: Use the auth token in a subsequent request
-// json() returns a callable Accessor — no wrapper function needed
+// json() returns a ResponseDataAccessor — resolved lazily by the template
 // CodeLens: ▶ Send | 🐛 Debug
 export const getProfile = sling`
   GET https://${apiHost}/profile HTTP/1.1

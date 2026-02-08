@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { sling as slingFactory } from "../src/sling.js";
-import { sling as slingBrand } from "../src/types.js";
+import type { DataAccessor, SlingInterpolation } from "../src/types.js";
 import { secret, sensitive } from "../src/index.js";
 import { isSlingDefinition } from "../src/definition.js";
 
@@ -17,9 +17,9 @@ describe("sling", () => {
       GET https://api.example.com/users HTTP/1.1
     `;
 
-    expect(def[slingBrand].version).toBe("v1");
-    expect(def[slingBrand].parsed.method).toBe("GET");
-    expect(def[slingBrand].parsed.url).toBe("https://api.example.com/users");
+    expect(def.getInternals().version).toBe("v1");
+    expect(def.getInternals().parsed.method).toBe("GET");
+    expect(def.getInternals().parsed.url).toBe("https://api.example.com/users");
   });
 
   it("handles string interpolations", () => {
@@ -29,7 +29,7 @@ describe("sling", () => {
       GET https://${host}/users HTTP/1.1
     `;
 
-    expect(def[slingBrand].parsed.url).toBe("https://api.example.com/users");
+    expect(def.getInternals().parsed.url).toBe("https://api.example.com/users");
   });
 
   it("handles secret interpolations", () => {
@@ -41,10 +41,10 @@ describe("sling", () => {
       Authorization: Bearer ${token}
     `;
 
-    expect(def[slingBrand].maskedValues).toHaveLength(1);
-    expect(def[slingBrand].maskedValues[0]!.type).toBe("secret");
+    expect(def.getInternals().maskedValues).toHaveLength(1);
+    expect(def.getInternals().maskedValues[0]!.type).toBe("secret");
     // Preview shows masked value
-    expect(def[slingBrand].parsed.headers["Authorization"]).toBe("Bearer *****");
+    expect(def.getInternals().parsed.headers["Authorization"]).toBe("Bearer *****");
   });
 
   it("handles sensitive interpolations", () => {
@@ -58,20 +58,24 @@ describe("sling", () => {
       {"email": "${email}"}
     `;
 
-    expect(def[slingBrand].maskedValues).toHaveLength(1);
-    expect(def[slingBrand].maskedValues[0]!.type).toBe("sensitive");
+    expect(def.getInternals().maskedValues).toHaveLength(1);
+    expect(def.getInternals().maskedValues[0]!.type).toBe("sensitive");
   });
 
-  it("handles function interpolations as <deferred> in preview", () => {
+  it("handles ResponseDataAccessor interpolations as <deferred> in preview", () => {
     const s = slingFactory();
-    const getToken = () => "dynamic-token";
+    const getToken: SlingInterpolation = Promise.resolve({
+      async value() { return "dynamic-token"; },
+      async validate() { return true; },
+      async tryValue() { return "dynamic-token"; },
+    } satisfies DataAccessor);
     const def = s`
       GET https://api.example.com/users HTTP/1.1
 
       Authorization: Bearer ${getToken}
     `;
 
-    expect(def[slingBrand].parsed.headers["Authorization"]).toBe("Bearer <deferred>");
+    expect(def.getInternals().parsed.headers["Authorization"]).toBe("Bearer <deferred>");
   });
 
   it("collects template parts for later re-rendering", () => {
@@ -79,9 +83,9 @@ describe("sling", () => {
     const host = "example.com";
     const def = s`GET https://${host}/api`;
 
-    expect(def[slingBrand].template.strings).toHaveLength(2);
-    expect(def[slingBrand].template.values).toHaveLength(1);
-    expect(def[slingBrand].template.values[0]).toBe("example.com");
+    expect(def.getInternals().template.strings).toHaveLength(2);
+    expect(def.getInternals().template.values).toHaveLength(1);
+    expect(def.getInternals().template.values[0]).toBe("example.com");
   });
 });
 

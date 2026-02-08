@@ -108,14 +108,22 @@ describe("resolveInterpolation", () => {
     expect(await resolveInterpolation(s)).toBe("marvin@example.com");
   });
 
-  it("resolves sync functions", async () => {
-    expect(await resolveInterpolation(() => "computed")).toBe("computed");
+  it("resolves ResponseDataAccessor (Promise<DataAccessor>)", async () => {
+    const accessor = Promise.resolve({
+      async value() { return "computed"; },
+      async validate() { return true; },
+      async tryValue() { return "computed"; },
+    });
+    expect(await resolveInterpolation(accessor)).toBe("computed");
   });
 
-  it("resolves async functions", async () => {
-    expect(
-      await resolveInterpolation(async () => "async-value"),
-    ).toBe("async-value");
+  it("resolves ResponseDataAccessor with non-string values", async () => {
+    const accessor = Promise.resolve({
+      async value() { return 42; },
+      async validate() { return true; },
+      async tryValue() { return 42; },
+    });
+    expect(await resolveInterpolation(accessor)).toBe("42");
   });
 });
 
@@ -130,8 +138,13 @@ describe("resolveInterpolationDisplay", () => {
     );
   });
 
-  it("shows <deferred> for functions", () => {
-    expect(resolveInterpolationDisplay(() => "test")).toBe("<deferred>");
+  it("shows <deferred> for ResponseDataAccessor (Promise)", () => {
+    const accessor = Promise.resolve({
+      async value() { return "test"; },
+      async validate() { return true; },
+      async tryValue() { return "test"; },
+    });
+    expect(resolveInterpolationDisplay(accessor)).toBe("<deferred>");
   });
 
   it("shows strings as-is", () => {

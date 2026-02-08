@@ -13,7 +13,6 @@ export { sensitive } from "./masking/sensitive.js";
 
 // Runtime utilities (for CLI / extensions)
 export { isSlingDefinition } from "./definition.js";
-export { sling as slingBrand } from "./types.js";
 export {
   parseHttpText,
   resolveInterpolation,
@@ -22,9 +21,15 @@ export {
   SlingParseError,
 } from "./parser.js";
 
+// Error types
+export { HttpError, InvalidJsonPathError } from "./types.js";
+
 // Types
 export type {
-  Accessor,
+  DataAccessor,
+  ResponseDataAccessor,
+  ResponseJsonAccessor,
+  PrimitiveValue,
   SlingDefinition,
   SlingInternals,
   SlingResponse,
