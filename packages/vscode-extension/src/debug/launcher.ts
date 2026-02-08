@@ -77,13 +77,12 @@ function buildRunnerScript(
     import { pathToFileURL } from 'node:url';
     import { writeFileSync } from 'node:fs';
 
-    const slingKey = Symbol.for('sling');
     const exportName = ${JSON.stringify(exportName)};
     const fileUrl = pathToFileURL(${JSON.stringify(filePath)}).href;
     const mod = await import(fileUrl);
     const definition = mod[exportName];
 
-    if (!definition || !definition[slingKey]) {
+    if (!definition || typeof definition.getInternals !== 'function') {
       console.error('Export "' + exportName + '" is not a sling definition');
       process.exit(1);
     }

@@ -1,21 +1,5 @@
 import type { ParameterType, SlingParameters } from "./parameters.js";
 
-/**
- * Symbol used to brand sling definitions.
- *
- * Internals are stored behind this Symbol so they stay invisible
- * in IDE auto-complete / IntelliSense.
- *
- * @example
- * ```ts
- * import { sling } from '@slng/config'
- *
- * const internals = definition[sling]
- * console.log(internals.parsed.method) // "GET"
- * ```
- */
-export const sling = Symbol.for("sling");
-
 // ── Error types ──────────────────────────────────────────────
 
 /**
@@ -145,7 +129,8 @@ export interface ParsedHttpRequest {
 }
 
 /**
- * Internal data stored on a sling definition, hidden behind `[sling]`.
+ * Internal data stored on a sling definition.
+ * Access via {@link SlingDefinition.getInternals}.
  */
 export type SlingInternals = {
   readonly version: "v1";
@@ -228,14 +213,10 @@ export interface SlingResponse {
 
 /**
  * A sling request definition. Returned by the tagged template.
- *
- * Internals (template, parsed request, masked values) are stored behind
- * the `[sling]` Symbol to keep them out of IDE auto-complete.
- * Use `definition[sling]` to access them when needed.
  */
 export interface SlingDefinition {
-  /** Symbol-branded internals. */
-  readonly [sling]: SlingInternals;
+  /** Access the definition's internal data (parsed request, template parts, etc.). */
+  getInternals(): SlingInternals;
   /** Execute the request, resolving all lazy interpolations. */
   execute: (options?: ExecuteOptions) => Promise<SlingResponse>;
   /**

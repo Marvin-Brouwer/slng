@@ -1,5 +1,4 @@
 import {
-  sling,
   HttpError,
   InvalidJsonPathError,
   type DataAccessor,
@@ -56,7 +55,7 @@ export function createDefinition(
   };
 
   const definition: SlingDefinition = {
-    [sling]: internals,
+    getInternals: () => internals,
 
     async execute(options?: ExecuteOptions): Promise<SlingResponse> {
       const readFromCache = options?.readFromCache !== false;
@@ -293,10 +292,16 @@ function logRequest(
  * Check if an unknown value is a SlingDefinition.
  */
 export function isSlingDefinition(value: unknown): value is SlingDefinition {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    sling in value &&
-    (value as SlingDefinition)[sling].version === "v1"
-  );
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    typeof (value as Record<string, unknown>).getInternals !== "function"
+  ) {
+    return false;
+  }
+  try {
+    return (value as SlingDefinition).getInternals().version === "v1";
+  } catch {
+    return false;
+  }
 }
