@@ -1,66 +1,73 @@
-export interface CliArgs {
-  /** Specific file to run. */
-  file?: string;
-  /** Glob pattern for multiple files. */
-  files?: string;
-  /** Specific export name to run. If omitted, run all. */
-  name?: string;
-  /** Environment to activate. */
-  environment?: string;
-  /** Show verbose output including full request/response. */
-  verbose: boolean;
-  /** Mask secrets in output. */
-  mask: boolean;
-  /** Show help. */
-  help: boolean;
+export interface CliArguments {
+	/** Specific file to run. */
+	file?: string
+	/** Glob pattern for multiple files. */
+	files?: string
+	/** Specific export name to run. If omitted, run all. */
+	name?: string
+	/** Environment to activate. */
+	environment?: string
+	/** Show verbose output including full request/response. */
+	verbose: boolean
+	/** Mask secrets in output. */
+	mask: boolean
+	/** Show help. */
+	help: boolean
 }
 
-export function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = {
-    verbose: false,
-    mask: true,
-    help: false,
-  };
+export function parseArgs(argv: string[]): CliArguments {
+	const arguments_: CliArguments = {
+		verbose: false,
+		mask: true,
+		help: false,
+	}
 
-  let i = 0;
-  while (i < argv.length) {
-    const arg = argv[i]!;
+	let index = 0
+	while (index < argv.length) {
+		const argument = argv[index]
 
-    switch (arg) {
-      case "--file":
-      case "-f":
-        args.file = argv[++i];
-        break;
-      case "--files":
-        args.files = argv[++i];
-        break;
-      case "--env":
-      case "-e":
-        args.environment = argv[++i];
-        break;
-      case "--verbose":
-      case "-v":
-        args.verbose = true;
-        break;
-      case "--no-mask":
-        args.mask = false;
-        break;
-      case "--help":
-      case "-h":
-        args.help = true;
-        break;
-      default:
-        // Positional argument = export name
-        if (!arg.startsWith("-")) {
-          args.name = arg;
-        }
-        break;
-    }
+		switch (argument) {
+			case '--file':
+			case '-f': {
+				arguments_.file = argv[++index]
+				break
+			}
+			case '--files': {
+				arguments_.files = argv[++index]
+				break
+			}
+			case '--env':
+			case '-e': {
+				arguments_.environment = argv[++index]
+				break
+			}
+			case '--verbose':
+			case '-v': {
+				arguments_.verbose = true
+				break
+			}
+			case '--no-mask': {
+				arguments_.mask = false
+				break
+			}
+			case '--help':
+			case '-h': {
+				arguments_.help = true
+				break
+			}
+			default: {
+				// Positional argument = export name
+				if (!argument.startsWith('-')) {
+					arguments_.name = argument
+				}
+				break
+			}
+		}
 
-    i++;
-  }
+		index++
+	}
 
-  return args;
+	return arguments_
 }
 
 export const HELP_TEXT = `
@@ -84,4 +91,4 @@ Examples:
   npx @slng/cli --file ./api/users.mts "getUser"
   npx @slng/cli --files "./apis/*.mts"
   npx @slng/cli
-`.trim();
+`.trim()

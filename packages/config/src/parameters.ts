@@ -10,14 +10,14 @@
  * is whatever the plugin stored (string, number, or boolean).
  */
 export type SlingParameters = Record<string, unknown | undefined> & {
-  get<T extends ParameterType = string>(key: string): T | undefined
-  getRequired<T extends ParameterType = string>(key: string): T
+	get<T extends ParameterType = string>(key: string): T | undefined
+	getRequired<T extends ParameterType = string>(key: string): T
 }
 
-export type ParameterType = string | number | boolean;
+export type ParameterType = string | number | boolean
 
 export type SlingParameterDictionary = SlingParameters & {
-  set(key: string, value: ParameterType): void
+	set(key: string, value: ParameterType): void
 }
 
 /**
@@ -35,25 +35,24 @@ export type SlingParameterDictionary = SlingParameters & {
  * performed.
  */
 export function createSlingParameters(initial?: Record<string, ParameterType | undefined>): SlingParameterDictionary {
+	const parameters: Record<string, ParameterType | undefined> = initial ?? {}
 
-  const parameters: Record<string, ParameterType | undefined> = initial ?? {};
+	function set(key: string, value: ParameterType) {
+		parameters[key] = value
+	}
 
-  function set(key: string, value: ParameterType) {
-    parameters[key] = value;
-  }
+	function get<T>(key: string) {
+		const value = parameters[key]
+		if (value === undefined) return
 
-  function get<T>(key: string) {
-    const value = parameters[key];
-    if (value === undefined) return undefined;
+		return value as T
+	}
 
-    return value as T;
-  }
+	function getRequired<T>(key: string) {
+		const value = get<T>(key)
+		if (value === undefined) throw new Error(`Required parameter '${key}' was not loaded.`)
+		return value
+	}
 
-  function getRequired<T>(key: string) {
-    const value = get<T>(key);
-    if (value === undefined) throw new Error(`Required parameter '${key}' was not loaded.`);
-    return value;
-  }
-
-  return Object.assign({}, parameters, { get, getRequired, set })
+	return Object.assign({}, parameters, { get, getRequired, set })
 }

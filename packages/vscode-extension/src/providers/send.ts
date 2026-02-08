@@ -1,17 +1,18 @@
-import * as vscode from "vscode";
-import { execFile } from "node:child_process";
-import { resolve } from "node:path";
-import { readFile, unlink } from "node:fs/promises";
+import { execFile } from 'node:child_process'
+import { readFile, unlink } from 'node:fs/promises'
+import { resolve } from 'node:path'
+
+import * as vscode from 'vscode'
 
 interface SendResult {
-  name: string;
-  method: string;
-  url: string;
-  status: number;
-  statusText: string;
-  headers: Record<string, string>;
-  body: string;
-  duration: number;
+	name: string
+	method: string
+	url: string
+	status: number
+	statusText: string
+	headers: Record<string, string>
+	body: string
+	duration: number
 }
 
 /**
@@ -22,22 +23,22 @@ interface SendResult {
  * This keeps execution transparent and identical to CLI usage.
  */
 export async function sendRequest(
-  fileUri: vscode.Uri,
-  exportName: string,
+	fileUri: vscode.Uri,
+	exportName: string,
 ): Promise<SendResult | undefined> {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
-  if (!workspaceFolder) {
-    vscode.window.showErrorMessage(
-      "Cannot send: file is not in a workspace folder.",
-    );
-    return;
-  }
+	const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri)
+	if (!workspaceFolder) {
+		vscode.window.showErrorMessage(
+			'Cannot send: file is not in a workspace folder.',
+		)
+		return
+	}
 
-  const filePath = fileUri.fsPath;
-  const cwd = workspaceFolder.uri.fsPath;
-  const resultFile = resolve(cwd, `.slng-result-${Date.now()}.json`);
+	const filePath = fileUri.fsPath
+	const cwd = workspaceFolder.uri.fsPath
+	const resultFile = resolve(cwd, `.slng-result-${Date.now()}.json`)
 
-  const script = `
+	const script = `
     import { pathToFileURL } from 'node:url';
     import { writeFileSync } from 'node:fs';
 
@@ -64,49 +65,50 @@ export async function sendRequest(
       duration: response.duration,
     };
     writeFileSync(${JSON.stringify(resultFile)}, JSON.stringify(result));
-  `.trim();
+  `.trim()
 
-  return vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: `Sling: sending ${exportName}...`,
-      cancellable: true,
-    },
-    async (_progress, token) => {
-      return new Promise<SendResult | undefined>((resolvePromise, reject) => {
-        const child = execFile(
-          "npx",
-          ["tsx", "--eval", script],
-          { cwd, timeout: 30_000 },
-          async (error, _stdout, stderr) => {
-            if (token.isCancellationRequested) {
-              resolvePromise(undefined);
-              return;
-            }
+	return vscode.window.withProgress(
+		{
+			location: vscode.ProgressLocation.Notification,
+			title: `Sling: sending ${exportName}...`,
+			cancellable: true,
+		},
+		async (_progress, token) => {
+			return new Promise<SendResult | undefined>((resolvePromise, reject) => {
+				const child = execFile(
+					'npx',
+					['tsx', '--eval', script],
+					{ cwd, timeout: 30_000 },
+					async (error, _stdout, stderr) => {
+						if (token.isCancellationRequested) {
+							resolvePromise()
+							return
+						}
 
-            if (error) {
-              vscode.window.showErrorMessage(
-                `Sling: ${exportName} failed — ${stderr || error.message}`,
-              );
-              reject(error);
-              return;
-            }
+						if (error) {
+							vscode.window.showErrorMessage(
+								`Sling: ${exportName} failed — ${stderr || error.message}`,
+							)
+							reject(error)
+							return
+						}
 
-            try {
-              const raw = await readFile(resultFile, "utf-8");
-              const result = JSON.parse(raw) as SendResult;
-              await unlink(resultFile).catch(() => {});
-              resolvePromise(result);
-            } catch (err) {
-              reject(err);
-            }
-          },
-        );
+						try {
+							const raw = await readFile(resultFile, 'utf-8')
+							const result = JSON.parse(raw) as SendResult
+							await unlink(resultFile).catch(() => {})
+							resolvePromise(result)
+						}
+						catch (error_) {
+							reject(error_)
+						}
+					},
+				)
 
-        token.onCancellationRequested(() => {
-          child.kill("SIGTERM");
-        });
-      });
-    },
-  );
+				token.onCancellationRequested(() => {
+					child.kill('SIGTERM')
+				})
+			})
+		},
+	)
 }

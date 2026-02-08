@@ -1,4 +1,4 @@
-import type { MaskedValue } from "../types.js";
+import type { MaskedValue } from '../types.js'
 
 /**
  * Mark a value as secret. It will be displayed as `*****` in logs
@@ -20,10 +20,10 @@ import type { MaskedValue } from "../types.js";
  * ```
  */
 export function secret(value: string): MaskedValue {
-  return {
-    __masked: true,
-    type: "secret",
-    value,
-    displayValue: "*****",
-  };
+	return {
+		__masked: true,
+		type: 'secret',
+		value,
+		displayValue: '*****',
+	}
 }

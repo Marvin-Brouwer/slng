@@ -1,5 +1,6 @@
-import * as vscode from "vscode";
-import { resolve } from "node:path";
+import { resolve } from 'node:path'
+
+import * as vscode from 'vscode'
 
 /**
  * Launch a debug session that runs a specific sling definition.
@@ -18,62 +19,62 @@ import { resolve } from "node:path";
  * No hidden magic — the user's code runs exactly as-is.
  */
 export async function launchDebugSession(
-  fileUri: vscode.Uri,
-  exportName: string,
-  lineNumber: number,
+	fileUri: vscode.Uri,
+	exportName: string,
+	lineNumber: number,
 ): Promise<void> {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
-  if (!workspaceFolder) {
-    vscode.window.showErrorMessage(
-      "Cannot debug: file is not in a workspace folder.",
-    );
-    return;
-  }
+	const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri)
+	if (!workspaceFolder) {
+		vscode.window.showErrorMessage(
+			'Cannot debug: file is not in a workspace folder.',
+		)
+		return
+	}
 
-  const filePath = fileUri.fsPath;
-  const cwd = workspaceFolder.uri.fsPath;
-  const resultFile = resolve(cwd, `.slng-debug-result-${Date.now()}.json`);
+	const filePath = fileUri.fsPath
+	const cwd = workspaceFolder.uri.fsPath
+	const resultFile = resolve(cwd, `.slng-debug-result-${Date.now()}.json`)
 
-  // Build inline runner script.
-  // This is transparent — the user can see exactly what runs.
-  const runnerScript = buildRunnerScript(filePath, exportName, resultFile);
+	// Build inline runner script.
+	// This is transparent — the user can see exactly what runs.
+	const runnerScript = buildRunnerScript(filePath, exportName, resultFile)
 
-  // Set a breakpoint at the definition line
-  const breakpoint = new vscode.SourceBreakpoint(
-    new vscode.Location(fileUri, new vscode.Position(lineNumber, 0)),
-    true,
-  );
-  vscode.debug.addBreakpoints([breakpoint]);
+	// Set a breakpoint at the definition line
+	const breakpoint = new vscode.SourceBreakpoint(
+		new vscode.Location(fileUri, new vscode.Position(lineNumber, 0)),
+		true,
+	)
+	vscode.debug.addBreakpoints([breakpoint])
 
-  // Launch debug config
-  const debugConfig: vscode.DebugConfiguration = {
-    type: "node",
-    request: "launch",
-    name: `Sling: ${exportName}`,
-    runtimeExecutable: "npx",
-    runtimeArgs: ["tsx", "--eval", runnerScript],
-    cwd,
-    console: "integratedTerminal",
-    sourceMaps: true,
-    resolveSourceMapLocations: ["**"],
-    // Don't skip user files
-    skipFiles: [],
-    env: {
-      SLNG_DEBUG: "1",
-      SLNG_RESULT_FILE: resultFile,
-    },
-  };
+	// Launch debug config
+	const debugConfig: vscode.DebugConfiguration = {
+		type: 'node',
+		request: 'launch',
+		name: `Sling: ${exportName}`,
+		runtimeExecutable: 'npx',
+		runtimeArgs: ['tsx', '--eval', runnerScript],
+		cwd,
+		console: 'integratedTerminal',
+		sourceMaps: true,
+		resolveSourceMapLocations: ['**'],
+		// Don't skip user files
+		skipFiles: [],
+		env: {
+			SLNG_DEBUG: '1',
+			SLNG_RESULT_FILE: resultFile,
+		},
+	}
 
-  await vscode.debug.startDebugging(workspaceFolder, debugConfig);
+	await vscode.debug.startDebugging(workspaceFolder, debugConfig)
 }
 
 function buildRunnerScript(
-  filePath: string,
-  exportName: string,
-  resultFile: string,
+	filePath: string,
+	exportName: string,
+	resultFile: string,
 ): string {
-  // Use pathToFileURL to handle Windows paths
-  return `
+	// Use pathToFileURL to handle Windows paths
+	return `
     import { pathToFileURL } from 'node:url';
     import { writeFileSync } from 'node:fs';
 
@@ -103,5 +104,5 @@ function buildRunnerScript(
       console.error('Request failed:', err);
       process.exit(1);
     }
-  `.trim();
+  `.trim()
 }

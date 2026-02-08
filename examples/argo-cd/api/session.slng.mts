@@ -1,9 +1,9 @@
 // based on https://httpyac.github.io/guide/examples.html#argocd
 
+import { sensitive, secret } from '@slng/config'
+
 import sling from '../slng.config.mjs'
 import constants from '../slng.constants.mjs'
-
-import { sensitive, secret } from '@slng/config';
 
 const username = sensitive(sling.parameters.getRequired('USERNAME'), 3)
 const password = secret(sling.parameters.getRequired('PASSWORD'))

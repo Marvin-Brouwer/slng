@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+import * as vscode from 'vscode'
 
 /**
  * Regex to find exported sling template definitions.
@@ -10,58 +10,58 @@ import * as vscode from "vscode";
  *
  * Captures the export name.
  */
-const SLING_EXPORT_RE =
-  /export\s+(?:const|let|var)\s+(\w+)\s*=\s*sling\s*`/g;
+const SLING_EXPORT_RE
+	= /export\s+(?:const|let|var)\s+(\w+)\s*=\s*sling\s*`/g
 
 export class SlingCodeLensProvider implements vscode.CodeLensProvider {
-  private readonly _onDidChange = new vscode.EventEmitter<void>();
-  readonly onDidChangeCodeLenses = this._onDidChange.event;
+	private readonly _onDidChange = new vscode.EventEmitter<void>()
+	readonly onDidChangeCodeLenses = this._onDidChange.event
 
-  provideCodeLenses(
-    document: vscode.TextDocument,
-    _token: vscode.CancellationToken,
-  ): vscode.CodeLens[] {
-    // Only apply to .mts files
-    if (!document.fileName.endsWith(".mts")) {
-      return [];
-    }
+	provideCodeLenses(
+		document: vscode.TextDocument,
+		_token: vscode.CancellationToken,
+	): vscode.CodeLens[] {
+		// Only apply to .mts files
+		if (!document.fileName.endsWith('.mts')) {
+			return []
+		}
 
-    const text = document.getText();
-    const lenses: vscode.CodeLens[] = [];
+		const text = document.getText()
+		const lenses: vscode.CodeLens[] = []
 
-    let match: RegExpExecArray | null;
-    SLING_EXPORT_RE.lastIndex = 0;
+		let match: RegExpExecArray | null
+		SLING_EXPORT_RE.lastIndex = 0
 
-    while ((match = SLING_EXPORT_RE.exec(text)) !== null) {
-      const exportName = match[1]!;
-      const position = document.positionAt(match.index);
-      const range = new vscode.Range(position, position);
+		while ((match = SLING_EXPORT_RE.exec(text)) !== null) {
+			const exportName = match[1]
+			const position = document.positionAt(match.index)
+			const range = new vscode.Range(position, position)
 
-      // "Send" lens
-      lenses.push(
-        new vscode.CodeLens(range, {
-          title: "▶ Send",
-          command: "slng.send",
-          arguments: [document.uri, exportName],
-          tooltip: `Send the "${exportName}" request`,
-        }),
-      );
+			// "Send" lens
+			lenses.push(
+				new vscode.CodeLens(range, {
+					title: '▶ Send',
+					command: 'slng.send',
+					arguments: [document.uri, exportName],
+					tooltip: `Send the "${exportName}" request`,
+				}),
+			)
 
-      // "Debug" lens
-      lenses.push(
-        new vscode.CodeLens(range, {
-          title: "🐛 Debug",
-          command: "slng.debug",
-          arguments: [document.uri, exportName, position.line],
-          tooltip: `Debug the "${exportName}" request (attaches debugger)`,
-        }),
-      );
-    }
+			// "Debug" lens
+			lenses.push(
+				new vscode.CodeLens(range, {
+					title: '🐛 Debug',
+					command: 'slng.debug',
+					arguments: [document.uri, exportName, position.line],
+					tooltip: `Debug the "${exportName}" request (attaches debugger)`,
+				}),
+			)
+		}
 
-    return lenses;
-  }
+		return lenses
+	}
 
-  refresh(): void {
-    this._onDidChange.fire();
-  }
+	refresh(): void {
+		this._onDidChange.fire()
+	}
 }
