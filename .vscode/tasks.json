@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build:extension",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "-r",
+        "--filter", "@slng/config",
+        "--filter", "@slng/vscode-extension",
+        "run", "build"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$tsc"]
+    }
+  ]
+}
