@@ -41,6 +41,26 @@
 					"description": "Mask secret and sensitive values in the response panel"
 				}
 			}
+		},
+		"viewsContainers": {
+			"secondarySidebar": [
+				{
+					"id": "resultsContainer",
+					"title": "Sling",
+					"icon": "media/icon.svg",
+					"type": "webview"
+				}
+			]
+		},
+		"views": {
+			"resultsContainer": [
+				{
+					"id": "sling.responseDetails",
+					"name": "Sling",
+					"icon": "media/icon.svg",
+					"type": "webview"
+				}
+			]
 		}
 	},
 	"scripts": {
