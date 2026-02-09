@@ -29,6 +29,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Build
+        run: pnpm build
+
       - name: Lint
         run: pnpm lint:nofix
 
@@ -37,9 +40,6 @@ jobs:
 
       - name: Test
         run: pnpm test -- --coverage
-
-      - name: Build
-        run: pnpm build
 
       - name: Upload coverage
         if: matrix.node-version == 25
