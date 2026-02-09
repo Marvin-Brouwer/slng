@@ -81,7 +81,7 @@ export async function sendRequest(
 					{ cwd, timeout: 30_000 },
 					(error, _stdout, stderr) => {
 						if (token.isCancellationRequested) {
-							resolvePromise()
+							resolvePromise(void 0)
 							return
 						}
 
