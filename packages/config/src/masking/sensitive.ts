@@ -1,6 +1,6 @@
-import type { MaskedValue } from "../types.js";
+import type { MaskedValue } from '../types.js'
 
-const DEFAULT_VISIBLE_CHARS = 6;
+const DEFAULT_VISIBLE_CHARS = 6
 
 /**
  * Mark a value as sensitive. The first `n` characters are shown,
@@ -21,15 +21,15 @@ const DEFAULT_VISIBLE_CHARS = 6;
  * ```
  */
 export function sensitive(value: string, n?: number): MaskedValue {
-  const visible = n ?? DEFAULT_VISIBLE_CHARS;
-  const prefix = value.slice(0, visible);
-  const maskedLength = Math.max(0, value.length - visible);
-  const displayValue = prefix + "*".repeat(maskedLength);
+	const visible = n ?? DEFAULT_VISIBLE_CHARS
+	const prefix = value.slice(0, visible)
+	const maskedLength = Math.max(0, value.length - visible)
+	const displayValue = prefix + '*'.repeat(maskedLength)
 
-  return {
-    __masked: true,
-    type: "sensitive",
-    value,
-    displayValue,
-  };
+	return {
+		__masked: true,
+		type: 'sensitive',
+		value,
+		displayValue,
+	}
 }

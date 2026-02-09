@@ -1,60 +1,62 @@
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { glob } from "glob";
-import { isSlingDefinition } from "@slng/config";
-import type { SlingDefinition } from "@slng/config";
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+import { isSlingDefinition } from '@slng/config'
+import { glob } from 'glob'
+
+import type { SlingDefinition } from '@slng/config'
 
 export interface LoadedDefinition {
-  name: string;
-  definition: SlingDefinition;
-  sourcePath: string;
+	name: string
+	definition: SlingDefinition
+	sourcePath: string
 }
 
 /**
  * Load all sling definitions from a single file.
  */
 export async function loadFile(filePath: string): Promise<LoadedDefinition[]> {
-  const absolutePath = resolve(filePath);
-  const fileUrl = pathToFileURL(absolutePath).href;
+	const absolutePath = path.resolve(filePath)
+	const fileUrl = pathToFileURL(absolutePath).href
 
-  const mod = (await import(fileUrl)) as Record<string, unknown>;
-  const definitions: LoadedDefinition[] = [];
+	const module_ = (await import(fileUrl)) as Record<string, unknown>
+	const definitions: LoadedDefinition[] = []
 
-  for (const [key, value] of Object.entries(mod)) {
-    if (key === "default") continue; // Skip the config export
-    if (isSlingDefinition(value)) {
-      value.getInternals().name = key;
-      value.getInternals().sourcePath = absolutePath;
-      definitions.push({
-        name: key,
-        definition: value,
-        sourcePath: absolutePath,
-      });
-    }
-  }
+	for (const [key, value] of Object.entries(module_)) {
+		if (key === 'default') continue // Skip the config export
+		if (isSlingDefinition(value)) {
+			value.getInternals().name = key
+			value.getInternals().sourcePath = absolutePath
+			definitions.push({
+				name: key,
+				definition: value,
+				sourcePath: absolutePath,
+			})
+		}
+	}
 
-  return definitions;
+	return definitions
 }
 
 /**
  * Load all sling definitions from files matching a glob pattern.
  */
 export async function loadGlob(
-  pattern: string,
-  options?: { ignore?: string[] },
+	pattern: string,
+	options?: { ignore?: string[] },
 ): Promise<LoadedDefinition[]> {
-  const files = await glob(pattern, {
-    absolute: true,
-    ignore: options?.ignore,
-  });
-  const allDefinitions: LoadedDefinition[] = [];
+	const files = await glob(pattern, {
+		absolute: true,
+		ignore: options?.ignore,
+	})
+	const allDefinitions: LoadedDefinition[] = []
 
-  for (const file of files.sort()) {
-    const definitions = await loadFile(file);
-    allDefinitions.push(...definitions);
-  }
+	for (const file of files.toSorted()) {
+		const definitions = await loadFile(file)
+		allDefinitions.push(...definitions)
+	}
 
-  return allDefinitions;
+	return allDefinitions
 }
 
 /**
@@ -62,7 +64,7 @@ export async function loadGlob(
  * Excludes node_modules, config files, and dist directories.
  */
 export async function autoDiscover(): Promise<LoadedDefinition[]> {
-  return loadGlob("./**/*.mts", {
-    ignore: ["**/node_modules/**", "**/*.config.mts", "**/dist/**"],
-  });
+	return loadGlob('./**/*.mts', {
+		ignore: ['**/node_modules/**', '**/*.config.mts', '**/dist/**'],
+	})
 }

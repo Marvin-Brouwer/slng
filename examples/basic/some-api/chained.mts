@@ -1,8 +1,9 @@
-import sling from "../slng.config.mjs";
-import { secret, sensitive } from "@slng/config";
+import { secret, sensitive } from '@slng/config'
 
-const apiHost = "api.example.com";
-const apiToken = sling.parameters.getRequired('TOKEN');
+import sling from '../slng.config.mjs'
+
+const apiHost = 'api.example.com'
+const apiToken = sling.parameters.getRequired('TOKEN')
 
 // Step 1: Authenticate
 // CodeLens: ▶ Send | 🐛 Debug
@@ -13,25 +14,25 @@ export const authenticate = sling`
   {
     "token": "${secret(apiToken)}"
   }
-`;
+`
 
 // Step 2: Use the auth token in a subsequent request
 // json() returns a ResponseDataAccessor — resolved lazily by the template
 // CodeLens: ▶ Send | 🐛 Debug
 export const getProfile = sling`
   GET https://${apiHost}/profile HTTP/1.1
-  Authorization: Bearer ${authenticate.json("auth_token")}
+  Authorization: Bearer ${authenticate.json('auth_token')}
   Accept: application/json
-`;
+`
 
 // Example with sensitive data (partially masked)
 // CodeLens: ▶ Send | 🐛 Debug
 export const updateEmail = sling`
   PATCH https://${apiHost}/profile HTTP/1.1
-  Authorization: Bearer ${authenticate.json("auth_token")}
+  Authorization: Bearer ${authenticate.json('auth_token')}
   Content-Type: application/json
 
   {
-    "email": "${sensitive("marvin.brouwer@gmail.com")}"
+    "email": "${sensitive('marvin.brouwer@gmail.com')}"
   }
-`;
+`

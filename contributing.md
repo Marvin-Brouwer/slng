@@ -145,4 +145,4 @@ The core execution logic lives in `@slng/config` — editor extensions are thin 
 2. Write/update tests
 3. Run `pnpm lint && pnpm test && pnpm build`
 4. Open a PR with a clear description
-5. CI will run lint, test, typecheck, and build
+5. CI will run build, lint, and test
