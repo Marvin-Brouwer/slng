@@ -178,7 +178,7 @@ function createDataAccessor(
 		}
 
 		try {
-			const body = JSON.parse(response.body)
+			const body: unknown = JSON.parse(response.body)
 			const value = resolveJsonPath(body, jsonPath)
 			return { value, found: value !== undefined }
 		}
@@ -231,10 +231,7 @@ async function executeRequest(
 	const responseBody = await fetchResponse.text()
 
 	// Convert headers
-	const responseHeaders: Record<string, string> = {}
-	for (const [key, value] of fetchResponse.headers.entries()) {
-		responseHeaders[key] = value
-	}
+	const responseHeaders = Object.fromEntries(fetchResponse.headers as unknown as Iterable<[string, string]>)
 
 	const slingResponse: SlingResponse = {
 		status: fetchResponse.status,
@@ -281,7 +278,7 @@ function logRequest(
 	// When mask is false, show the resolved (real) values.
 	const displayValues = mask === false
 		? values.map(String)
-		: values.map(resolveInterpolationDisplay)
+		: values.map(v => resolveInterpolationDisplay(v))
 
 	const displayText = assembleTemplate(strings, displayValues)
 

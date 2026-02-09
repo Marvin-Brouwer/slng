@@ -37,18 +37,15 @@ export class SlingCodeLensProvider implements vscode.CodeLensProvider {
 			const position = document.positionAt(match.index)
 			const range = new vscode.Range(position, position)
 
-			// "Send" lens
 			lenses.push(
+				// "Send" lens
 				new vscode.CodeLens(range, {
 					title: '▶ Send',
 					command: 'slng.send',
 					arguments: [document.uri, exportName],
 					tooltip: `Send the "${exportName}" request`,
 				}),
-			)
-
-			// "Debug" lens
-			lenses.push(
+				// "Debug" lens
 				new vscode.CodeLens(range, {
 					title: '🐛 Debug',
 					command: 'slng.debug',

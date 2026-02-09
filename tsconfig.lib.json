@@ -9,7 +9,6 @@
 		"skipLibCheck": true,
 		"isolatedModules": true,
 		"allowJs": true,
-		"outDir": "dist",
 		"lib": [
 			"ES2024.ArrayBuffer",
 			"ES2017.TypedArrays",
@@ -18,10 +17,8 @@
 		"types": [
 			"node"
 		],
-		/* Bundler mode */
 		"declaration": true,
 		"declarationMap": true,
-		"declarationDir": "dist",
 		/* Linting */
 		"strict": true,
 		"noUnusedLocals": true,
@@ -29,8 +26,5 @@
 		"erasableSyntaxOnly": false,
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedSideEffectImports": true
-	},
-	"include": [
-		"./src/**/*.mts"
-	]
+	}
 }

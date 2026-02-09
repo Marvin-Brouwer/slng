@@ -27,7 +27,7 @@ function stringifyForInterpolation(value: unknown): string {
 	if (typeof value === 'string') return value
 	if (value === null || value === undefined) return String(value)
 	if (typeof value === 'object') return JSON.stringify(value)
-	return String(value)
+	return String(value as number | boolean | bigint | symbol)
 }
 
 /**
@@ -182,7 +182,7 @@ export function parseTemplatePreview(
 	strings: ReadonlyArray<string>,
 	values: ReadonlyArray<SlingInterpolation>,
 ): ParsedHttpRequest {
-	const displayValues = values.map(resolveInterpolationDisplay)
+	const displayValues = values.map(v => resolveInterpolationDisplay(v))
 	const raw = assembleTemplate(strings, displayValues)
 	return parseHttpText(raw)
 }
@@ -194,7 +194,7 @@ export async function parseTemplateResolved(
 	strings: ReadonlyArray<string>,
 	values: ReadonlyArray<SlingInterpolation>,
 ): Promise<ParsedHttpRequest> {
-	const resolvedValues = await Promise.all(values.map(resolveInterpolation))
+	const resolvedValues = await Promise.all(values.map(v => resolveInterpolation(v)))
 	const raw = assembleTemplate(strings, resolvedValues)
 	return parseHttpText(raw)
 }

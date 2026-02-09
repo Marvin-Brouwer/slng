@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import path from 'node:path'
 
 import { parse } from 'dotenv'
 
@@ -8,7 +8,7 @@ import type { SlingPlugin } from '../types.js'
 
 export interface DotEnvironmentOptions {
 	/** Directory to resolve `.env` files from. Defaults to `process.cwd()`. */
-	dir?: string
+	directory?: string
 	/** One or more environment names to load. */
 	environments: string[]
 }
@@ -17,21 +17,21 @@ export interface DotEnvironmentOptions {
  * Load `.env` files into the sling context as named environments.
  *
  * Always loads `.env` as the base. Each environment name maps to
- * `.env.<name>` (e.g. `useDotEnv('local', 'staging')` loads
+ * `.env.<name>` (e.g. `useDotEnvironment('local', 'staging')` loads
  * `.env`, `.env.local`, and `.env.staging`).
  *
  * The first listed environment is set as the active one by default.
  *
  * @param args  Either environment name strings, or a single options object
- *              with `dir` (defaults to `process.cwd()`) and `environments`.
+ *              with `directory` (defaults to `process.cwd()`) and `environments`.
  *
  * @example
  * ```ts
- * import sling, { useDotEnv } from '@slng/config'
+ * import sling, { useDotEnvironment } from '@slng/config'
  *
  * // Simple — resolve .env files from process.cwd()
  * export default sling(
- *   useDotEnv('local', 'staging'),
+ *   useDotEnvironment('local', 'staging'),
  * )
  * ```
  *
@@ -39,23 +39,23 @@ export interface DotEnvironmentOptions {
  * ```ts
  * // With explicit directory (e.g. relative to the config file)
  * export default sling(
- *   useDotEnv({ dir: import.meta.dirname, environments: ['local', 'staging'] }),
+ *   useDotEnvironment({ directory: import.meta.dirname, environments: ['local', 'staging'] }),
  * )
  * ```
  */
-export function useDotEnv(...arguments_: string[]): SlingPlugin
-export function useDotEnv(options: DotEnvironmentOptions): SlingPlugin
-export function useDotEnv(...arguments_: [DotEnvironmentOptions] | string[]): SlingPlugin {
-	let dir: string
+export function useDotEnvironment(...arguments_: string[]): SlingPlugin
+export function useDotEnvironment(options: DotEnvironmentOptions): SlingPlugin
+export function useDotEnvironment(...arguments_: [DotEnvironmentOptions] | string[]): SlingPlugin {
+	let directory: string
 	let environments: string[]
 
 	if (arguments_.length === 1 && typeof arguments_[0] === 'object') {
 		const options = arguments_[0]
-		dir = options.dir ?? process.cwd()
+		directory = options.directory ?? process.cwd()
 		environments = options.environments
 	}
 	else {
-		dir = process.cwd()
+		directory = process.cwd()
 		environments = arguments_ as string[]
 	}
 
@@ -63,7 +63,7 @@ export function useDotEnv(...arguments_: [DotEnvironmentOptions] | string[]): Sl
 		name: 'dotenv',
 		setup(context) {
 			// Always load base .env (with type conversion)
-			const rawBaseEnvironment = loadEnvironmentFile(resolve(dir, '.env'))
+			const rawBaseEnvironment = loadEnvironmentFile(path.resolve(directory, '.env'))
 			const baseEnvironment = Object.fromEntries(
 				Object.entries(rawBaseEnvironment).map(([key, value]) => [key, parseEnvironmentValue(value)]),
 			)
@@ -71,7 +71,7 @@ export function useDotEnv(...arguments_: [DotEnvironmentOptions] | string[]): Sl
 			for (const environment of environments) {
 				const currentEnvironment = context.envSets.get(environment)
 
-				const environmentFile = resolve(dir, `.env.${environment}`)
+				const environmentFile = path.resolve(directory, `.env.${environment}`)
 				const environmentVariables = loadEnvironmentFile(environmentFile)
 				// Convert numbers and bools from their string representation
 				const concreteEnvironmentVariables = Object.fromEntries(Object.entries(environmentVariables)
@@ -96,7 +96,7 @@ function loadEnvironmentFile(filePath: string): Record<string, string> {
 	if (!existsSync(filePath)) {
 		return {}
 	}
-	const content = readFileSync(filePath, 'utf-8')
+	const content = readFileSync(filePath, 'utf8')
 	return parse(content)
 }
 

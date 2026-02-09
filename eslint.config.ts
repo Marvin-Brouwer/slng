@@ -8,7 +8,7 @@ import { lintJs, lintTs } from './eslint.preset.lang.js'
 import { projectConfig } from './eslint.preset.project'
 
 export default defineConfig([
-	globalIgnores(['node_modules', 'dist']),
+	globalIgnores(['**/node_modules', '**/dist', 'examples']),
 	configureFiles([
 		'remarkrc.mjs',
 		'eslint.*.ts',

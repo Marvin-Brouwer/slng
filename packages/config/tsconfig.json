@@ -1,20 +1,10 @@
 {
-	"files": [],
+	"extends": "../../tsconfig.lib.json",
 	"compilerOptions": {
-		"target": "esnext",
-		"module": "esnext",
-		"moduleResolution": "bundler",
-		"moduleDetection": "force"
+		"outDir": "./dist",
+		"rootDir": "./src"
 	},
-	"references": [
-		{
-			"path": "./tsconfig.config.json"
-		},
-		{
-			"path": "./tsconfig.test.json"
-		},
-		{
-			"path": "./tsconfig.lib.json"
-		}
+	"include": [
+		"src"
 	]
 }

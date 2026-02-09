@@ -8,22 +8,17 @@ import { sendRequest } from './providers/send.js'
 export function activate(context: vscode.ExtensionContext): void {
 	// Register CodeLens provider for .mts files
 	const codeLensProvider = new SlingCodeLensProvider()
+
 	context.subscriptions.push(
 		vscode.languages.registerCodeLensProvider(
 			{ language: 'typescript', pattern: '**/*.mts' },
 			codeLensProvider,
 		),
-	)
-
-	// Refresh CodeLens on file save
-	context.subscriptions.push(
+		// Refresh CodeLens on file save
 		vscode.workspace.onDidSaveTextDocument(() => {
 			codeLensProvider.refresh()
 		}),
-	)
-
-	// Register "Send" command
-	context.subscriptions.push(
+		// Register "Send" command
 		vscode.commands.registerCommand(
 			'slng.send',
 			async (fileUri: vscode.Uri, exportName: string) => {
@@ -36,10 +31,7 @@ export function activate(context: vscode.ExtensionContext): void {
 				}
 			},
 		),
-	)
-
-	// Register "Debug" command
-	context.subscriptions.push(
+		// Register "Debug" command
 		vscode.commands.registerCommand(
 			'slng.debug',
 			async (fileUri: vscode.Uri, exportName: string, lineNumber: number) => {

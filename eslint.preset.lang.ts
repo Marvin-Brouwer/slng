@@ -17,9 +17,19 @@ export const lintTs = defineConfig([
 	{
 		languageOptions: {
 			parserOptions: {
-				projectService: true,
+				project: [
+					'./packages/*/tsconfig.json',
+					'./tsconfig.test.json',
+					'./tsconfig.config.json',
+				],
 				tsconfigRootDir: import.meta.dirname,
 			},
+		},
+		rules: {
+			'@typescript-eslint/no-unused-vars': ['error', {
+				argsIgnorePattern: '^_',
+				varsIgnorePattern: '^_',
+			}],
 		},
 	},
 ])

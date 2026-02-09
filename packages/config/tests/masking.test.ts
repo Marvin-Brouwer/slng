@@ -1,50 +1,51 @@
-import { describe, it, expect } from "vitest";
-import { secret } from "../src/masking/secret.js";
-import { sensitive } from "../src/masking/sensitive.js";
+import { describe, it, expect } from 'vitest'
 
-describe("secret", () => {
-  it("creates a masked value with ***** display", () => {
-    const result = secret("super-secret-key");
+import { secret } from '../src/masking/secret.js'
+import { sensitive } from '../src/masking/sensitive.js'
 
-    expect(result.__masked).toBe(true);
-    expect(result.type).toBe("secret");
-    expect(result.value).toBe("super-secret-key");
-    expect(result.displayValue).toBe("*****");
-  });
+describe('secret', () => {
+	it('creates a masked value with ***** display', () => {
+		const result = secret('super-secret-key')
 
-  it("works with empty strings", () => {
-    const result = secret("");
-    expect(result.value).toBe("");
-    expect(result.displayValue).toBe("*****");
-  });
-});
+		expect(result.__masked).toBe(true)
+		expect(result.type).toBe('secret')
+		expect(result.value).toBe('super-secret-key')
+		expect(result.displayValue).toBe('*****')
+	})
 
-describe("sensitive", () => {
-  it("shows first 6 characters by default", () => {
-    const result = sensitive("marvin.brouwer@gmail.com");
+	it('works with empty strings', () => {
+		const result = secret('')
+		expect(result.value).toBe('')
+		expect(result.displayValue).toBe('*****')
+	})
+})
 
-    expect(result.__masked).toBe(true);
-    expect(result.type).toBe("sensitive");
-    expect(result.value).toBe("marvin.brouwer@gmail.com");
-    expect(result.displayValue).toBe("marvin******************");
-    // "marvin" = 6 chars visible, rest = 18 stars
-  });
+describe('sensitive', () => {
+	it('shows first 6 characters by default', () => {
+		const result = sensitive('marvin.brouwer@gmail.com')
 
-  it("accepts custom visible character count", () => {
-    const result = sensitive("marvin.brouwer@gmail.com", 3);
+		expect(result.__masked).toBe(true)
+		expect(result.type).toBe('sensitive')
+		expect(result.value).toBe('marvin.brouwer@gmail.com')
+		expect(result.displayValue).toBe('marvin******************')
+		// "marvin" = 6 chars visible, rest = 18 stars
+	})
 
-    expect(result.displayValue).toBe("mar*********************");
-  });
+	it('accepts custom visible character count', () => {
+		const result = sensitive('marvin.brouwer@gmail.com', 3)
 
-  it("handles value shorter than visible count", () => {
-    const result = sensitive("abc", 10);
+		expect(result.displayValue).toBe('mar*********************')
+	})
 
-    expect(result.displayValue).toBe("abc");
-  });
+	it('handles value shorter than visible count', () => {
+		const result = sensitive('abc', 10)
 
-  it("handles zero visible characters", () => {
-    const result = sensitive("secret", 0);
+		expect(result.displayValue).toBe('abc')
+	})
 
-    expect(result.displayValue).toBe("******");
-  });
-});
+	it('handles zero visible characters', () => {
+		const result = sensitive('secret', 0)
+
+		expect(result.displayValue).toBe('******')
+	})
+})

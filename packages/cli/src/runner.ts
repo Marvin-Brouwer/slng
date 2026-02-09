@@ -109,8 +109,8 @@ function printResponse(
 	if (response.body) {
 		try {
 			// Pretty-print JSON
-			const parsed = JSON.parse(response.body)
-			console.log(JSON.stringify(parsed, null, 2))
+			const parsed: unknown = JSON.parse(response.body)
+			console.log(JSON.stringify(parsed, undefined, 2))
 		}
 		catch {
 			console.log(response.body)
@@ -120,8 +120,11 @@ function printResponse(
 
 function printError(name: string, error: Error): void {
 	console.error(`  ✗ ${name} failed: ${error.message}`)
-	if (error.cause) {
-		console.error(`    Caused by: ${String(error.cause)}`)
+	if (error.cause instanceof Error) {
+		console.error(`    Caused by: ${error.cause.message}`)
+	}
+	else if (error.cause !== undefined) {
+		console.error(`    Caused by: ${String(error.cause as string)}`)
 	}
 }
 

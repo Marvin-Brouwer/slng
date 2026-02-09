@@ -68,7 +68,7 @@ export class ResponsePanel {
 		// Try to pretty-print JSON
 		let formattedBody = body
 		try {
-			formattedBody = JSON.stringify(JSON.parse(body), null, 2)
+			formattedBody = JSON.stringify(JSON.parse(body), undefined, 2)
 		}
 		catch {
 			// Not JSON, keep as-is

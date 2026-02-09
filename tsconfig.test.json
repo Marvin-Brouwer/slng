@@ -15,7 +15,6 @@
 		"types": [
 			"node"
 		],
-		/* Bundler mode */
 		"allowImportingTsExtensions": true,
 		"verbatimModuleSyntax": true,
 		"noEmit": true,
@@ -25,11 +24,9 @@
 		"noUnusedParameters": true,
 		"erasableSyntaxOnly": false,
 		"noFallthroughCasesInSwitch": true,
-		"noUncheckedSideEffectImports": true,
+		"noUncheckedSideEffectImports": true
 	},
 	"include": [
-		"src/**/*.mts",
-		"src/**/*.test.ts",
-		"tests/**/*.*"
+		"packages/*/tests/**/*"
 	]
 }

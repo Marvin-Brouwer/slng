@@ -9,7 +9,7 @@
  * cast — it does not perform runtime validation. The returned value
  * is whatever the plugin stored (string, number, or boolean).
  */
-export type SlingParameters = Record<string, unknown | undefined> & {
+export type SlingParameters = Record<string, unknown> & {
 	get<T extends ParameterType = string>(key: string): T | undefined
 	getRequired<T extends ParameterType = string>(key: string): T
 }

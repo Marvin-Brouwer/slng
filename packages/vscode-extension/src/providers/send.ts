@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process'
 import { readFile, unlink } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import path from 'node:path'
 
 import * as vscode from 'vscode'
 
@@ -36,9 +36,9 @@ export async function sendRequest(
 
 	const filePath = fileUri.fsPath
 	const cwd = workspaceFolder.uri.fsPath
-	const resultFile = resolve(cwd, `.slng-result-${Date.now()}.json`)
+	const resultFile = path.resolve(cwd, `.slng-result-${Date.now()}.json`)
 
-	const script = `
+	const script = String.raw`
     import { pathToFileURL } from 'node:url';
     import { writeFileSync } from 'node:fs';
 
@@ -48,7 +48,7 @@ export async function sendRequest(
     const definition = mod[exportName];
 
     if (!definition || typeof definition.getInternals !== 'function') {
-      process.stderr.write('Export "' + exportName + '" is not a sling definition\\n');
+      process.stderr.write('Export "' + exportName + '" is not a sling definition\n');
       process.exit(1);
     }
 
@@ -73,13 +73,13 @@ export async function sendRequest(
 			title: `Sling: sending ${exportName}...`,
 			cancellable: true,
 		},
-		async (_progress, token) => {
+		(_progress, token) => {
 			return new Promise<SendResult | undefined>((resolvePromise, reject) => {
 				const child = execFile(
 					'npx',
 					['tsx', '--eval', script],
 					{ cwd, timeout: 30_000 },
-					async (error, _stdout, stderr) => {
+					(error, _stdout, stderr) => {
 						if (token.isCancellationRequested) {
 							resolvePromise()
 							return
@@ -89,19 +89,20 @@ export async function sendRequest(
 							vscode.window.showErrorMessage(
 								`Sling: ${exportName} failed — ${stderr || error.message}`,
 							)
-							reject(error)
+							reject(new Error(stderr || error.message, { cause: error }))
 							return
 						}
 
-						try {
-							const raw = await readFile(resultFile, 'utf-8')
-							const result = JSON.parse(raw) as SendResult
-							await unlink(resultFile).catch(() => {})
-							resolvePromise(result)
-						}
-						catch (error_) {
-							reject(error_)
-						}
+						readFile(resultFile, 'utf8')
+							.then((raw) => {
+								const result = JSON.parse(raw) as SendResult
+								return unlink(resultFile)
+									.catch(() => {})
+									.then(() => resolvePromise(result))
+							})
+							.catch((error_: unknown) => {
+								reject(error_ instanceof Error ? error_ : new Error(String(error_)))
+							})
 					},
 				)
 

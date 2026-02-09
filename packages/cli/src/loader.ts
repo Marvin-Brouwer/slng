@@ -1,4 +1,4 @@
-import { resolve } from 'node:path'
+import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import { isSlingDefinition } from '@slng/config'
@@ -16,7 +16,7 @@ export interface LoadedDefinition {
  * Load all sling definitions from a single file.
  */
 export async function loadFile(filePath: string): Promise<LoadedDefinition[]> {
-	const absolutePath = resolve(filePath)
+	const absolutePath = path.resolve(filePath)
 	const fileUrl = pathToFileURL(absolutePath).href
 
 	const module_ = (await import(fileUrl)) as Record<string, unknown>
@@ -51,7 +51,7 @@ export async function loadGlob(
 	})
 	const allDefinitions: LoadedDefinition[] = []
 
-	for (const file of files.sort()) {
+	for (const file of files.toSorted()) {
 		const definitions = await loadFile(file)
 		allDefinitions.push(...definitions)
 	}

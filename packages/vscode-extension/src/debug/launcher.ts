@@ -1,4 +1,4 @@
-import { resolve } from 'node:path'
+import path from 'node:path'
 
 import * as vscode from 'vscode'
 
@@ -33,7 +33,7 @@ export async function launchDebugSession(
 
 	const filePath = fileUri.fsPath
 	const cwd = workspaceFolder.uri.fsPath
-	const resultFile = resolve(cwd, `.slng-debug-result-${Date.now()}.json`)
+	const resultFile = path.resolve(cwd, `.slng-debug-result-${Date.now()}.json`)
 
 	// Build inline runner script.
 	// This is transparent — the user can see exactly what runs.
@@ -74,7 +74,7 @@ function buildRunnerScript(
 	resultFile: string,
 ): string {
 	// Use pathToFileURL to handle Windows paths
-	return `
+	return String.raw`
     import { pathToFileURL } from 'node:url';
     import { writeFileSync } from 'node:fs';
 
@@ -99,7 +99,7 @@ function buildRunnerScript(
         duration: response.duration,
       };
       writeFileSync(${JSON.stringify(resultFile)}, JSON.stringify(result, null, 2));
-      console.log('\\n\\u2713 Response written to result file');
+      console.log('\n\u2713 Response written to result file');
     } catch (err) {
       console.error('Request failed:', err);
       process.exit(1);

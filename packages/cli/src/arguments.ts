@@ -15,7 +15,7 @@ export interface CliArguments {
 	help: boolean
 }
 
-export function parseArgs(argv: string[]): CliArguments {
+export function parseArguments(argv: string[]): CliArguments {
 	const arguments_: CliArguments = {
 		verbose: false,
 		mask: true,
