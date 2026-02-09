@@ -6,7 +6,7 @@ import { parse } from 'dotenv'
 import type { ParameterType } from '../parameters.js'
 import type { SlingPlugin } from '../types.js'
 
-export interface DotEnvironmentOptions {
+export interface DotEnvOptions {
 	/** Directory to resolve `.env` files from. Defaults to `process.cwd()`. */
 	directory?: string
 	/** One or more environment names to load. */
@@ -17,7 +17,7 @@ export interface DotEnvironmentOptions {
  * Load `.env` files into the sling context as named environments.
  *
  * Always loads `.env` as the base. Each environment name maps to
- * `.env.<name>` (e.g. `useDotEnvironment('local', 'staging')` loads
+ * `.env.<name>` (e.g. `useDotEnv('local', 'staging')` loads
  * `.env`, `.env.local`, and `.env.staging`).
  *
  * The first listed environment is set as the active one by default.
@@ -27,11 +27,11 @@ export interface DotEnvironmentOptions {
  *
  * @example
  * ```ts
- * import sling, { useDotEnvironment } from '@slng/config'
+ * import sling, { useDotEnv } from '@slng/config'
  *
  * // Simple — resolve .env files from process.cwd()
  * export default sling(
- *   useDotEnvironment('local', 'staging'),
+ *   useDotEnv('local', 'staging'),
  * )
  * ```
  *
@@ -39,13 +39,13 @@ export interface DotEnvironmentOptions {
  * ```ts
  * // With explicit directory (e.g. relative to the config file)
  * export default sling(
- *   useDotEnvironment({ directory: import.meta.dirname, environments: ['local', 'staging'] }),
+ *   useDotEnv({ directory: import.meta.dirname, environments: ['local', 'staging'] }),
  * )
  * ```
  */
-export function useDotEnvironment(...arguments_: string[]): SlingPlugin
-export function useDotEnvironment(options: DotEnvironmentOptions): SlingPlugin
-export function useDotEnvironment(...arguments_: [DotEnvironmentOptions] | string[]): SlingPlugin {
+export function useDotEnv(...arguments_: string[]): SlingPlugin
+export function useDotEnv(options: DotEnvOptions): SlingPlugin
+export function useDotEnv(...arguments_: [DotEnvOptions] | string[]): SlingPlugin {
 	let directory: string
 	let environments: string[]
 

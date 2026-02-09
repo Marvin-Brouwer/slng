@@ -1,5 +1,5 @@
-import sling, { useDotEnvironment } from '@slng/config'
+import sling, { useDotEnv } from '@slng/config'
 
 export default sling(
-	useDotEnvironment({ directory: import.meta.dirname, environments: ['local', 'staging'] }),
+	useDotEnv({ directory: import.meta.dirname, environments: ['local', 'staging'] }),
 )

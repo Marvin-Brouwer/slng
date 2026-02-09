@@ -11,6 +11,13 @@ export const projectConfig = defineConfig([
 		rules: {
 			'@stylistic/indent-binary-ops': ['off'],
 			'unicorn/prefer-node-protocol': ['error'],
+			'unicorn/prevent-abbreviations': ['error', {
+				allowList: {
+					dotEnv: true,
+					useDotEnv: true,
+					DotEnvOptions: true,
+				},
+			}],
 			'@typescript-eslint/switch-exhaustiveness-check': ['error', {
 				/** If 'true', allow 'default' cases on switch statements with exhaustive cases. */
 				allowDefaultCaseForExhaustiveSwitch: true,

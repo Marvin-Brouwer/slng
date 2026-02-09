@@ -1,8 +1,8 @@
-import sling, { useConfig, useDotEnvironment } from '@slng/config'
+import sling, { useConfig, useDotEnv } from '@slng/config'
 
 export default sling(
 	// .env.dev get's precedence over useConfig
-	useDotEnvironment('dev'),
+	useDotEnv('dev'),
 	useConfig({
 		dev: {
 			app: 'testapp',

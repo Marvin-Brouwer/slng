@@ -18,10 +18,10 @@ import {
  * @example
  * ```ts
  * // slng.config.mts
- * import sling, { useDotEnvironment } from '@slng/config'
+ * import sling, { useDotEnv } from '@slng/config'
  *
  * export default sling(
- *   useDotEnvironment('local', 'staging'),
+ *   useDotEnv('local', 'staging'),
  * )
  * ```
  *
