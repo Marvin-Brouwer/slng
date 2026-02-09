@@ -4,6 +4,9 @@ import path from 'node:path'
 
 import * as vscode from 'vscode'
 
+// TODO, this is very invisible, the plugin should log to the extensions log in vscode so we can see what's happening.
+// Preferably via a logger.info kind of api so the console and the vscode extension log the same messages dictated by the config project.
+
 interface SendResult {
 	name: string
 	method: string

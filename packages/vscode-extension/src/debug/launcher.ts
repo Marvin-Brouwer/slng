@@ -2,6 +2,9 @@ import path from 'node:path'
 
 import * as vscode from 'vscode'
 
+// TODO debugging doesn't actually halt.
+// TODO I'd prefer debug/launcher.ts to be launchers/debug.ts so we can also have a launchers/send.ts
+
 /**
  * Launch a debug session that runs a specific sling definition.
  *

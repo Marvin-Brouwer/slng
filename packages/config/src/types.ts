@@ -1,5 +1,10 @@
 import type { ParameterType, SlingParameters } from './parameters.js'
 
+// TODO, these types should be closer to their implementation.
+// Errors and base types may have their own files in ./types/, at least a file per type.
+// Specific types should live next to their implementation, for example:
+// - ResponseJsonAccessor should live in definition.ts, etc.
+
 // ── Error types ──────────────────────────────────────────────
 
 /**
@@ -65,6 +70,8 @@ export interface MaskedValue {
  * // Boolean check
  * if (await accessor.validate()) { ... }
  * ```
+ *
+ * @internal
  */
 export interface DataAccessor {
 	/**
@@ -82,19 +89,10 @@ export interface DataAccessor {
 }
 
 /**
- * A promised {@link DataAccessor}. The promise resolves immediately
- * to a DataAccessor whose methods lazily trigger the HTTP request.
- *
- * Can be used directly as a sling template interpolation value —
- * the template resolver awaits the promise, then calls `.value()`.
- */
-export type ResponseDataAccessor = Promise<DataAccessor>
-
-/**
- * Alias for {@link ResponseDataAccessor}.
+ * Specific {@link DataAccessor} for `json(jsonPath)` queries. \
  * Returned by {@link SlingDefinition.json}.
  */
-export type ResponseJsonAccessor = ResponseDataAccessor
+export type ResponseJsonAccessor = DataAccessor & {}
 
 // ── Interpolation types ──────────────────────────────────────
 
@@ -108,12 +106,12 @@ export type PrimitiveValue = string | number | boolean
  *
  * - `PrimitiveValue` — inlined as-is (`string`, `number`, `boolean`)
  * - `MaskedValue` — inlined but masked in output
- * - `ResponseDataAccessor` — resolved lazily at execution time (for chaining)
+ * - `DataAccessor` — resolved lazily at execution time (for chaining)
  */
 export type SlingInterpolation
 	= | PrimitiveValue
-  | MaskedValue
-  | ResponseDataAccessor
+	| MaskedValue
+	| DataAccessor
 
 // ── HTTP types ───────────────────────────────────────────────
 
@@ -223,13 +221,12 @@ export interface SlingDefinition {
    * Create a data accessor that extracts a value from the JSON response body
    * using a simple path expression.
    *
-   * Returns a `Promise<DataAccessor>` ({@link ResponseJsonAccessor}).
-   * The promise resolves immediately — the actual HTTP request is
+   * Returns a {@link ResponseJsonAccessor}.
+   * The actual HTTP request, including resolving the json and path query, is
    * deferred until a method on the accessor is called.
    *
    * Can be used directly as a template interpolation value:
-   * the template resolver awaits the promise, then calls `.value()`
-   * to obtain a string for interpolation.
+   * the template resolver calls the `.value()` to obtain a string for interpolation.
    *
    * Supports dot-notation and bracket indexing:
    * - `"user.name"` — access nested properties

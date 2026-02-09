@@ -26,8 +26,6 @@ export { HttpError, InvalidJsonPathError } from './types.js'
 
 // Types
 export type {
-	DataAccessor,
-	ResponseDataAccessor,
 	ResponseJsonAccessor,
 	PrimitiveValue,
 	SlingDefinition,

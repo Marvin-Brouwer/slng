@@ -10,6 +10,8 @@ import * as vscode from 'vscode'
  *
  * Captures the export name.
  */
+
+// TODO maybe, they can name the import anything they want, perhaps find the "import sling from '../slng.config.mjs'
 const SLING_EXPORT_RE
 	= /export\s+(?:const|let|var)\s+(\w+)\s*=\s*sling\s*`/g
 

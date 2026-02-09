@@ -82,7 +82,10 @@ export function createDefinition(
 		},
 
 		json(jsonPath: string, options?: JsonOptions): ResponseJsonAccessor {
-			return Promise.resolve(createDataAccessor(this, jsonPath, options))
+			// TODO extract jsonPath logic to separate file, parse the path and fail early
+			// it should return a jsonPath(jsonObject) function when valid so we can just call that after
+			// the request has been parsed to JSON.
+			return createDataAccessor(this, jsonPath, options)
 		},
 	}
 
@@ -146,7 +149,7 @@ function createDataAccessor(
 
 	/** Shared extraction logic: execute, validate status, parse, traverse. */
 	async function extract(): Promise<
-    { value: unknown, found: boolean } | HttpError
+		{ value: unknown, found: boolean } | HttpError
 	> {
 		let response: SlingResponse
 		try {
@@ -166,7 +169,7 @@ function createDataAccessor(
 				return new HttpError(
 					response.status,
 					`Request failed with status ${response.status} ${response.statusText}. `
-            + `Expected one of: ${validCodes.join(', ')}`,
+					+ `Expected one of: ${validCodes.join(', ')}`,
 				)
 			}
 		}
@@ -295,8 +298,8 @@ function logRequest(
 export function isSlingDefinition(value: unknown): value is SlingDefinition {
 	if (
 		typeof value !== 'object'
-    || value === null
-    || typeof (value as Record<string, unknown>).getInternals !== 'function'
+		|| value === null
+		|| typeof (value as Record<string, unknown>).getInternals !== 'function'
 	) {
 		return false
 	}

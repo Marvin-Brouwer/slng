@@ -20,6 +20,10 @@ const DEFAULT_VISIBLE_CHARS = 6
  * // Displays: "mar********************"
  * ```
  */
+
+// TODO add overload that accepts a string instead of a number
+// sensitive("marvin.brouwer@gmail.com", "username") should result in a named mask;
+// // ?= "<username>"
 export function sensitive(value: string, n?: number): MaskedValue {
 	const visible = n ?? DEFAULT_VISIBLE_CHARS
 	const prefix = value.slice(0, visible)
