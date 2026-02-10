@@ -11,6 +11,30 @@ export type Masked<T> = {
 
 export type MaskedDataAccessor = Masked<Promise<string | HttpError | InvalidJsonPathError>> & {}
 
+/**
+ * Mask a value directly. It will be displayed as {@param mask}.
+ *
+ * The real value is only used when actually executing the HTTP request.
+ *
+ * @example
+ * ```ts
+ * import { namedMask } from '@slng/config'
+ *
+ * const auth_token = namedMask('TOKEN', process.env.TOKEN);
+ *
+ * export const myRequest = sling`
+ *   POST https://api.example.com/auth
+ *
+ *   { "key": "${apiKey}" }
+ * `
+ * ```
+ */
+export function namedMask<T extends PrimitiveValue>(mask: string, value: T): Masked<T>
+export function namedMask<T extends DataAccessor>(mask: string, value: T): MaskedDataAccessor
+export function namedMask<T extends PrimitiveValue | DataAccessor>(mask: string, value: T) {
+	return createMask<T>(value, `{${mask}}`, `[${mask}]`)
+}
+
 export function mask<T extends PrimitiveValue | DataAccessor>(original: T, mask: string) {
 	return createMask<T>(original, mask, `[Masked] ${mask}`)
 }
@@ -78,28 +102,6 @@ function createAccessorMask(original: DataAccessor, mask: string): MaskedDataAcc
 			return mask
 		},
 	} as MaskedDataAccessor
-}
-
-/**
- * Mask a value directly. It will be displayed as {@param mask}.
- *
- * The real value is only used when actually executing the HTTP request.
- *
- * @example
- * ```ts
- * import { namedMask } from '@slng/config'
- *
- * const auth_token = namedMask('TOKEN', process.env.TOKEN);
- *
- * export const myRequest = sling`
- *   POST https://api.example.com/auth
- *
- *   { "key": "${apiKey}" }
- * `
- * ```
- */
-export function namedMask<T extends PrimitiveValue>(mask: string, value: T): Masked<T> {
-	return createValueMask<T>(value, `{${mask}}`, `[${mask}]`)
 }
 
 export function isMask(value: unknown): value is Masked<unknown> {

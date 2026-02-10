@@ -1,9 +1,7 @@
-import { secret, sensitive } from '@slng/config'
-
 import sling from '../slng.config.mjs'
 
 const apiHost = 'api.example.com'
-const apiToken = secret(sling.parameters.getRequired('TOKEN'))
+const apiToken = sling.secret(sling.parameters.getRequired('TOKEN'))
 
 // Step 1: Authenticate
 // CodeLens: ▶ Send | 🐛 Debug
@@ -26,6 +24,7 @@ export const getProfile = sling`
 `
 
 // Example with sensitive data (partially masked)
+// This is mostly useful when copying the responses directly into emails and such
 // CodeLens: ▶ Send | 🐛 Debug
 export const updateEmail = sling`
   PATCH https://${apiHost}/profile HTTP/1.1
@@ -33,6 +32,6 @@ export const updateEmail = sling`
   Content-Type: application/json
 
   {
-    "email": "${sensitive('marvin.brouwer@gmail.com')}"
+    "email": "${sling.sensitive('marvin.brouwer@gmail.com')}"
   }
 `

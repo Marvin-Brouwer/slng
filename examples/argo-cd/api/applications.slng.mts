@@ -7,17 +7,17 @@ import { session } from './session.slng.mjs'
 
 export const getApplications = sling`
   GET ${constants.host}/argocd/api/v1/applications
-  Authorization: Bearer ${session.json('token')}
+  Authorization: Bearer ${sling.secret(session.json('token'))}
 `
 
 export const createApplication = sling`
   POST ${constants.host}/argocd/api/v1/applications
-  Authorization: Bearer ${session.json('token')}
+  Authorization: Bearer ${sling.secret(session.json('token'))}
 
   {
     "metadata": {
       "name": "{{app}}",
-      "namespace": "argocd"  
+      "namespace": "argocd"
     },
     "spec": {
       "source": {

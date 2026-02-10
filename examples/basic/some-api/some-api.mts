@@ -1,9 +1,7 @@
-import { secret } from '@slng/config'
-
 import sling from '../slng.config.mjs'
 
 const apiHost = 'jsonplaceholder.typicode.com'
-const apiToken = secret(sling.parameters.getRequired('TOKEN'))
+const apiToken = sling.secret(sling.parameters.getRequired('TOKEN'))
 
 // CodeLens: ▶ Send | 🐛 Debug
 export const getUsers = sling`

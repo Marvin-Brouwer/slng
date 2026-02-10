@@ -1,5 +1,8 @@
 import { Masked, MaskedDataAccessor } from './masking/mask.js'
 import type { ParameterType, SlingParameters } from './parameters.js'
+import { namedMask } from './masking/mask'
+import { secret } from './masking/secret'
+import { sensitive } from './masking/sensitive'
 
 // TODO, these types should be closer to their implementation.
 // Errors and base types may have their own files in ./types/, at least a file per type.
@@ -292,16 +295,24 @@ export interface SlingPlugin {
 /**
  * A configured sling tagged template function.
  *
- * Use as: `sling\`GET https://...\``
- *
- * Also carries the resolved context for CLI/extension use.
+ * Use as: `http\`GET https://...\``
  */
-export interface ConfiguredSling {
-	(
-		strings: TemplateStringsArray,
-		...values: SlingInterpolation[]
-	): SlingDefinition
+export type SlingTemplateBuilder = (
+	strings: TemplateStringsArray,
+	...values: SlingInterpolation[]
+) => SlingDefinition
+
+/**
+ * A configured sling tagged template function.
+ *
+ * Use as: `http\`GET https://...\``
+ */
+export type ConfiguredSling = SlingTemplateBuilder & {
 	/** The resolved configuration context. */
 	readonly context: SlingContext
 	readonly parameters: SlingParameters
+
+	namedMask: typeof namedMask,
+	secret: typeof secret,
+	sensitive: typeof sensitive
 }

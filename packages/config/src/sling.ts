@@ -1,10 +1,14 @@
 import { createDefinition } from './definition.js'
+import { namedMask } from './masking/mask.js'
+import { secret } from './masking/secret.js'
+import { sensitive } from './masking/sensitive.js'
 import { createSlingParameters } from './parameters.js'
 import {
 	type ConfiguredSling,
 	type SlingContext,
 	type SlingPlugin,
 	type SlingInterpolation,
+	SlingTemplateBuilder,
 } from './types.js'
 
 /**
@@ -64,7 +68,14 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
 		...values: SlingInterpolation[]
 	) {
 		return createDefinition(strings, values, context)
-	} as ConfiguredSling
+	} as SlingTemplateBuilder
+
+	// Attach builder
+	Object.defineProperty(templateFunction, 'http', {
+		value: templateFunction,
+		writable: false,
+		enumerable: true,
+	})
 
 	// Attach parameters
 	Object.defineProperty(templateFunction, 'context', {
@@ -92,5 +103,22 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
 		enumerable: false,
 	})
 
-	return templateFunction
+	// Attach helpers
+	Object.defineProperty(templateFunction, 'namedMask', {
+		value: namedMask,
+		writable: false,
+		enumerable: true,
+	})
+	Object.defineProperty(templateFunction, 'secret', {
+		value: secret,
+		writable: false,
+		enumerable: true,
+	})
+	Object.defineProperty(templateFunction, 'sensitive', {
+		value: sensitive,
+		writable: false,
+		enumerable: true,
+	})
+
+	return templateFunction as ConfiguredSling
 }

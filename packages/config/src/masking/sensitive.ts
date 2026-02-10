@@ -26,7 +26,7 @@ const DEFAULT_VISIBLE_CHARS = 6
 // TODO add overload that accepts a string instead of a number
 // sensitive("marvin.brouwer@gmail.com", "username") should result in a named mask;
 // // ?= "<username>"
-export function sensitive<T extends PrimitiveValue>(value: T, n?: number) {
+export function sensitive<T extends PrimitiveValue>(value: T, n?: number): Masked<T> {
 	const visible = n ?? DEFAULT_VISIBLE_CHARS
 	const stringValue = value.toString()
 	const prefix = stringValue.slice(0, visible)

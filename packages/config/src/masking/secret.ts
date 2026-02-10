@@ -1,6 +1,6 @@
 import { DataAccessor, PrimitiveValue } from '../types'
 
-import { mask } from './mask'
+import { mask, Masked, MaskedDataAccessor } from './mask'
 
 /**
  * Mark a value as secret. It will be displayed as `●●●●●`.
@@ -20,6 +20,8 @@ import { mask } from './mask'
  * `
  * ```
  */
+export function secret<T extends PrimitiveValue>(value: T): Masked<T>
+export function secret<T extends DataAccessor>(value: T): MaskedDataAccessor
 export function secret<T extends PrimitiveValue | DataAccessor>(value: T) {
 	return mask(value, '●●●●●')
 }
