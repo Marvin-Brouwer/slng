@@ -1,3 +1,4 @@
+import { Masked, MaskedDataAccessor } from './masking/mask.js'
 import type { ParameterType, SlingParameters } from './parameters.js'
 
 // TODO, these types should be closer to their implementation.
@@ -73,7 +74,10 @@ export interface MaskedValue {
  *
  * @internal
  */
-export interface DataAccessor {
+
+export const dataAccessorSymbol = Symbol.for('dataAccessor')
+// allow for the DataAccessor to pass the AbortSignal of the parent.
+export type DataAccessor = {
 	/**
    * Extract the value at the JSON path.
    * Returns the value on success, or an error type on failure.
@@ -88,6 +92,9 @@ export interface DataAccessor {
 	tryValue<T = string>(): Promise<T | HttpError | undefined>
 }
 
+export function isDataAccessor(value: unknown): value is DataAccessor {
+	return !!value && typeof value === 'object' && Object.hasOwn(value, dataAccessorSymbol)
+}
 /**
  * Specific {@link DataAccessor} for `json(jsonPath)` queries. \
  * Returned by {@link SlingDefinition.json}.
@@ -107,11 +114,13 @@ export type PrimitiveValue = string | number | boolean
  * - `PrimitiveValue` — inlined as-is (`string`, `number`, `boolean`)
  * - `MaskedValue` — inlined but masked in output
  * - `DataAccessor` — resolved lazily at execution time (for chaining)
+ * - `MaskedDataAccessor` — resolved lazily at execution time (for chaining), but masked in output
  */
-export type SlingInterpolation
-	= | PrimitiveValue
-	| MaskedValue
+export type SlingInterpolation =
+	| PrimitiveValue
+	| Masked<PrimitiveValue>
 	| DataAccessor
+	| MaskedDataAccessor
 
 // ── HTTP types ───────────────────────────────────────────────
 
@@ -144,7 +153,7 @@ export type SlingInternals = {
 	/** Parsed HTTP request (with unresolved interpolations as placeholders). */
 	readonly parsed: ParsedHttpRequest
 	/** Collected masked values from this definition. */
-	readonly maskedValues: ReadonlyArray<MaskedValue>
+	readonly maskedValues: ReadonlyArray<Masked<unknown>>
 }
 
 // ── Options ──────────────────────────────────────────────────

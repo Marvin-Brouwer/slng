@@ -1,24 +1,17 @@
+import types from 'node:util/types'
+
+import { isMask } from './masking/mask.js'
 import {
-	HttpError,
-	InvalidJsonPathError,
+	isDataAccessor,
 	type ParsedHttpRequest,
 	type SlingInterpolation,
-	type DataAccessor,
 } from './types.js'
 
-const REQUEST_LINE_RE = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)\s+(\S+)(?:\s+(HTTP\/[\d.]+))?$/
-
-/**
- * Check whether a value looks like a thenable (Promise / ResponseDataAccessor).
- */
-function isThenable(value: unknown): value is PromiseLike<DataAccessor> {
-	return (
-		typeof value === 'object'
-    && value !== null
-    && 'then' in value
-    && typeof (value as Record<string, unknown>).then === 'function'
-	)
+function isAsyncFunction(value: unknown): value is (arguments_: unknown[]) => Promise<unknown> {
+	return types.isAsyncFunction(value)
 }
+
+const REQUEST_LINE_RE = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)\s+(\S+)(?:\s+(HTTP\/[\d.]+))?$/
 
 /**
  * Convert an extracted JSON value to a string for template interpolation.
@@ -41,18 +34,26 @@ function stringifyForInterpolation(value: unknown): string {
 export async function resolveInterpolation(
 	value: SlingInterpolation,
 ): Promise<string> {
-	if (typeof value === 'object' && value !== null) {
-		if ('__masked' in value) {
-			return (value).value
-		}
-		if (isThenable(value)) {
-			const accessor = await value
-			const result = await accessor.value()
-			if (result instanceof HttpError) throw result
-			if (result instanceof InvalidJsonPathError) throw result
-			return stringifyForInterpolation(result)
-		}
+	// TODO fix eslint warning
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+	if (isDataAccessor(value)) {
+		// TODO fix eslint warnings
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+		const result = await value.value()
+		if (result instanceof Error) throw result
+		return stringifyForInterpolation(result)
 	}
+	// eslint-disable-next-line @typescript-eslint/unbound-method
+	if (isMask(value) && isAsyncFunction(value.unmask)) {
+		const result = await value.unmask()
+		if (result instanceof Error) throw result
+		return stringifyForInterpolation(result)
+	}
+	if (isMask(value)) {
+		return String(value.unmask())
+	}
+	// This is only number/bool/string
+	// eslint-disable-next-line @typescript-eslint/no-base-to-string
 	return String(value)
 }
 
@@ -62,14 +63,20 @@ export async function resolveInterpolation(
 export function resolveInterpolationDisplay(
 	value: SlingInterpolation,
 ): string {
-	if (typeof value === 'object' && value !== null) {
-		if ('__masked' in value) {
-			return (value).displayValue
-		}
-		if (isThenable(value)) {
-			return '<deferred>'
-		}
+	if (value === undefined) return '<undefined>'
+	if (value === null) return '<null>'
+
+	// TODO fix eslint warning
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+	if (isDataAccessor(value)) {
+		return '<deferred>'
 	}
+	if (isMask(value)) {
+		return (value).value
+	}
+
+	// This is only number/bool/string
+	// eslint-disable-next-line @typescript-eslint/no-base-to-string
 	return String(value)
 }
 

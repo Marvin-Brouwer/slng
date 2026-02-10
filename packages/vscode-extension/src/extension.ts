@@ -3,17 +3,17 @@ import path from 'node:path'
 import * as vscode from 'vscode'
 
 import { launchDebugSession } from './debug/launcher.js'
-import { ResponsePanel } from './panels/response.js'
 import { SlingCodeLensProvider } from './providers/codelens.js'
 import { sendRequest } from './providers/send.js'
+import { ResponseViewProvider } from './views/response.js'
 
 export function activate(context: vscode.ExtensionContext): void {
 	// Register CodeLens provider for .mts files
 	const codeLensProvider = new SlingCodeLensProvider()
-	const channel = vscode.window.createOutputChannel('Sling')
+	const channel = vscode.window.createOutputChannel('Sling', { log: true })
 	channel.show(true)
 	channel.appendLine('testing views')
-	const provider = new DetailsViewProvider(channel)
+	const responseViewProvider = new ResponseViewProvider(channel)
 
 	context.subscriptions.push(
 		vscode.languages.registerCodeLensProvider(
@@ -28,12 +28,26 @@ export function activate(context: vscode.ExtensionContext): void {
 		vscode.commands.registerCommand(
 			'slng.send',
 			async (fileUri: vscode.Uri, exportName: string) => {
-				const config = vscode.workspace.getConfiguration('slng')
-				const maskSecrets = config.get<boolean>('maskSecrets', true)
-
-				const result = await sendRequest(fileUri, exportName)
-				if (result) {
-					ResponsePanel.show(context, result, maskSecrets)
+				const result = await sendRequest(fileUri, exportName, channel).catch(error => error as Error)
+				if (result instanceof Error) {
+					// npm might error
+					/*
+npm error code E401
+npm error Unable to authenticate, your authentication token seems to be invalid.
+npm error To correct this please try logging in again with:
+npm error   npm login
+npm error A complete log of this run can be found in:
+					*/
+					channel.appendLine('ERROR')
+					channel.appendLine(result.toString())
+				}
+				else if (result) {
+					responseViewProvider.update(result)
+					responseViewProvider.show()
+					// ResponsePanel.show(context, result, maskSecrets)
+				}
+				else {
+					channel.appendLine(`${fileUri.toString()} -> ${exportName} had no result`)
 				}
 			},
 		),
@@ -59,8 +73,8 @@ export function activate(context: vscode.ExtensionContext): void {
 			vscode.commands.executeCommand('sling.responseDetails.focus')
 		}),
 		vscode.window.registerWebviewViewProvider(
-			DetailsViewProvider.viewType,
-			provider,
+			ResponseViewProvider.viewType,
+			responseViewProvider,
 			{
 				webviewOptions: {
 					retainContextWhenHidden: true,
@@ -79,29 +93,42 @@ export function activate(context: vscode.ExtensionContext): void {
 		after: {
 			// todo figure out a way to position the status, perhaps after the HTTP/1.1?
 			// todo ... when sending, // new vscode.ThemeColor('editorError.foreground') when error
-			contentText: ': OK (200)',
+			contentText: '⇌ OK (200)',
 			color: new vscode.ThemeColor('editorCodeLens.foreground'),
-
+			// ⇀ in progress
 			margin: '0 0 0 1ex',
-
+		},
+		rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+	})
+	const responseTagError = vscode.window.createTextEditorDecorationType({
+		after: {
+			contentText: '⇌ Internal server error (500)',
+			color: new vscode.ThemeColor('editorError.foreground'),
+			// ⇀ in progress
+			margin: '0 0 0 1ex',
 		},
 		rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
 	})
 	const hoverHelper = vscode.window.createTextEditorDecorationType({
 		rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
 	})
+	const hoverHelperError = vscode.window.createTextEditorDecorationType({
+		rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
+	})
 	const editor = vscode.window.activeTextEditor
 	if (editor) {
-		const definitionLine = editor.document.lineAt(8)
-		const httpLine = editor.document.lineAt(9)
-		const endLine = editor.document.lineAt(11)
-		const md = [new vscode.MarkdownString(
-			'`OK (200)`',
-		), new vscode.MarkdownString(
-			`[details](command:sling.showDetails?${encodeURIComponent(
-				JSON.stringify({ uri: editor.document.uri.toString(), line: definitionLine.lineNumber }),
-			)})`,
-		)]
+		let definitionLine = editor.document.lineAt(8)
+		let httpLine = editor.document.lineAt(9)
+		let endLine = editor.document.lineAt(11)
+		const md = [
+			new vscode.MarkdownString(
+				'`OK (200)`',
+			), new vscode.MarkdownString(
+				`[details](command:sling.showDetails?${encodeURIComponent(
+					JSON.stringify({ uri: editor.document.uri.toString(), line: definitionLine.lineNumber }),
+				)})`,
+			),
+		]
 		md[1].isTrusted = true
 		editor.setDecorations(statusIcon, [
 			{
@@ -126,50 +153,45 @@ export function activate(context: vscode.ExtensionContext): void {
 			},
 		])
 
-		provider.update('test')
+		definitionLine = editor.document.lineAt(14)
+		httpLine = editor.document.lineAt(15)
+		endLine = editor.document.lineAt(17)
+		const mdError = [
+			new vscode.MarkdownString(
+				'`Internal server error (500)`',
+			), new vscode.MarkdownString(
+				`[details](command:sling.showDetails?${encodeURIComponent(
+					JSON.stringify({ uri: editor.document.uri.toString(), line: definitionLine.lineNumber }),
+				)})`,
+			),
+		]
+		mdError[1].isTrusted = true
+		editor.setDecorations(statusIcon, [
+			{
+				range: definitionLine.range,
+			},
+		])
+		editor.setDecorations(responseTagError, [
+			{
+				range: new vscode.Range(
+					httpLine.range.start.line, httpLine.range.start.character + 1,
+					httpLine.range.end.line, httpLine.range.end.character + 10,
+				),
+			},
+		])
+		editor.setDecorations(hoverHelperError, [
+			{
+				range: new vscode.Range(
+					definitionLine.range.start,
+					endLine.range.end,
+				), // After the sling text
+				hoverMessage: mdError,
+			},
+		])
 	}
 	console.log('Sling extension activated')
 }
 
 export function deactivate(): void {
 	// Cleanup handled by disposables
-}
-
-// TODO, this is nice for history view perhaps
-class DetailsViewProvider implements vscode.WebviewViewProvider {
-	public static readonly viewType = 'sling.responseDetails'
-
-	private _view?: vscode.WebviewView
-
-	constructor(private readonly channel: vscode.OutputChannel) {}
-
-	resolveWebviewView(view: vscode.WebviewView) {
-		this.channel.appendLine('resolveWebviewView')
-		this._view = view
-		// view.show(true)
-		view.webview.options = { enableScripts: true }
-		view.webview.html = this.getHtml('No selection yet')
-	}
-
-	public update(content: string) {
-		this.channel.appendLine('update')
-		this.channel.appendLine(content)
-		if (this._view) {
-			this._view.webview.html = this.getHtml(content)
-		}
-	}
-
-	private getHtml(content: string) {
-		this.channel.appendLine('getHtml')
-		this.channel.appendLine(content)
-		return `
-      <html>
-        <body>
-          <h2>Details</h2>
-          <div>${content}</div>
-          <button onclick="alert('Real button!')">Click me</button>
-        </body>
-      </html>
-    `
-	}
 }

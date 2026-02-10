@@ -3,7 +3,7 @@ import { secret } from '@slng/config'
 import sling from '../slng.config.mjs'
 
 const apiHost = 'jsonplaceholder.typicode.com'
-const apiToken = sling.parameters.getRequired('TOKEN')
+const apiToken = secret(sling.parameters.getRequired('TOKEN'))
 
 // CodeLens: ▶ Send | 🐛 Debug
 export const getUsers = sling`
@@ -22,7 +22,7 @@ export const createUser = sling`
   POST https://${apiHost}/users HTTP/1.1
 
   Content-Type: application/json
-  Authorization: Bearer ${secret(apiToken)}
+  Authorization: Bearer ${apiToken}
 
   {
     "name": "Marvin Brouwer",

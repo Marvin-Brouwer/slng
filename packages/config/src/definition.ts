@@ -1,3 +1,4 @@
+import { isMask, Masked } from './masking/mask.js'
 import {
 	parseTemplatePreview,
 	parseTemplateResolved,
@@ -8,13 +9,13 @@ import {
 	HttpError,
 	InvalidJsonPathError,
 	type DataAccessor,
+	dataAccessorSymbol,
 	type ResponseJsonAccessor,
 	type SlingDefinition,
 	type SlingInternals,
 	type SlingInterpolation,
 	type SlingResponse,
 	type SlingContext,
-	type MaskedValue,
 	type ExecuteOptions,
 	type JsonOptions,
 	type ParsedHttpRequest,
@@ -34,10 +35,7 @@ export function createDefinition(
 	_context: SlingContext,
 ): SlingDefinition {
 	// Collect masked values
-	const maskedValues: MaskedValue[] = values.filter(
-		(v): v is MaskedValue =>
-			typeof v === 'object' && v !== null && '__masked' in v,
-	)
+	const maskedValues = values.filter(isMask) as Masked<unknown>[]
 
 	// Parse a preview (with deferred values as placeholders)
 	const parsed = parseTemplatePreview(strings, values)
@@ -144,7 +142,7 @@ function createDataAccessor(
 	definition: SlingDefinition,
 	jsonPath: string,
 	options?: JsonOptions,
-): DataAccessor {
+) {
 	const validCodes = options?.validResponseCodes
 
 	/** Shared extraction logic: execute, validate status, parse, traverse. */
@@ -194,6 +192,7 @@ function createDataAccessor(
 	}
 
 	return {
+		[dataAccessorSymbol]: true,
 		async value<T = string>(): Promise<T | HttpError | InvalidJsonPathError> {
 			const result = await extract()
 			if (result instanceof HttpError) return result
@@ -212,7 +211,7 @@ function createDataAccessor(
 			if (result instanceof HttpError) return result
 			return result.found ? (result.value as T) : undefined
 		},
-	}
+	} as DataAccessor
 }
 
 /**

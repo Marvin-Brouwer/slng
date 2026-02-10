@@ -1,4 +1,6 @@
-import type { MaskedValue } from '../types.js'
+import { PrimitiveValue } from '../types.js'
+
+import { mask, Masked } from './mask.js'
 
 const DEFAULT_VISIBLE_CHARS = 6
 
@@ -24,16 +26,12 @@ const DEFAULT_VISIBLE_CHARS = 6
 // TODO add overload that accepts a string instead of a number
 // sensitive("marvin.brouwer@gmail.com", "username") should result in a named mask;
 // // ?= "<username>"
-export function sensitive(value: string, n?: number): MaskedValue {
+export function sensitive<T extends PrimitiveValue>(value: T, n?: number) {
 	const visible = n ?? DEFAULT_VISIBLE_CHARS
-	const prefix = value.slice(0, visible)
-	const maskedLength = Math.max(0, value.length - visible)
+	const stringValue = value.toString()
+	const prefix = stringValue.slice(0, visible)
+	const maskedLength = Math.max(0, stringValue.length - visible)
 	const displayValue = prefix + '*'.repeat(maskedLength)
 
-	return {
-		__masked: true,
-		type: 'sensitive',
-		value,
-		displayValue,
-	}
+	return mask(value, displayValue) as Masked<T>
 }

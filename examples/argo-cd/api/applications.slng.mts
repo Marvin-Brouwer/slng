@@ -3,16 +3,16 @@
 import sling from '../slng.config.mjs'
 import constants from '../slng.constants.mjs'
 
-import { getSessionToken } from './session.slng.mjs'
+import { session } from './session.slng.mjs'
 
 export const getApplications = sling`
   GET ${constants.host}/argocd/api/v1/applications
-  Authorization: Bearer ${getSessionToken}
+  Authorization: Bearer ${session.json('token')}
 `
 
 export const createApplication = sling`
   POST ${constants.host}/argocd/api/v1/applications
-  Authorization: Bearer ${getSessionToken}
+  Authorization: Bearer ${session.json('token')}
 
   {
     "metadata": {

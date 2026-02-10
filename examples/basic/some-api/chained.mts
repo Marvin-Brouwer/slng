@@ -3,7 +3,7 @@ import { secret, sensitive } from '@slng/config'
 import sling from '../slng.config.mjs'
 
 const apiHost = 'api.example.com'
-const apiToken = sling.parameters.getRequired('TOKEN')
+const apiToken = secret(sling.parameters.getRequired('TOKEN'))
 
 // Step 1: Authenticate
 // CodeLens: ▶ Send | 🐛 Debug
@@ -12,7 +12,7 @@ export const authenticate = sling`
   Content-Type: application/json
 
   {
-    "token": "${secret(apiToken)}"
+    "token": "${apiToken}"
   }
 `
 

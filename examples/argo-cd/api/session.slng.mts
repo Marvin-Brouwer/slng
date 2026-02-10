@@ -15,6 +15,3 @@ export const session = sling`
     "password": "${password}"
   }
 `
-
-// json() returns a ResponseDataAccessor — use directly in templates
-export const getSessionToken = session.json('token')

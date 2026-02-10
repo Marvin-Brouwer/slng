@@ -1,26 +1,26 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Launch Extension",
-      "type": "extensionHost",
-      "request": "launch",
-      "runtimeExecutable": "${execPath}",
-      "autoAttachChildProcesses": true,
-      "args": [
-        "--disable-updates",
-        "--disable-workspace-trust",
-        "--profile-temp",
-        "--skip-release-notes",
-        "--skip-welcome",
-        "${workspaceFolder}/examples",
-        "--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
-      ],
-      "skipFiles": [
-        "<node_internals>/**",
-        "**/node_modules/**"
-      ],
-      "preLaunchTask": "build:extension"
-    }
-  ]
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Launch Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "",
+			"autoAttachChildProcesses": true,
+			"args": [
+				"--disable-updates",
+				"--disable-workspace-trust",
+				"--profile-temp",
+				"--skip-release-notes",
+				"--skip-welcome",
+				"${workspaceFolder}/examples",
+				"--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
+			],
+			"skipFiles": [
+				"<node_internals>/**",
+				"**/node_modules/**"
+			],
+			"preLaunchTask": "build:extension"
+		}
+	]
 }

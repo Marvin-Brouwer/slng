@@ -30,7 +30,7 @@ export class ResponsePanel {
 	): void {
 		if (ResponsePanel.instance) {
 			ResponsePanel.instance.update(data, maskSecrets)
-			ResponsePanel.instance.panel.reveal(vscode.ViewColumn.Beside)
+			ResponsePanel.instance.panel.reveal(vscode.ViewColumn.Active)
 			return
 		}
 
