@@ -93,7 +93,7 @@ npm error A complete log of this run can be found in:
 		after: {
 			// todo figure out a way to position the status, perhaps after the HTTP/1.1?
 			// todo ... when sending, // new vscode.ThemeColor('editorError.foreground') when error
-			contentText: '⇌ OK (200)',
+			contentText: '⇌ 200 OK',
 			color: new vscode.ThemeColor('editorCodeLens.foreground'),
 			// ⇀ in progress
 			margin: '0 0 0 1ex',
@@ -102,7 +102,7 @@ npm error A complete log of this run can be found in:
 	})
 	const responseTagError = vscode.window.createTextEditorDecorationType({
 		after: {
-			contentText: '⇌ Internal server error (500)',
+			contentText: '⇌ 500 InternalServerError',
 			color: new vscode.ThemeColor('editorError.foreground'),
 			// ⇀ in progress
 			margin: '0 0 0 1ex',
@@ -117,19 +117,19 @@ npm error A complete log of this run can be found in:
 	})
 	const editor = vscode.window.activeTextEditor
 	if (editor) {
-		let definitionLine = editor.document.lineAt(8)
-		let httpLine = editor.document.lineAt(9)
-		let endLine = editor.document.lineAt(11)
-		const md = [
-			new vscode.MarkdownString(
-				'`OK (200)`',
-			), new vscode.MarkdownString(
-				`[details](command:sling.showDetails?${encodeURIComponent(
-					JSON.stringify({ uri: editor.document.uri.toString(), line: definitionLine.lineNumber }),
-				)})`,
-			),
-		]
-		md[1].isTrusted = true
+		let definitionLine = editor.document.lineAt(6)
+		let httpLine = editor.document.lineAt(7)
+		let endLine = editor.document.lineAt(9)
+		const detailUrl = encodeURIComponent(
+			JSON.stringify({ uri: editor.document.uri.toString(), line: definitionLine.lineNumber }),
+		)
+		const md = createMarkdown(`
+			\`GET https://fake-url/api/test\`
+			\`200 OK\`: \`application/json\`
+
+			<a href="command:sling.showDetails?${detailUrl}" title="show details">show details</a>
+		`)
+
 		editor.setDecorations(statusIcon, [
 			{
 				range: definitionLine.range,
@@ -153,18 +153,15 @@ npm error A complete log of this run can be found in:
 			},
 		])
 
-		definitionLine = editor.document.lineAt(14)
-		httpLine = editor.document.lineAt(15)
-		endLine = editor.document.lineAt(17)
-		const mdError = [
-			new vscode.MarkdownString(
-				'`Internal server error (500)`',
-			), new vscode.MarkdownString(
-				`[details](command:sling.showDetails?${encodeURIComponent(
-					JSON.stringify({ uri: editor.document.uri.toString(), line: definitionLine.lineNumber }),
-				)})`,
-			),
-		]
+		definitionLine = editor.document.lineAt(12)
+		httpLine = editor.document.lineAt(13)
+		endLine = editor.document.lineAt(15)
+		const mdError = createMarkdown(`
+			\`GET https://fake-url/api/test\`
+			\`500 InternalServerError\`: \`text/plain\`
+
+			<a href="command:sling.showDetails?${detailUrl}" title="show details">show details</a>
+		`)
 		mdError[1].isTrusted = true
 		editor.setDecorations(statusIcon, [
 			{
@@ -194,4 +191,16 @@ npm error A complete log of this run can be found in:
 
 export function deactivate(): void {
 	// Cleanup handled by disposables
+}
+
+function createMarkdown(md: string) {
+	return md
+		.split('\n')
+		.map((line) => {
+			const mdLine = new vscode.MarkdownString()
+			mdLine.isTrusted = true
+			mdLine.supportHtml = true
+			mdLine.value = line.replaceAll('\t', '')
+			return mdLine
+		})
 }
