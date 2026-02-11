@@ -14,8 +14,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	channel.show(true)
 	channel.info('Initializing', context.extension.id)
 
-	// TODO remove once we fixed the issue where we can't launch vscode with a log level
+	const responseViewProvider = registerResponseView(context.subscriptions, channel)
+
 	if (context.extensionMode === vscode.ExtensionMode.Development) {
+		// Reset to standard for developers
+		responseViewProvider.hide()
+
+		// TODO remove once we fixed the issue where we can't launch vscode with a log level
 		channel.info('Current log level:', channel.logLevel.toString())
 		await new Promise(resolve => setTimeout(resolve, 1300))
 		while (channel.logLevel >= vscode.LogLevel.Info) {
@@ -24,7 +29,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	}
 
 	registerCodeLens(context.subscriptions)
-	const responseViewProvider = registerResponseView(context.subscriptions, channel)
 
 	registerSendCommand(context.subscriptions, channel, responseViewProvider)
 	registerShowDetailsFromHoverCommand(context.subscriptions, channel)
