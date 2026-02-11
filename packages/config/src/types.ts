@@ -212,6 +212,11 @@ export interface ExecuteOptions extends CacheOptions {
  * The response from executing a sling request.
  */
 export interface SlingResponse {
+	/**
+	 * The id of the request definition that initiated the request
+	 * This is a unique value made up of the shape of the request in code, meaning the id changes if a user modifies the call.
+	 * */
+	readonly definitionReference: string
 	readonly status: number
 	readonly statusText: string
 	readonly headers: Record<string, string>
@@ -226,6 +231,10 @@ export interface SlingResponse {
  * A sling request definition. Returned by the tagged template.
  */
 export interface SlingDefinition {
+	/**
+	 * This is a unique value made up of the shape of the request in code, meaning the id changes if a user modifies the call.
+	 * */
+	id(): string
 	/** Access the definition's internal data (parsed request, template parts, etc.). */
 	getInternals(): SlingInternals
 	/** Execute the request, resolving all lazy interpolations. */

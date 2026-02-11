@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { inspect } from 'node:util'
 
 import { isMask } from './masking/mask.js'
@@ -55,6 +56,15 @@ export function createDefinition(
 
 	const definition: SlingDefinition = {
 		getInternals: () => internals,
+		id() {
+			// This SHOULD never happen
+			if (!internals.tsAst) return '<unknown>'
+			return createHash('sha256')
+				.update(internals.tsAst.sourcePath).update('\0')
+				.update(internals.tsAst.exportName).update('\0')
+				.update(internals.template.strings.join('$_'))
+				.digest('hex')
+		},
 
 		async execute(options?: ExecuteOptions): Promise<SlingResponse> {
 			const readFromCache = options?.readFromCache !== false
@@ -70,7 +80,7 @@ export function createDefinition(
 				}
 			}
 
-			const response = await executeRequest(strings, values, options)
+			const response = await executeRequest(this.id(), strings, values, options)
 
 			// Store in cache (unless caching is explicitly disabled)
 			if (!cachingDisabled) {
@@ -219,6 +229,7 @@ function createDataAccessor(
  * Execute the HTTP request defined by a sling template.
  */
 async function executeRequest(
+	definitionReference: string,
 	strings: ReadonlyArray<string>,
 	values: ReadonlyArray<SlingInterpolation>,
 	options?: ExecuteOptions,
@@ -237,6 +248,7 @@ async function executeRequest(
 	const responseHeaders = Object.fromEntries(fetchResponse.headers as unknown as Iterable<[string, string]>)
 
 	const slingResponse: SlingResponse = {
+		definitionReference,
 		status: fetchResponse.status,
 		statusText: fetchResponse.statusText,
 		duration,
