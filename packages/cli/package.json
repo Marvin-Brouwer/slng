@@ -18,8 +18,8 @@
 		"dist"
 	],
 	"scripts": {
-		"build": "tsup",
-		"clean": "rm -rf dist"
+		"_build": "tsup",
+		"_clean": "rm -rf dist"
 	},
 	"dependencies": {
 		"@slng/config": "workspace:*",

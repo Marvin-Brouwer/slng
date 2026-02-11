@@ -8,6 +8,9 @@
 			"runtimeExecutable": "",
 			"autoAttachChildProcesses": true,
 			"args": [
+				// TODO figure out a way to have vscode actually work with the correct log level
+				"--log-level trace",
+				"--log slng.@sling/vscode:debug",
 				"--disable-updates",
 				"--disable-workspace-trust",
 				"--profile-temp",

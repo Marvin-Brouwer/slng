@@ -1,5 +1,5 @@
 {
-	"name": "@slng/vscode-extension",
+	"name": "@sling/vscode",
 	"displayName": "Sling — HTTP Client",
 	"description": "Send HTTP requests directly from TypeScript definition files with CodeLens integration",
 	"version": "0.1.0",

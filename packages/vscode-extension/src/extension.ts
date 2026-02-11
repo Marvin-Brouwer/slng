@@ -8,17 +8,32 @@ import { launchDebugSession } from './debug/launcher.js'
 import { registerResponseView } from './views/response.js'
 import { registerCodeLens } from './visual/codelens.js'
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext) {
 	// Register CodeLens provider for .mts files
 	const channel = vscode.window.createOutputChannel('Sling', { log: true })
 	channel.show(true)
-	channel.appendLine('testing views')
+	channel.info('Initializing', context.extension.id)
+
+	// TODO remove once we fixed the issue where we can't launch vscode with a log level
+	if (context.extensionMode === vscode.ExtensionMode.Development) {
+		channel.info('Current log level:', channel.logLevel.toString())
+		await new Promise(resolve => setTimeout(resolve, 1300))
+		while (channel.logLevel >= vscode.LogLevel.Info) {
+			await vscode.commands.executeCommand('workbench.action.setLogLevel')
+		}
+	}
 
 	registerCodeLens(context.subscriptions)
 	const responseViewProvider = registerResponseView(context.subscriptions, channel)
 
 	registerSendCommand(context.subscriptions, channel, responseViewProvider)
 	registerShowDetailsFromHoverCommand(context.subscriptions, channel)
+
+	function runExtension(activeEditor: vscode.TextEditor | undefined) {
+		if (!activeEditor) return
+
+		channel.debug('activeEditor', activeEditor.document.uri.toString())
+	}
 
 	context.subscriptions.push(
 		// TODO figure out how we want to do debugging
@@ -131,7 +146,11 @@ export function activate(context: vscode.ExtensionContext): void {
 			},
 		])
 	}
-	console.log('Sling extension activated')
+
+	vscode.window.onDidChangeActiveTextEditor(runExtension, undefined, context.subscriptions)
+	runExtension(vscode.window.activeTextEditor)
+
+	channel.info('Sling extension activated')
 }
 
 export function deactivate(): void {

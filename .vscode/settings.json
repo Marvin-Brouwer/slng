@@ -1,4 +1,5 @@
-{"eslint.codeActionsOnSave.mode": "all",
+{
+	"eslint.codeActionsOnSave.mode": "all",
 	"eslint.format.enable": true,
 	"eslint.validate": [
 		"javascript",
@@ -44,5 +45,5 @@
 	"javascript.format.insertSpaceAfterOpeningAndBeforeClosingEmptyBraces": false,
 	"typescript.format.insertSpaceAfterOpeningAndBeforeClosingEmptyBraces": false,
 	"typescript.tsc.autoDetect": "off",
-	"npm.autoDetect": "off"
+	"npm.autoDetect": "off",
 }
