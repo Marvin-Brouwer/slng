@@ -1,3 +1,5 @@
+import { inspect } from 'node:util'
+
 import { isMask, Masked } from './masking/mask.js'
 import {
 	parseTemplatePreview,
@@ -5,6 +7,7 @@ import {
 	assembleTemplate,
 	resolveInterpolationDisplay,
 } from './parser.js'
+import { sling } from './sling.js'
 import {
 	HttpError,
 	InvalidJsonPathError,
@@ -238,11 +241,41 @@ async function executeRequest(
 	const slingResponse: SlingResponse = {
 		status: fetchResponse.status,
 		statusText: fetchResponse.statusText,
-		headers: responseHeaders,
-		body: responseBody,
-		raw: fetchResponse,
 		duration,
+
+		// We return the real responseBody, but we "decorate" it with a custom inspection method.
+		// This is to prevent console bloat
+		headers: Object.assign(responseHeaders, {
+			toJSON() {
+				return `[headers]`
+			},
+			[inspect.custom]() {
+				return `[headers]`
+			},
+		}),
+		body: Object.assign(responseBody, {
+			toJSON() {
+				if (!fetchResponse.bodyUsed) return `[no-content]`
+				return `[${fetchResponse.headers.get('content-type') ?? 'text/plain'}]`
+			},
+			[inspect.custom]() {
+				if (!fetchResponse.bodyUsed) return `[no-content]`
+				return `[${fetchResponse.headers.get('content-type') ?? 'text/plain'}]`
+			},
+		}),
+
+		// We make this gettable to hide it for the console completely
+		raw: undefined! as Response,
 	}
+
+	// Make raw a getter to prevent console expanding
+	Object.defineProperty(sling, 'raw', {
+		get() {
+			return fetchResponse
+		},
+		enumerable: true,
+		configurable: false,
+	})
 
 	if (options?.verbose) {
 		logRequest(strings, values, resolved, slingResponse, options.maskOutput)
