@@ -1,13 +1,12 @@
 import { inspect } from 'node:util'
 
-import { isMask, Masked } from './masking/mask.js'
+import { isMask } from './masking/mask.js'
 import {
 	parseTemplatePreview,
 	parseTemplateResolved,
 	assembleTemplate,
 	resolveInterpolationDisplay,
 } from './parser.js'
-import { sling } from './sling.js'
 import {
 	HttpError,
 	InvalidJsonPathError,
@@ -38,7 +37,7 @@ export function createDefinition(
 	_context: SlingContext,
 ): SlingDefinition {
 	// Collect masked values
-	const maskedValues = values.filter(isMask) as Masked<unknown>[]
+	const maskedValues = values.filter(v => isMask(v))
 
 	// Parse a preview (with deferred values as placeholders)
 	const parsed = parseTemplatePreview(strings, values)
@@ -48,8 +47,7 @@ export function createDefinition(
 
 	const internals: SlingInternals = {
 		version: 'v1',
-		name: undefined,
-		sourcePath: undefined,
+		tsAst: undefined!, // added by the runtime
 		template: { strings: [...strings], values },
 		parsed,
 		maskedValues,
@@ -269,11 +267,11 @@ async function executeRequest(
 	}
 
 	// Make raw a getter to prevent console expanding
-	Object.defineProperty(sling, 'raw', {
+	Object.defineProperty(slingResponse, 'raw', {
 		get() {
 			return fetchResponse
 		},
-		enumerable: true,
+		enumerable: false,
 		configurable: false,
 	})
 

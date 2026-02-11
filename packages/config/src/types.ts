@@ -1,8 +1,9 @@
-import { Masked, MaskedDataAccessor } from './masking/mask.js'
-import type { ParameterType, SlingParameters } from './parameters.js'
-import { namedMask } from './masking/mask'
+import { AstData } from './loader/file-loader.js'
+import { namedMask, Masked, MaskedDataAccessor } from './masking/mask'
 import { secret } from './masking/secret'
 import { sensitive } from './masking/sensitive'
+
+import type { ParameterType, SlingParameters } from './parameters.js'
 
 // TODO, these types should be closer to their implementation.
 // Errors and base types may have their own files in ./types/, at least a file per type.
@@ -119,8 +120,8 @@ export type PrimitiveValue = string | number | boolean
  * - `DataAccessor` — resolved lazily at execution time (for chaining)
  * - `MaskedDataAccessor` — resolved lazily at execution time (for chaining), but masked in output
  */
-export type SlingInterpolation =
-	| PrimitiveValue
+export type SlingInterpolation
+	= | PrimitiveValue
 	| Masked<PrimitiveValue>
 	| DataAccessor
 	| MaskedDataAccessor
@@ -144,10 +145,10 @@ export interface ParsedHttpRequest {
  */
 export type SlingInternals = {
 	readonly version: 'v1'
-	/** Name of the export (set by the CLI/extension after module loading). */
-	name?: string
-	/** Source file path (set by the CLI/extension after module loading). */
-	sourcePath?: string
+
+	/** File AST information for cross referencing in editor-plugins, added when loading the file */
+	readonly tsAst: AstData
+
 	/** The original template parts, for re-rendering with masking. */
 	readonly template: {
 		readonly strings: ReadonlyArray<string>
@@ -312,7 +313,7 @@ export type ConfiguredSling = SlingTemplateBuilder & {
 	readonly context: SlingContext
 	readonly parameters: SlingParameters
 
-	namedMask: typeof namedMask,
-	secret: typeof secret,
+	namedMask: typeof namedMask
+	secret: typeof secret
 	sensitive: typeof sensitive
 }

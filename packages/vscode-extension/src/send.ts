@@ -1,7 +1,5 @@
-import { isSlingDefinition, SlingDefinition, SlingResponse } from '@slng/config'
+import { isSlingDefinition, loadDefinitionFile, SlingResponse } from '@slng/config'
 import * as vscode from 'vscode'
-
-import { loadModuleFile } from './require'
 
 export async function sendRequest(
 	fileUri: vscode.Uri,
@@ -60,7 +58,11 @@ export async function sendRequest(
 }
 
 async function sendHttpRequest(filePath: string, callName: string, signal: AbortSignal) {
-	const definition = await loadModuleFile<Record<string, SlingDefinition>>(filePath)
+	// TODO fix ignores
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+	const definition = await loadDefinitionFile(filePath)
+	// TODO fix ignores
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
 	const callDefinition = definition[callName]
 	if (!isSlingDefinition(callDefinition))
 		throw new Error(`Export '${callName}' in "${filePath}" is not a sling definition`)

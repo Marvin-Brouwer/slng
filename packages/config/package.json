@@ -21,9 +21,14 @@
 		"clean": "rm -rf dist"
 	},
 	"dependencies": {
-		"dotenv": "^16.4.0"
+		"@babel/parser": "^7.29.0",
+		"@babel/traverse": "^7.29.0",
+		"@babel/types": "^7.29.0",
+		"dotenv": "^16.4.0",
+		"jiti": "^2.6.1"
 	},
 	"devDependencies": {
+		"@types/babel__traverse": "^7.28.0",
 		"@types/node": "^25.2.1",
 		"tsup": "^8.0.0",
 		"typescript": "^5.5.0"

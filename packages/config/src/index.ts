@@ -7,12 +7,8 @@ export { useDotEnv } from './plugins/dotenv.js'
 export type { DotEnvOptions } from './plugins/dotenv.js'
 export { useConfig } from './plugins/static-config.js'
 
-// Masking utilities
-export { secret } from './masking/secret.js'
-export { sensitive } from './masking/sensitive.js'
-export { namedMask, type Masked, type MaskedDataAccessor } from './masking/mask.js'
-
 // Runtime utilities (for CLI / extensions)
+export { loadDefinitionFile, type AstData } from './loader/file-loader.js'
 export { isSlingDefinition } from './definition.js'
 export {
 	parseHttpText,
