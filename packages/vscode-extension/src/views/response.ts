@@ -47,3 +47,19 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
     `
 	}
 }
+
+export function registerResponseView(subscription: vscode.Disposable[], channel: vscode.LogOutputChannel) {
+	const responseViewProvider = new ResponseViewProvider(channel)
+	subscription.push(
+		vscode.window.registerWebviewViewProvider(
+			ResponseViewProvider.viewType,
+			responseViewProvider,
+			{
+				webviewOptions: {
+					retainContextWhenHidden: true,
+				},
+			},
+		),
+	)
+	return responseViewProvider
+}

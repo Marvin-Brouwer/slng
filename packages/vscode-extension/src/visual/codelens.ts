@@ -1,5 +1,7 @@
 import * as vscode from 'vscode'
 
+import { sendCommand } from '../commands/send'
+
 /**
  * Regex to find exported sling template definitions.
  *
@@ -42,8 +44,8 @@ export class SlingCodeLensProvider implements vscode.CodeLensProvider {
 			lenses.push(
 				// "Send" lens
 				new vscode.CodeLens(range, {
-					title: '▶ Send',
-					command: 'slng.send',
+					title: 'Send',
+					command: sendCommand,
 					arguments: [document.uri, exportName],
 					tooltip: `Send the "${exportName}" request`,
 				}),
@@ -63,4 +65,19 @@ export class SlingCodeLensProvider implements vscode.CodeLensProvider {
 	refresh(): void {
 		this._onDidChange.fire()
 	}
+}
+
+export function registerCodeLens(subscription: vscode.Disposable[]) {
+	const codeLensProvider = new SlingCodeLensProvider()
+
+	subscription.push(
+		vscode.languages.registerCodeLensProvider(
+			{ language: 'typescript', pattern: '**/*.mts' },
+			codeLensProvider,
+		),
+		// Refresh CodeLens on file save
+		vscode.workspace.onDidSaveTextDocument(() => {
+			codeLensProvider.refresh()
+		}),
+	)
 }

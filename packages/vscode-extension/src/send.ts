@@ -3,28 +3,22 @@ import * as vscode from 'vscode'
 
 import { loadModuleFile } from './require'
 
-/**
- * Execute a sling request by spawning a child process.
- *
- * Uses tsx to import the user's .mts file and run the named export.
- * The result is written to a temp JSON file and read back.
- * This keeps execution transparent and identical to CLI usage.
- */
 export async function sendRequest(
 	fileUri: vscode.Uri,
 	exportName: string,
-	channel?: vscode.LogOutputChannel,
-): Promise<SlingResponse | undefined> {
+	channel: vscode.LogOutputChannel,
+): Promise<SlingResponse | false> {
 	const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri)
 	if (!workspaceFolder) {
 		vscode.window.showErrorMessage(
 			'Cannot send: file is not in a workspace folder.',
 		)
-		return
+		return false
 	}
 
 	channel?.info(`invoking '${exportName}' in "${fileUri.path}"`)
 
+	// TODO, we are returning the result now, perhaps it's better to have a single function that either shows progress, error, or the response pane.
 	return await vscode.window.withProgress(
 		{
 			location: vscode.ProgressLocation.Notification,
@@ -34,31 +28,33 @@ export async function sendRequest(
 		async (_progress, token) => {
 			const abortController = new AbortController()
 			token.onCancellationRequested(abortController.abort.bind(void 0))
-			const result = await sendHttpRequest(fileUri.fsPath, exportName, abortController.signal)
+			const result = await sendHttpRequest(fileUri.fsPath, exportName, abortController.signal).catch(error => error as Error)
 
+			if (result instanceof Error) {
+				// npm might error
+				/*
+					npm error code E401
+					npm error Unable to authenticate, your authentication token seems to be invalid.
+					npm error To correct this please try logging in again with:
+					npm error   npm login
+					npm error A complete log of this run can be found in:
+				*/
+				channel.appendLine('ERROR')
+				channel.appendLine(result.toString())
+				vscode.window.showErrorMessage(
+					`Sling: ${exportName} failed — ${result.message}`,
+				)
+				return false
+			}
 			if (!result) {
 				vscode.window.showErrorMessage(
 					`Sling: ${exportName} failed to return a result`,
 				)
-				return
-			}
-			if (result instanceof Error) {
-				vscode.window.showErrorMessage(
-					`Sling: ${exportName} failed — ${result.message}`,
-				)
-				return
+				channel.appendLine(`${fileUri.toString()} -> ${exportName} had no result`)
+				return false
 			}
 
 			return result
-
-			// name: exportName,
-			// method: internals.parsed.method,
-			// url: internals.parsed.url,
-			// status: response.status,
-			// statusText: response.statusText,
-			// headers: response.headers,
-			// body: response.body,
-			// duration: response.duration,
 		},
 	)
 }
