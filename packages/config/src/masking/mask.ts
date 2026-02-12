@@ -1,4 +1,4 @@
-import { inspect } from 'node:util'
+import { inspect, types } from 'node:util'
 
 import { DataAccessor, HttpError, InvalidJsonPathError, PrimitiveValue } from '../types'
 
@@ -19,6 +19,7 @@ export type MaskedDataAccessor = Masked<Promise<string | HttpError | InvalidJson
  * @example
  * ```ts
  * import { namedMask } from '@slng/config'
+import { isAsyncFunction } from 'node:util/types';
  *
  * const auth_token = namedMask('TOKEN', process.env.TOKEN);
  *
@@ -56,7 +57,7 @@ function createValueMask<T extends PrimitiveValue>(original: T, mask: string, in
 	data.fill(0)
 
 	return {
-		[mask]: true,
+		[maskSymbol]: true,
 		value: mask,
 		unmask() {
 			const original = obfuscated.map(byte => byte ^ key).toString()
@@ -81,7 +82,7 @@ function createValueMask<T extends PrimitiveValue>(original: T, mask: string, in
 }
 function createAccessorMask(original: DataAccessor, mask: string): MaskedDataAccessor {
 	return {
-		[mask]: true,
+		[maskSymbol]: true,
 		value: mask,
 		unmask() {
 			return original.value<string>()
@@ -104,6 +105,20 @@ function createAccessorMask(original: DataAccessor, mask: string): MaskedDataAcc
 	} as MaskedDataAccessor
 }
 
+function isAsyncMask(mask: Masked<unknown>) {
+	// We don't care about binding, it's just a type check
+	// eslint-disable-next-line @typescript-eslint/unbound-method
+	return types.isAsyncFunction(mask.unmask)
+}
+
 export function isMask(value: unknown): value is Masked<unknown> {
-	return !!value && typeof value === 'object' && Object.hasOwn(value, maskSymbol)
+	return !!value && typeof value === 'object' && (value as Record<symbol, boolean>)[maskSymbol] === true
+}
+
+export function isPrimitiveMask(value: unknown): value is Masked<PrimitiveValue> {
+	return isMask(value) && !isAsyncMask(value)
+}
+
+export function isMaskedDataAccessor(value: unknown): value is MaskedDataAccessor {
+	return isMask(value) && isAsyncMask(value)
 }

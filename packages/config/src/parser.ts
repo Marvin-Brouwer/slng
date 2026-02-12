@@ -1,15 +1,9 @@
-import types from 'node:util/types'
-
-import { isMask } from './masking/mask.js'
+import { isMask, isMaskedDataAccessor, isPrimitiveMask } from './masking/mask.js'
 import {
 	isDataAccessor,
 	type ParsedHttpRequest,
 	type SlingInterpolation,
 } from './types.js'
-
-function isAsyncFunction(value: unknown): value is (arguments_: unknown[]) => Promise<unknown> {
-	return types.isAsyncFunction(value)
-}
 
 const REQUEST_LINE_RE = /^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|TRACE)\s+(\S+)(?:\s+(HTTP\/[\d.]+))?$/
 
@@ -35,25 +29,25 @@ export async function resolveInterpolation(
 	value: SlingInterpolation,
 ): Promise<string> {
 	// TODO fix eslint warning
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
 	if (isDataAccessor(value)) {
 		// TODO fix eslint warnings
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+
 		const result = await value.value()
 		if (result instanceof Error) throw result
 		return stringifyForInterpolation(result)
 	}
-	// eslint-disable-next-line @typescript-eslint/unbound-method
-	if (isMask(value) && isAsyncFunction(value.unmask)) {
+
+	if (isMaskedDataAccessor(value)) {
 		const result = await value.unmask()
 		if (result instanceof Error) throw result
 		return stringifyForInterpolation(result)
 	}
-	if (isMask(value)) {
+	if (isPrimitiveMask(value)) {
 		return String(value.unmask())
 	}
 	// This is only number/bool/string
-	// eslint-disable-next-line @typescript-eslint/no-base-to-string
+
 	return String(value)
 }
 
@@ -67,7 +61,7 @@ export function resolveInterpolationDisplay(
 	if (value === null) return '<null>'
 
 	// TODO fix eslint warning
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-call
+
 	if (isDataAccessor(value)) {
 		return '<deferred>'
 	}
@@ -76,7 +70,7 @@ export function resolveInterpolationDisplay(
 	}
 
 	// This is only number/bool/string
-	// eslint-disable-next-line @typescript-eslint/no-base-to-string
+
 	return String(value)
 }
 

@@ -80,7 +80,7 @@ export function createDefinition(
 				}
 			}
 
-			const response = await executeRequest(this.id(), strings, values, options)
+			const response = await executeRequest(this, strings, values, options)
 
 			// Store in cache (unless caching is explicitly disabled)
 			if (!cachingDisabled) {
@@ -229,12 +229,14 @@ function createDataAccessor(
  * Execute the HTTP request defined by a sling template.
  */
 async function executeRequest(
-	definitionReference: string,
+	definition: SlingDefinition,
 	strings: ReadonlyArray<string>,
 	values: ReadonlyArray<SlingInterpolation>,
 	options?: ExecuteOptions,
 ): Promise<SlingResponse> {
 	const startTime = performance.now()
+
+	const internals = definition.getInternals()
 
 	// Resolve all interpolations (including async accessors for chaining)
 	const resolved = await parseTemplateResolved(strings, values)
@@ -248,31 +250,22 @@ async function executeRequest(
 	const responseHeaders = Object.fromEntries(fetchResponse.headers as unknown as Iterable<[string, string]>)
 
 	const slingResponse: SlingResponse = {
-		definitionReference,
 		status: fetchResponse.status,
 		statusText: fetchResponse.statusText,
 		duration,
 
-		// We return the real responseBody, but we "decorate" it with a custom inspection method.
-		// This is to prevent console bloat
-		headers: Object.assign(responseHeaders, {
-			toJSON() {
-				return `[headers]`
+		request: {
+			reference: definition.id(),
+			parsed: {
+				...internals.parsed,
+				headers: debuggerDecorate(`headers`, internals.parsed.headers),
+				body: debuggerDecorateBody(fetchResponse, internals.parsed.body),
 			},
-			[inspect.custom]() {
-				return `[headers]`
-			},
-		}),
-		body: Object.assign(responseBody, {
-			toJSON() {
-				if (!fetchResponse.bodyUsed) return `[no-content]`
-				return `[${fetchResponse.headers.get('content-type') ?? 'text/plain'}]`
-			},
-			[inspect.custom]() {
-				if (!fetchResponse.bodyUsed) return `[no-content]`
-				return `[${fetchResponse.headers.get('content-type') ?? 'text/plain'}]`
-			},
-		}),
+			template: internals.template,
+		},
+
+		headers: debuggerDecorate(`headers`, responseHeaders),
+		body: debuggerDecorateBody(fetchResponse, responseBody),
 
 		// We make this gettable to hide it for the console completely
 		raw: undefined! as Response,
@@ -351,4 +344,22 @@ export function isSlingDefinition(value: unknown): value is SlingDefinition {
 	catch {
 		return false
 	}
+}
+
+// We return the real value, but we "decorate" it with a custom inspection method.
+// This is to prevent console bloat
+function debuggerDecorate<T extends object | string | undefined>(tag: string, value: T) {
+	return Object.assign(value as object, {
+		toJSON() {
+			return `[${tag}]`
+		},
+		[inspect.custom]() {
+			return `[${tag}]`
+		},
+	}) as T
+}
+
+function debuggerDecorateBody<T extends object | string | undefined>(fetchResponse: Response, body: T) {
+	if (!fetchResponse.bodyUsed) return debuggerDecorate(`no-content`, body)
+	return debuggerDecorate(fetchResponse.headers.get('content-type') ?? 'text/plain', body)
 }

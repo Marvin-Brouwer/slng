@@ -4,7 +4,7 @@ import { sendRequest } from '../send'
 import { ResponseViewProvider } from '../views/response'
 
 export const sendCommand = 'slng.send'
-export function registerSendCommand(subscription: vscode.Disposable[], channel: vscode.LogOutputChannel, responseViewProvider: ResponseViewProvider) {
+export function registerSendCommand(subscription: vscode.Disposable[], state: vscode.Memento, channel: vscode.LogOutputChannel, responseViewProvider: ResponseViewProvider) {
 	subscription.push(
 		vscode.commands.registerCommand(
 			sendCommand,
@@ -16,7 +16,15 @@ export function registerSendCommand(subscription: vscode.Disposable[], channel: 
 					return
 				}
 
-				responseViewProvider.update(result)
+				// TODO fix ignores
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+				const reference = result.request.reference
+				// TODO fix ignores
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+				state.update(reference, result)
+				// TODO fix ignores
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+				responseViewProvider.update(reference)
 				responseViewProvider.show()
 			},
 		),

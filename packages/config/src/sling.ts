@@ -70,13 +70,6 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
 		return createDefinition(strings, values, context)
 	} as SlingTemplateBuilder
 
-	// Attach builder
-	Object.defineProperty(templateFunction, 'http', {
-		value: templateFunction,
-		writable: false,
-		enumerable: true,
-	})
-
 	// Attach parameters
 	Object.defineProperty(templateFunction, 'context', {
 		value: context,

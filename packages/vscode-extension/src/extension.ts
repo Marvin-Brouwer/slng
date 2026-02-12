@@ -14,7 +14,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	channel.show(true)
 	channel.info('Initializing', context.extension.id)
 
-	const responseViewProvider = registerResponseView(context.subscriptions, channel)
+	const responseViewProvider = registerResponseView(context.subscriptions, context.workspaceState, channel)
 
 	if (context.extensionMode === vscode.ExtensionMode.Development) {
 		// Reset to standard for developers
@@ -30,7 +30,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	registerCodeLens(context.subscriptions)
 
-	registerSendCommand(context.subscriptions, channel, responseViewProvider)
+	registerSendCommand(context.subscriptions, context.workspaceState, channel, responseViewProvider)
 	registerShowDetailsFromHoverCommand(context.subscriptions, channel)
 
 	function runExtension(activeEditor: vscode.TextEditor | undefined) {

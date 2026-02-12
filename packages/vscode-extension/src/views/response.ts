@@ -10,6 +10,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 
 	constructor(
 		private readonly channel: vscode.LogOutputChannel,
+		private readonly state: vscode.Memento,
 	) {
 		this.config = vscode.workspace.getConfiguration('slng')
 	}
@@ -19,7 +20,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 		this._view = view
 
 		view.webview.options = { enableScripts: true }
-		view.webview.html = this.getHtml({ result: 'Not run yet' })
+		view.webview.html = this.getHtml('No request selected')
 	}
 
 	public hide() {
@@ -32,14 +33,19 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 		this._view?.show(false)
 	}
 
-	public update(content: SlingResponse) {
-		this.channel.info('update', content)
-		if (this._view) {
-			this._view.webview.html = this.getHtml(content)
-		}
+	// TODO do we want to show more information when no response? Maybe a send button?
+	public update(reference: string | undefined) {
+		this.channel.info('update', reference)
+		if (!this._view) return this.channel.warn('ResponseView not resolved!')
+
+		if (!reference) return this.getHtml('No request selected')
+		if (!this.state.keys().includes(reference)) return this.getHtml('Request not executed')
+
+		const referencedResponse = this.state.get(reference) as SlingResponse
+		this._view.webview.html = this.getHtml(referencedResponse)
 	}
 
-	private getHtml(content: object) {
+	private getHtml(content: SlingResponse | string) {
 		this.channel.info('getHtml', content)
 		return `
       <html>
@@ -52,8 +58,8 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	}
 }
 
-export function registerResponseView(subscription: vscode.Disposable[], channel: vscode.LogOutputChannel) {
-	const responseViewProvider = new ResponseViewProvider(channel)
+export function registerResponseView(subscription: vscode.Disposable[], state: vscode.Memento, channel: vscode.LogOutputChannel) {
+	const responseViewProvider = new ResponseViewProvider(channel, state)
 	subscription.push(
 		vscode.window.registerWebviewViewProvider(
 			ResponseViewProvider.viewType,

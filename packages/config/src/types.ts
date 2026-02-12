@@ -212,11 +212,6 @@ export interface ExecuteOptions extends CacheOptions {
  * The response from executing a sling request.
  */
 export interface SlingResponse {
-	/**
-	 * The id of the request definition that initiated the request
-	 * This is a unique value made up of the shape of the request in code, meaning the id changes if a user modifies the call.
-	 * */
-	readonly definitionReference: string
 	readonly status: number
 	readonly statusText: string
 	readonly headers: Record<string, string>
@@ -225,6 +220,16 @@ export interface SlingResponse {
 	readonly raw: Response
 	/** Total duration in milliseconds. */
 	readonly duration: number
+
+	readonly request: {
+		/**
+		 * The id of the request definition that initiated the request
+		 * This is a unique value made up of the shape of the request in code, meaning the id changes if a user modifies the call.
+		 * */
+		readonly reference: string
+		readonly parsed: ParsedHttpRequest
+		readonly template: SlingInternals['template']
+	}
 }
 
 /**

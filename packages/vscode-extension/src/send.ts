@@ -67,5 +67,11 @@ async function sendHttpRequest(filePath: string, callName: string, signal: Abort
 	if (!isSlingDefinition(callDefinition))
 		throw new Error(`Export '${callName}' in "${filePath}" is not a sling definition`)
 
-	return await callDefinition.execute({ maskOutput: true, signal }).catch(error => error as Error)
+	return await callDefinition.execute({
+		signal,
+		// We always mask
+		maskOutput: true,
+		// Don't read from cache if the button is pushed
+		readFromCache: false,
+	}).catch(error => error as Error)
 }
