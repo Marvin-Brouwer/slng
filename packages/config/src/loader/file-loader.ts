@@ -16,19 +16,25 @@ export type AstData = {
 	readonly sourcePath: string
 	readonly exportLocation: SourceLocation
 	readonly literalLocation: SourceLocation
+	readonly declarationLocation: SourceLocation
 	readonly astNode: Node
 }
 
 export async function loadDefinitionFile(filePath: string) {
-	const definitions = await loadModuleFile<Record<string, SlingDefinition>>(filePath)
-	// TODO parse the HTTP syntax inside of the template too
-	const fileAst = parseDefinitionFile(filePath, Object.keys(definitions))
+	try {
+		const definitions = await loadModuleFile<Record<string, SlingDefinition>>(filePath)
+		// TODO parse the HTTP syntax inside of the template too
+		const fileAst = parseDefinitionFile(filePath, Object.keys(definitions))
 
-	for (const definitionName in definitions) {
-		(definitions[definitionName].getInternals() as { tsAst: AstData }).tsAst = Object.freeze(fileAst[definitionName])
+		for (const definitionName in definitions) {
+			(definitions[definitionName].getInternals() as { tsAst: AstData }).tsAst = Object.freeze(fileAst[definitionName])
+		}
+
+		return definitions
 	}
-
-	return definitions
+	catch (error) {
+		return error as Error
+	}
 }
 
 function parseDefinitionFile(filePath: string, exportNames: string[]) {
@@ -70,6 +76,11 @@ function parseDefinitionFile(filePath: string, exportNames: string[]) {
 							exportLocation: decl.id.loc!,
 							// The location of the actual template content (inside the backticks)
 							literalLocation: init.quasi.loc!,
+							// The location of the entire block
+							declarationLocation: {
+								...decl.id.loc!,
+								end: init.quasi.loc!.end,
+							},
 							// Keep this as reference (TODO, verify if we need this)
 							astNode: declaration,
 						}

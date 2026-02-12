@@ -37,19 +37,29 @@ export async function sendRequest(
 					npm error   npm login
 					npm error A complete log of this run can be found in:
 				*/
-				channel.appendLine('ERROR')
-				channel.appendLine(result.toString())
+
+				channel.error(result.message, result)
 				vscode.window.showErrorMessage(
-					`Sling: ${exportName} failed — ${result.message}`,
+					`Sling: ${exportName} failed >> ${result.message}`,
 				)
+
 				return false
 			}
 			if (!result) {
 				vscode.window.showErrorMessage(
-					`Sling: ${exportName} failed to return a result`,
-				)
-				channel.appendLine(`${fileUri.toString()} -> ${exportName} had no result`)
+					`Sling: ${exportName} failed to return a result`)
+				channel.error(`${fileUri.toString()} -> ${exportName} had no result`)
 				return false
+			}
+			// Negative status is fetch error
+			if (result.status <= 0) {
+				vscode.window.showWarningMessage(result.body)
+				channel.error(result.statusText, result)
+			}
+			// Negative status is fetch error
+			if (Math.round(result.status / 100) === 5) {
+				vscode.window.showWarningMessage(`${result.status} ${result.statusText}`)
+				channel.error(result.statusText, result)
 			}
 
 			return result
@@ -61,6 +71,7 @@ async function sendHttpRequest(filePath: string, callName: string, signal: Abort
 	// TODO fix ignores
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
 	const definition = await loadDefinitionFile(filePath)
+	if (definition instanceof Error) throw definition
 	// TODO fix ignores
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
 	const callDefinition = definition[callName]

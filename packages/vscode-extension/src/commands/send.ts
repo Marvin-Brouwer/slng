@@ -3,6 +3,8 @@ import * as vscode from 'vscode'
 import { sendRequest } from '../send'
 import { ResponseViewProvider } from '../views/response'
 
+import { updateFile } from './update-file'
+
 export const sendCommand = 'slng.send'
 export function registerSendCommand(subscription: vscode.Disposable[], state: vscode.Memento, channel: vscode.LogOutputChannel, responseViewProvider: ResponseViewProvider) {
 	subscription.push(
@@ -26,6 +28,8 @@ export function registerSendCommand(subscription: vscode.Disposable[], state: vs
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 				responseViewProvider.update(reference)
 				responseViewProvider.show()
+
+				await updateFile()
 			},
 		),
 	)

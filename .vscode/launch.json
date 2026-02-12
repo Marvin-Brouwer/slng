@@ -17,6 +17,7 @@
 				"--skip-release-notes",
 				"--skip-welcome",
 				"${workspaceFolder}/examples",
+				"--disable-extensions", // This ignores all other extensions
 				"--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
 			],
 			"skipFiles": [

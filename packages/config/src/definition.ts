@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { inspect } from 'node:util'
 
 import { isMask } from './masking/mask.js'
 import {
@@ -225,6 +224,14 @@ function createDataAccessor(
 	} as DataAccessor
 }
 
+type FetchError = Error & {
+	code: string
+	errno: number
+	syscall: string
+} & {
+	code: 'ENOTFOUND'
+	hostname: string
+}
 /**
  * Execute the HTTP request defined by a sling template.
  */
@@ -237,11 +244,37 @@ async function executeRequest(
 	const startTime = performance.now()
 
 	const internals = definition.getInternals()
+	const request = {
+		reference: definition.id(),
+		parsed: {
+			...internals.parsed,
+			headers: internals.parsed.headers,
+			body: internals.parsed.body,
+		},
+		template: internals.template,
+	}
 
 	// Resolve all interpolations (including async accessors for chaining)
 	const resolved = await parseTemplateResolved(strings, values)
-
 	const fetchResponse = await performFetch(resolved, options)
+
+	if (fetchResponse instanceof Error) {
+		const fetchError = fetchResponse as FetchError
+		let fetchErrorMessage = fetchError.message
+		if (fetchError.code === 'ENOTFOUND') fetchErrorMessage = `Hostname '${fetchError.hostname}' could not be found!`
+		return {
+			status: fetchError.errno,
+			statusText: fetchError.code,
+			duration: 0,
+			request,
+
+			headers: {},
+			body: fetchErrorMessage,
+
+			// We make this gettable to hide it for the console completely
+			raw: undefined! as Response,
+		}
+	}
 
 	const duration = performance.now() - startTime
 	const responseBody = await fetchResponse.text()
@@ -249,27 +282,53 @@ async function executeRequest(
 	// Convert headers
 	const responseHeaders = Object.fromEntries(fetchResponse.headers as unknown as Iterable<[string, string]>)
 
+	Object.defineProperty(request, 'body', {
+		get() {
+			return responseBody
+		},
+		enumerable: false,
+		configurable: false,
+	})
+
+	Object.defineProperty(request, 'headers', {
+		get() {
+			return responseHeaders
+		},
+		enumerable: false,
+		configurable: false,
+	})
+
+	// TODO, we don't want the console to expand the headers or body, however,
+	// using toJSON will also fail in the vscode extensionState object, since it's apparently serialized.
+	// Maybe create a custom formatter for the loggers and tag the values somehow?
 	const slingResponse: SlingResponse = {
 		status: fetchResponse.status,
 		statusText: fetchResponse.statusText,
 		duration,
+		request,
 
-		request: {
-			reference: definition.id(),
-			parsed: {
-				...internals.parsed,
-				headers: debuggerDecorate(`headers`, internals.parsed.headers),
-				body: debuggerDecorateBody(fetchResponse, internals.parsed.body),
-			},
-			template: internals.template,
-		},
-
-		headers: debuggerDecorate(`headers`, responseHeaders),
-		body: debuggerDecorateBody(fetchResponse, responseBody),
+		headers: undefined!,
+		body: undefined!,
 
 		// We make this gettable to hide it for the console completely
 		raw: undefined! as Response,
 	}
+
+	Object.defineProperty(slingResponse, 'body', {
+		get() {
+			return responseBody
+		},
+		enumerable: false,
+		configurable: false,
+	})
+
+	Object.defineProperty(slingResponse, 'headers', {
+		get() {
+			return responseHeaders
+		},
+		enumerable: true,
+		configurable: false,
+	})
 
 	// Make raw a getter to prevent console expanding
 	Object.defineProperty(slingResponse, 'raw', {
@@ -290,7 +349,8 @@ async function executeRequest(
 async function performFetch(
 	parsed: ParsedHttpRequest,
 	options?: ExecuteOptions,
-): Promise<Response> {
+): Promise<Response | Error> {
+	debugger
 	const init: RequestInit = {
 		method: parsed.method,
 		headers: parsed.headers,
@@ -302,7 +362,15 @@ async function performFetch(
 		init.body = parsed.body
 	}
 
-	return fetch(parsed.url, init)
+	try {
+		return await fetch(parsed.url, init)
+	}
+	catch (error) {
+		if (error instanceof TypeError && error.cause && Object.hasOwn(error.cause, 'code')) {
+			return error.cause as FetchError
+		}
+		throw error
+	}
 }
 
 function logRequest(
@@ -346,20 +414,20 @@ export function isSlingDefinition(value: unknown): value is SlingDefinition {
 	}
 }
 
-// We return the real value, but we "decorate" it with a custom inspection method.
-// This is to prevent console bloat
-function debuggerDecorate<T extends object | string | undefined>(tag: string, value: T) {
-	return Object.assign(value as object, {
-		toJSON() {
-			return `[${tag}]`
-		},
-		[inspect.custom]() {
-			return `[${tag}]`
-		},
-	}) as T
-}
+// // We return the real value, but we "decorate" it with a custom inspection method.
+// // This is to prevent console bloat
+// function debuggerDecorate<T extends object | string>(tag: string, value: T | undefined) {
+// 	let returnValue: T | symbol = value as T
+// 	if (returnValue === undefined) returnValue = Symbol.for('undefined')
+// 	if (returnValue === null) returnValue = Symbol.for('null')
+// 	return Object.assign(returnValue, {
+// 		toJSON() {
+// 			return `[${tag}]`
+// 		},
+// 	}) as T
+// }
 
-function debuggerDecorateBody<T extends object | string | undefined>(fetchResponse: Response, body: T) {
-	if (!fetchResponse.bodyUsed) return debuggerDecorate(`no-content`, body)
-	return debuggerDecorate(fetchResponse.headers.get('content-type') ?? 'text/plain', body)
-}
+// function debuggerDecorateBody<T extends object | string>(fetchResponse: Response, body: T | undefined) {
+// 	if (!fetchResponse.bodyUsed) return debuggerDecorate(`no-content`, body)
+// 	return debuggerDecorate(fetchResponse.headers.get('content-type') ?? 'text/plain', body)
+// }
