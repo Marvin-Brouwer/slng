@@ -50,13 +50,12 @@ function updateFileCommand(channel: vscode.LogOutputChannel, state: vscode.Memen
 				// Todo, issuccess from the Response object?
 				const statusColor = response.status >= 0 && Math.round(response.status / 100) === 2
 					? 'editorCodeLens.foreground'
-					// TODO sometimes this doesn't show up red
 					: 'editorError.foreground'
 
 				const responseTagOptions: vscode.DecorationInstanceRenderOptions = {
 					after: {
 						contentText: responseTagText,
-						color: statusColor,
+						color: new vscode.ThemeColor(statusColor),
 					},
 				}
 

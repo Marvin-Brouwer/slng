@@ -350,7 +350,6 @@ async function performFetch(
 	parsed: ParsedHttpRequest,
 	options?: ExecuteOptions,
 ): Promise<Response | Error> {
-	debugger
 	const init: RequestInit = {
 		method: parsed.method,
 		headers: parsed.headers,
