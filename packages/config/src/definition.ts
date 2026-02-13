@@ -252,7 +252,10 @@ async function executeRequest(
 			headers: internals.parsed.headers,
 			body: internals.parsed.body,
 		},
-		template: internals.template,
+		template: {
+			...internals.template,
+			maskedValues: internals.maskedValues,
+		},
 	}
 
 	// Resolve all interpolations (including async accessors for chaining)

@@ -9,6 +9,8 @@ export { useConfig } from './plugins/static-config.js'
 
 // Runtime utilities (for CLI / extensions)
 export { loadDefinitionFile, type AstData } from './loader/file-loader.js'
+export * from './serializable.js'
+export * from './masking/mask.js'
 export { isSlingDefinition } from './definition.js'
 export {
 	parseHttpText,

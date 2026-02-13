@@ -1,6 +1,8 @@
 import { isSlingDefinition, loadDefinitionFile, SlingResponse } from '@slng/config'
 import * as vscode from 'vscode'
 
+import { ExtensionContext } from '../context'
+
 import { createHoverUrl } from './show-details.hover'
 
 const updateFileCid = 'sling.update-file'
@@ -15,19 +17,19 @@ const hoverHelperTag = vscode.window.createTextEditorDecorationType({
 	rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
 })
 
-function updateFileCommand(channel: vscode.LogOutputChannel, state: vscode.Memento): vscode.Disposable {
+function updateFileCommand(context: ExtensionContext): vscode.Disposable {
 	return vscode.commands.registerCommand(updateFileCid, async () => {
 		const activeEditor = vscode.window.activeTextEditor
 		if (!activeEditor) {
-			channel.error('updateFile was called without an active Editor')
+			context.log.error('updateFile was called without an active Editor')
 			return // Should never happen
 		}
-		channel.debug('updateFile')
+		context.log.debug('updateFile')
 
 		const definitions = await loadDefinitionFile(activeEditor.document.uri.fsPath)
 
 		if (definitions instanceof Error) {
-			channel.error('Error while parsing definition', definitions)
+			context.log.error('Error while parsing definition', definitions)
 			return
 		}
 		if (!definitions) return
@@ -39,7 +41,7 @@ function updateFileCommand(channel: vscode.LogOutputChannel, state: vscode.Memen
 					responseTag: undefined,
 				}
 
-				const response = state.get<SlingResponse>(definition.id())
+				const response = context.state.get<SlingResponse>(definition.id())
 				if (!response) return {
 					responseTag: undefined,
 				}
@@ -99,8 +101,8 @@ function updateFileCommand(channel: vscode.LogOutputChannel, state: vscode.Memen
 		activeEditor.setDecorations(hoverHelperTag, decorations.map(d => d.hoverHelper).filter(x => x != undefined))
 	})
 }
-export function registerUpdateFileCommand(subscription: vscode.Disposable[], state: vscode.Memento, channel: vscode.LogOutputChannel) {
-	subscription.push(updateFileCommand(channel, state), responseTag, hoverHelperTag)
+export function registerUpdateFileCommand(context: ExtensionContext) {
+	context.addSubscriptions(updateFileCommand(context), responseTag, hoverHelperTag)
 }
 
 export async function updateFile() {

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 
 import { sendCommand } from '../commands/send'
+import { ExtensionContext } from '../context'
 
 /**
  * Regex to find exported sling template definitions.
@@ -67,10 +68,10 @@ export class SlingCodeLensProvider implements vscode.CodeLensProvider {
 	}
 }
 
-export function registerCodeLens(subscription: vscode.Disposable[]) {
+export function registerCodeLens(context: ExtensionContext) {
 	const codeLensProvider = new SlingCodeLensProvider()
 
-	subscription.push(
+	context.addSubscriptions(
 		vscode.languages.registerCodeLensProvider(
 			{ language: 'typescript', pattern: '**/*.mts' },
 			codeLensProvider,

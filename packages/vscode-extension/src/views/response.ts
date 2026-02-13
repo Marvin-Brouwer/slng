@@ -1,6 +1,8 @@
 import { SlingResponse } from '@slng/config'
 import * as vscode from 'vscode'
 
+import { ExtensionContext } from '../context'
+
 // TODO figure out a way to add time and bytes https://github.com/rhaldkhein/vscode-xrest-client/tree/master
 export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	public static readonly viewType = 'sling.responseDetails'
@@ -17,8 +19,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	private readonly stylePath: vscode.Uri
 
 	constructor(
-		private readonly channel: vscode.LogOutputChannel,
-		private readonly state: vscode.Memento,
+		private readonly context: ExtensionContext,
 		extensionUri: vscode.Uri,
 	) {
 		this.config = vscode.workspace.getConfiguration('slng')
@@ -29,7 +30,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	resolveWebviewView(view: vscode.WebviewView) {
-		this.channel.debug('resolveWebviewView')
+		this.context.log.debug('resolveWebviewView')
 		this.view = view
 
 		this.scriptUri = view.webview.asWebviewUri(this.scriptPath)!
@@ -50,24 +51,24 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	public hide() {
-		this.channel.warn('TODO', 'Figure out if closing is possible')
+		this.context.log.warn('TODO', 'Figure out if closing is possible')
 	}
 
 	public show() {
 		const maskSecrets = this.config.get<boolean>('maskSecrets', true)
-		this.channel.info('shouldmask', maskSecrets)
+		this.context.log.info('shouldmask', maskSecrets)
 		this.view.show(false)
 	}
 
 	// TODO do we want to show more information when no response? Maybe a send button?
 	public update(reference: string | undefined) {
-		this.channel.info('update', reference)
-		if (!this.view) return this.channel.warn('ResponseView not resolved!')
+		this.context.log.info('update', reference)
+		if (!this.view) return this.context.log.warn('ResponseView not resolved!')
 
 		if (!reference) return this.noSelectionView()
-		if (!this.state.keys().includes(reference)) return this.noSelectionView()
+		if (!this.context.state.includesKey(reference)) return this.noSelectionView()
 
-		const referencedResponse = this.state.get(reference) as SlingResponse
+		const referencedResponse = this.context.state.get<SlingResponse>(reference)
 		this.view.webview.html = this.responseView(referencedResponse)
 	}
 
@@ -161,6 +162,31 @@ function buildResponseDisplay(response: SlingResponse) {
 	].join('')
 }
 
+// /** https://en.wikipedia.org/wiki/HTTP#Example */
+// function buildRequestDisplay(request: RequestReference) {
+// 	const startLine = `${request.parsed.method} ${request.parsed.url} ${request.parsed.httpVersion}`
+// 	// TODO this may later contain masked values too
+// 	const headers = Object.entries(request.template.values)
+// 		.map(([key, value]) => {
+// 			return `<tr>
+// 				<td class="header-key">${key}:&nbsp;</td>
+// 				<td class="header-value">${value}</td>
+// 			</tr>`
+// 		})
+// 		.join('\n').replaceAll('\t', '')
+
+// 	// TODO this may later contain masked values too
+// 	// TODO color format when JSON or XML/HTML
+// 	const body = response.body
+
+// 	return [
+// 		`<pre class="start-line">${startLine}</pre>`,
+// 		`<div class="headers"><table>${headers}</table></div>`,
+// 		`<br />`,
+// 		`<pre class="body">${body}</pre>`,
+// 	].join('')
+// }
+
 function getNonce() {
 	let text = ''
 	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -171,12 +197,11 @@ function getNonce() {
 }
 
 export function registerResponseView(
-	subscription: vscode.Disposable[], state: vscode.Memento,
+	context: ExtensionContext,
 	extensionUri: vscode.Uri,
-	channel: vscode.LogOutputChannel,
 ) {
-	const responseViewProvider = new ResponseViewProvider(channel, state, extensionUri)
-	subscription.push(
+	const responseViewProvider = new ResponseViewProvider(context, extensionUri)
+	context.addSubscriptions(
 		vscode.window.registerWebviewViewProvider(
 			ResponseViewProvider.viewType,
 			responseViewProvider,
