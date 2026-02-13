@@ -247,15 +247,7 @@ async function executeRequest(
 	const request = {
 		reference: definition.id(),
 		name: internals.tsAst.exportName,
-		parsed: {
-			...internals.parsed,
-			headers: internals.parsed.headers,
-			body: internals.parsed.body,
-		},
-		template: {
-			...internals.template,
-			maskedValues: internals.maskedValues,
-		},
+		template: internals.template,
 	}
 
 	// Resolve all interpolations (including async accessors for chaining)

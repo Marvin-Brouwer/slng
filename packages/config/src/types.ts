@@ -232,8 +232,7 @@ export type RequestReference = {
 	readonly reference: string
 	/** The export name of the request definition that initiated the request */
 	readonly name: string
-	readonly parsed: ParsedHttpRequest
-	readonly template: SlingInternals['template'] & { maskedValues: SlingInternals['maskedValues'] }
+	readonly template: SlingInternals['template']
 }
 
 /**
