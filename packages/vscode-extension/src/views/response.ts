@@ -1,6 +1,7 @@
 import { SlingResponse } from '@slng/config'
 import * as vscode from 'vscode'
 
+// TODO figure out a way to add time and bytes https://github.com/rhaldkhein/vscode-xrest-client/tree/master
 export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	public static readonly viewType = 'sling.responseDetails'
 

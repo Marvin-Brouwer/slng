@@ -6,12 +6,20 @@ import '../webview'
 
 // TODO client scripts will go here
 /*
+
+//https://github.com/microsoft/vscode-webview-ui-toolkit
  In case we need communication between the client and extension:
  https://github.com/microsoft/vscode-extension-samples/blob/main/webview-sample/src/extension.ts#L209
  https://github.com/microsoft/vscode-extension-samples/blob/main/webview-sample/media/main.js
  However, most likely we will only use this to reveal secrets by button
  If we do, we must enable inline scripts to get access to the vscode API
  https://stackoverflow.com/a/74971047 import "vscode-webview"
+
+ https://stackoverflow.com/questions/54632431/vscode-api-read-clipboard-text-content
+ https://vshaxe.github.io/vscode-extern/vscode/Clipboard.html
+
+ see for icon buton https://github.com/microsoft/vscode-webview-ui-toolkit/blob/main/src/button/README.md#start-icon
+ for dropdown https://github.com/microsoft/vscode-webview-ui-toolkit/blob/main/src/dropdown/README.md
  */
 
 /**
@@ -45,6 +53,13 @@ class CopyButton extends HTMLElement {
 			type: 'button',
 			appearance: 'secondary'
 		})
+
+		button.appendChild(createElement<Button>('span', {
+			slot: 'start',
+			// TODO this doesn't work, fix or find alternative
+			// https://stackoverflow.com/questions/77204002/react-vscode-webview-ui-toolkit-button-not-showing-icon
+			className: 'codicon codicon-copy'
+		}))
 
 		// Default click handler (can be overridden by adding your own listener)
 		button.addEventListener('click', () => {
