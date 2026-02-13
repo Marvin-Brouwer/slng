@@ -21,7 +21,7 @@ function createState(workspaceState: vscode.Memento): State {
 		get<T>(key: string): T | undefined {
 			const raw = workspaceState.get<string>(key)
 			if (raw === undefined) return undefined
-			return JSON.parse(raw, maskTransformer.reviver) as T
+			return JSON.parse(raw, (k, v: unknown) => maskTransformer.reviver(k, v)) as T
 		},
 		async put<T>(key: string, value: T) {
 			await workspaceState.update(key, JSON.stringify(value, undefined, 2))
@@ -44,8 +44,8 @@ export default function createContext(context: vscode.ExtensionContext): Extensi
 function sanitize(arguments_: unknown[]): string {
 	return arguments_
 		.map(argument => typeof argument === 'object'
-			? JSON.stringify(argument, maskTransformer.displayReplacer, 2)
-			: String(argument))
+			? JSON.stringify(argument, (k: string, v: unknown) => maskTransformer.displayReplacer(k, v), 2)
+			: String(argument as string | number | boolean))
 		.join(' ')
 }
 
@@ -61,7 +61,7 @@ export function createLog(channel: vscode.LogOutputChannel): vscode.LogOutputCha
 					return (...arguments_: unknown[]) => target[property](sanitize(arguments_))
 				}
 				default: {
-					return Reflect.get(target, property, receiver)
+					return Reflect.get(target, property, receiver) as unknown
 				}
 			}
 		},

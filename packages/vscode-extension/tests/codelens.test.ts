@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('vscode', () => import('./mocks/vscode.js'))
 
-import { SlingCodeLensProvider } from '../src/providers/codelens.js'
+import { SlingCodeLensProvider } from '../src/visual/codelens.js'
 
 import { CancellationToken, createMockDocument } from './mocks/vscode.js'
 
