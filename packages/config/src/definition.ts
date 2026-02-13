@@ -246,6 +246,7 @@ async function executeRequest(
 	const internals = definition.getInternals()
 	const request = {
 		reference: definition.id(),
+		name: internals.tsAst.exportName,
 		parsed: {
 			...internals.parsed,
 			headers: internals.parsed.headers,
@@ -272,7 +273,7 @@ async function executeRequest(
 			body: fetchErrorMessage,
 
 			// We make this gettable to hide it for the console completely
-			raw: undefined! as Response,
+			raw: fetchResponse as unknown as Response,
 		}
 	}
 
@@ -281,22 +282,6 @@ async function executeRequest(
 
 	// Convert headers
 	const responseHeaders = Object.fromEntries(fetchResponse.headers as unknown as Iterable<[string, string]>)
-
-	Object.defineProperty(request, 'body', {
-		get() {
-			return responseBody
-		},
-		enumerable: false,
-		configurable: false,
-	})
-
-	Object.defineProperty(request, 'headers', {
-		get() {
-			return responseHeaders
-		},
-		enumerable: false,
-		configurable: false,
-	})
 
 	// TODO, we don't want the console to expand the headers or body, however,
 	// using toJSON will also fail in the vscode extensionState object, since it's apparently serialized.
@@ -307,37 +292,12 @@ async function executeRequest(
 		duration,
 		request,
 
-		headers: undefined!,
-		body: undefined!,
+		headers: responseHeaders,
+		body: responseBody,
 
 		// We make this gettable to hide it for the console completely
-		raw: undefined! as Response,
+		raw: fetchResponse,
 	}
-
-	Object.defineProperty(slingResponse, 'body', {
-		get() {
-			return responseBody
-		},
-		enumerable: false,
-		configurable: false,
-	})
-
-	Object.defineProperty(slingResponse, 'headers', {
-		get() {
-			return responseHeaders
-		},
-		enumerable: true,
-		configurable: false,
-	})
-
-	// Make raw a getter to prevent console expanding
-	Object.defineProperty(slingResponse, 'raw', {
-		get() {
-			return fetchResponse
-		},
-		enumerable: false,
-		configurable: false,
-	})
 
 	if (options?.verbose) {
 		logRequest(strings, values, resolved, slingResponse, options.maskOutput)

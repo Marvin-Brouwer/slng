@@ -37,4 +37,5 @@ export type {
 	CacheOptions,
 	JsonOptions,
 	ParsedHttpRequest,
+	RequestReference,
 } from './types.js'

@@ -1,0 +1,83 @@
+.response-data {
+	/* Pre-like typography */
+	font-family: var(--vscode-editor-font-family, monospace);
+	font-size: var(--vscode-editor-font-size, 12px);
+	line-height: var(--vscode-editor-line-height, 1.5);
+
+	/* Preserve whitespace */
+	white-space: pre;
+	word-break: keep-all;
+	tab-size: 2;
+
+	/* Visuals */
+	background-color: var(--vscode-editor-background);
+	color: var(--vscode-editor-foreground);
+
+	/* Box model */
+	display: grid;
+	width: 100%;
+	position: relative;
+	padding: 8px 12px;
+	border-radius: 4px;
+	overflow-x: visible;
+	box-sizing: border-box;
+}
+
+
+.headers {
+	display: grid;
+	width: 100%;
+	position: relative;
+	margin-top: 1em;
+	font-family: var(--vscode-editor-font-family, monospace);
+	font-size: var(--vscode-editor-font-size, 12px);
+
+	overflow: auto;
+	overflow-x: auto;
+	overflow-y: hidden;
+
+	white-space: nowrap;
+	word-break: keep-all;
+}
+
+.headers table {
+	display: table;
+	table-layout: fixed;
+	border-collapse: collapse;
+	width: max-content;
+	min-width: 100%;
+	padding: 0;
+	margin: 0;
+}
+
+.headers table tr {
+	white-space: pre;
+	word-break: keep-all;
+	padding-top: .2em;
+}
+
+.headers table td {
+	white-space: pre;
+	word-break: keep-all;
+	padding: 0;
+	border-bottom: 1px dashed color-mix(in srgb, currentColor 20%, transparent);
+}
+.headers table tr:last-child td {
+	border-bottom: none;
+}
+
+.headers table td.header-key {
+	font-weight: bold;
+	padding-right: 1em;
+}
+
+pre.start-line {
+	margin-top: .5em;
+	font-size: 1.2em;
+	font-weight: bolder;
+	padding: 0;
+	margin-bottom: 0;
+}
+pre.body {
+	margin-top: 0;
+}

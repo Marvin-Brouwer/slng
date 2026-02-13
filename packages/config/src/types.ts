@@ -221,15 +221,19 @@ export interface SlingResponse {
 	/** Total duration in milliseconds. */
 	readonly duration: number
 
-	readonly request: {
-		/**
+	readonly request: RequestReference
+}
+
+export type RequestReference = {
+	/**
 		 * The id of the request definition that initiated the request
 		 * This is a unique value made up of the shape of the request in code, meaning the id changes if a user modifies the call.
 		 * */
-		readonly reference: string
-		readonly parsed: ParsedHttpRequest
-		readonly template: SlingInternals['template']
-	}
+	readonly reference: string
+	/** The export name of the request definition that initiated the request */
+	readonly name: string
+	readonly parsed: ParsedHttpRequest
+	readonly template: SlingInternals['template']
 }
 
 /**

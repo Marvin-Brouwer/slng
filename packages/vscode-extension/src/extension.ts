@@ -14,7 +14,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	const channel = vscode.window.createOutputChannel('Sling', { log: true })
 	channel.info('Initializing', context.extension.id)
 
-	const responseViewProvider = registerResponseView(context.subscriptions, context.workspaceState, channel)
+	const responseViewProvider = registerResponseView(
+		context.subscriptions, context.workspaceState,
+		context.extensionUri,
+		channel)
 
 	if (context.extensionMode === vscode.ExtensionMode.Development) {
 		// Show the logs on screen

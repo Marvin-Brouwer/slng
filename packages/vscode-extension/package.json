@@ -16,6 +16,14 @@
 		"workspaceContains:**/slng.config.mts"
 	],
 	"main": "./dist/extension.js",
+	"exports": {
+		".": {
+			"require": "./dist/extension.js"
+		},
+		"./response.webview.global": {
+			"import": "./dist/response.webview.global.js"
+		}
+	},
 	"contributes": {
 		"commands": [
 			{
@@ -69,7 +77,8 @@
 		"package": "vsce package --no-dependencies"
 	},
 	"dependencies": {
-		"@slng/config": "workspace:*"
+		"@slng/config": "workspace:*",
+		"@vscode/webview-ui-toolkit": "^1.4.0"
 	},
 	"devDependencies": {
 		"@types/node": "^25.2.1",
