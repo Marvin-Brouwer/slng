@@ -22,7 +22,7 @@ describe('SlingCodeLensProvider', () => {
 
 		// Two lenses per export: Send + Debug
 		expect(lenses).toHaveLength(2)
-		expect(lenses[0].command!.title).toBe('▶ Send')
+		expect(lenses[0].command!.title).toBe('Send')
 		expect(lenses[0].command!.command).toBe('slng.send')
 		expect(lenses[0].command!.arguments![1]).toBe('getUsers')
 		expect(lenses[1].command!.title).toBe('🐛 Debug')
