@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 
 import { isSlingDefinition } from '../src/definition.js'
 import { secret, sensitive } from '../src/index.js'
+import { isMask } from '../src/masking/mask.js'
 import { sling as slingFactory } from '../src/sling.js'
-
-import type { DataAccessor, SlingInterpolation } from '../src/types.js'
+import { dataAccessorSymbol, type DataAccessor, type SlingInterpolation } from '../src/types.js'
 
 describe('sling', () => {
 	it('creates a tagged template function', () => {
@@ -44,9 +44,9 @@ describe('sling', () => {
     `
 
 		expect(definition.getInternals().maskedValues).toHaveLength(1)
-		expect(definition.getInternals().maskedValues[0].type).toBe('secret')
+		expect(isMask(definition.getInternals().maskedValues[0])).toBe(true)
 		// Preview shows masked value
-		expect(definition.getInternals().parsed.headers['Authorization']).toBe('Bearer *****')
+		expect(definition.getInternals().parsed.headers['Authorization']).toBe('Bearer ●●●●●')
 	})
 
 	it('handles sensitive interpolations', () => {
@@ -61,16 +61,17 @@ describe('sling', () => {
     `
 
 		expect(definition.getInternals().maskedValues).toHaveLength(1)
-		expect(definition.getInternals().maskedValues[0].type).toBe('sensitive')
+		expect(isMask(definition.getInternals().maskedValues[0])).toBe(true)
 	})
 
-	it('handles ResponseDataAccessor interpolations as <deferred> in preview', () => {
+	it('handles DataAccessor interpolations as <deferred> in preview', () => {
 		const s = slingFactory()
-		const getToken: SlingInterpolation = Promise.resolve({
+		const getToken: SlingInterpolation = {
+			[dataAccessorSymbol]: true,
 			value: () => Promise.resolve('dynamic-token'),
 			validate: () => Promise.resolve(true),
 			tryValue: () => Promise.resolve('dynamic-token'),
-		} satisfies DataAccessor)
+		} as DataAccessor
 		const definition = s`
       GET https://api.example.com/users HTTP/1.1
 
