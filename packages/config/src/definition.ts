@@ -244,14 +244,16 @@ async function executeRequest(
 	const startTime = performance.now()
 
 	const internals = definition.getInternals()
+
+	// Resolve all interpolations (including async accessors for chaining)
+	const resolved = await parseTemplateResolved(strings, values)
+
 	const request = {
 		reference: definition.id(),
 		name: internals.tsAst.exportName,
 		template: internals.template,
+		parsed: resolved,
 	}
-
-	// Resolve all interpolations (including async accessors for chaining)
-	const resolved = await parseTemplateResolved(strings, values)
 	const fetchResponse = await performFetch(resolved, options)
 
 	if (fetchResponse instanceof Error) {

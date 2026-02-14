@@ -88,8 +88,8 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 				img-src ${this.view.webview.cspSource} https:;
 				script-src 'nonce-${this.nonces.js}';
 			">
-			<link nonce="${this.nonces.css}" rel="stylesheet" href="${this.styleUri}" />
-			<script nonce="${this.nonces.js}" src="${this.scriptUri}"></script>
+			<link nonce="${this.nonces.css}" rel="stylesheet" href="${this.styleUri.toString()}" />
+			<script nonce="${this.nonces.js}" src="${this.scriptUri.toString()}"></script>
 		</head>
 		<body id="response-view">${html}</body>
 		</html>`

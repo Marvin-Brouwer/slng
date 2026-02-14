@@ -138,6 +138,25 @@ export interface TextDocument {
 	offsetAt(position: Position): number
 }
 
+// ── Decoration types ─────────────────────────────────────────
+
+export enum DecorationRangeBehavior {
+	OpenOpen = 0,
+	ClosedClosed = 1,
+	OpenClosed = 2,
+	ClosedOpen = 3,
+}
+
+export class ThemeColor {
+	constructor(public readonly id: string) {}
+}
+
+export class MarkdownString {
+	value = ''
+	isTrusted = false
+	supportHtml = false
+}
+
 // ── Webview / panels ─────────────────────────────────────────
 
 export enum ViewColumn {
@@ -181,9 +200,12 @@ export const window = {
 		panel.title = title
 		return panel
 	}),
+	createTextEditorDecorationType: vi.fn(() => ({ dispose: () => {} })),
 	showErrorMessage: vi.fn(),
 	showInformationMessage: vi.fn(),
+	showWarningMessage: vi.fn(),
 	withProgress: vi.fn(),
+	activeTextEditor: undefined,
 }
 
 export const workspace = {

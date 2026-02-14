@@ -25,7 +25,7 @@ export async function sendRequest(
 		},
 		async (_progress, token) => {
 			const abortController = new AbortController()
-			token.onCancellationRequested(abortController.abort.bind(void 0))
+			token.onCancellationRequested(() => abortController.abort())
 			const result = await sendHttpRequest(fileUri.fsPath, exportName, abortController.signal).catch(error => error as Error)
 
 			if (result instanceof Error) {
@@ -69,11 +69,11 @@ export async function sendRequest(
 
 async function sendHttpRequest(filePath: string, callName: string, signal: AbortSignal) {
 	// TODO fix ignores
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+
 	const definition = await loadDefinitionFile(filePath)
 	if (definition instanceof Error) throw definition
 	// TODO fix ignores
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+
 	const callDefinition = definition[callName]
 	if (!isSlingDefinition(callDefinition))
 		throw new Error(`Export '${callName}' in "${filePath}" is not a sling definition`)

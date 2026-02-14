@@ -9,6 +9,16 @@ import {
 	assembleTemplate,
 	SlingParseError,
 } from '../src/parser.js'
+import { dataAccessorSymbol, type DataAccessor } from '../src/types.js'
+
+function createMockDataAccessor(resolvedValue: unknown): DataAccessor {
+	return {
+		[dataAccessorSymbol]: true,
+		value: () => Promise.resolve(resolvedValue),
+		validate: () => Promise.resolve(true),
+		tryValue: () => Promise.resolve(resolvedValue),
+	} as DataAccessor
+}
 
 describe('parseHttpText', () => {
 	it('parses a simple GET request', () => {
@@ -109,28 +119,20 @@ describe('resolveInterpolation', () => {
 		expect(await resolveInterpolation(s)).toBe('marvin@example.com')
 	})
 
-	it('resolves ResponseDataAccessor (Promise<DataAccessor>)', async () => {
-		const accessor = Promise.resolve({
-			value: () => Promise.resolve('computed'),
-			validate: () => Promise.resolve(true),
-			tryValue: () => Promise.resolve('computed'),
-		})
+	it('resolves DataAccessor via .value()', async () => {
+		const accessor = createMockDataAccessor('computed')
 		expect(await resolveInterpolation(accessor)).toBe('computed')
 	})
 
-	it('resolves ResponseDataAccessor with non-string values', async () => {
-		const accessor = Promise.resolve({
-			value: () => Promise.resolve(42),
-			validate: () => Promise.resolve(true),
-			tryValue: () => Promise.resolve(42),
-		})
+	it('resolves DataAccessor with non-string values', async () => {
+		const accessor = createMockDataAccessor(42)
 		expect(await resolveInterpolation(accessor)).toBe('42')
 	})
 })
 
 describe('resolveInterpolationDisplay', () => {
-	it('shows ***** for secrets', () => {
-		expect(resolveInterpolationDisplay(secret('hidden'))).toBe('*****')
+	it('shows ●●●●● for secrets', () => {
+		expect(resolveInterpolationDisplay(secret('hidden'))).toBe('●●●●●')
 	})
 
 	it('shows partial value for sensitive', () => {
@@ -139,12 +141,8 @@ describe('resolveInterpolationDisplay', () => {
 		)
 	})
 
-	it('shows <deferred> for ResponseDataAccessor (Promise)', () => {
-		const accessor = Promise.resolve({
-			value: () => Promise.resolve('test'),
-			validate: () => Promise.resolve(true),
-			tryValue: () => Promise.resolve('test'),
-		})
+	it('shows <deferred> for DataAccessor', () => {
+		const accessor = createMockDataAccessor('test')
 		expect(resolveInterpolationDisplay(accessor)).toBe('<deferred>')
 	})
 
