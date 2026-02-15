@@ -151,8 +151,10 @@ function buildResponseDisplay(response: SlingResponse) {
 		.join('\n').replaceAll('\t', '')
 
 	// TODO this may later contain masked values too
-	// TODO color format when JSON or XML/HTML
-	const body = response.body
+	const contentType = response.headers['content-type'] ?? ''
+	const body = isJsonContentType(contentType)
+		? colorizeJson(response.body)
+		: escapeHtml(response.body)
 
 	return [
 		`<pre class="start-line">${startLine}</pre>`,
@@ -186,6 +188,67 @@ function buildResponseDisplay(response: SlingResponse) {
 // 		`<pre class="body">${body}</pre>`,
 // 	].join('')
 // }
+
+function escapeHtml(text: string): string {
+	return text
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;')
+}
+
+function isJsonContentType(contentType: string): boolean {
+	const mime = contentType.split(';')[0].trim().toLowerCase()
+	return mime === 'application/json' || mime.endsWith('+json')
+}
+
+/**
+ * Recursively converts a parsed JSON value into syntax-highlighted HTML.
+ * Uses CSS classes that map to VS Code's theme-aware token color variables.
+ */
+function jsonValueToHtml(value: unknown, indent: number): string {
+	const nextIndent = indent + 1
+	const pad = '  '.repeat(indent)
+	const padInner = '  '.repeat(nextIndent)
+
+	if (value === null) {
+		return '<span class="json-keyword">null</span>'
+	}
+	if (typeof value === 'boolean') {
+		return `<span class="json-keyword">${value}</span>`
+	}
+	if (typeof value === 'number') {
+		return `<span class="json-number">${value}</span>`
+	}
+	if (typeof value === 'string') {
+		return `<span class="json-string">${escapeHtml(JSON.stringify(value))}</span>`
+	}
+	if (Array.isArray(value)) {
+		if (value.length === 0) return '<span class="json-punctuation">[]</span>'
+		const items = value.map(item =>
+			`${padInner}${jsonValueToHtml(item, nextIndent)}`,
+		).join('<span class="json-punctuation">,</span>\n')
+		return `<span class="json-punctuation">[</span>\n${items}\n${pad}<span class="json-punctuation">]</span>`
+	}
+	if (typeof value === 'object') {
+		const entries = Object.entries(value as Record<string, unknown>)
+		if (entries.length === 0) return '<span class="json-punctuation">{}</span>'
+		const items = entries.map(([key, property]) =>
+			`${padInner}<span class="json-key">${escapeHtml(JSON.stringify(key))}</span><span class="json-punctuation">:</span> ${jsonValueToHtml(property, nextIndent)}`,
+		).join('<span class="json-punctuation">,</span>\n')
+		return `<span class="json-punctuation">{</span>\n${items}\n${pad}<span class="json-punctuation">}</span>`
+	}
+	return escapeHtml(JSON.stringify(value))
+}
+
+function colorizeJson(body: string): string {
+	try {
+		const parsed: unknown = JSON.parse(body)
+		return jsonValueToHtml(parsed, 0)
+	}
+	catch {
+		return escapeHtml(body)
+	}
+}
 
 function getNonce() {
 	let text = ''

@@ -83,3 +83,21 @@ pre.start-line {
 pre.body {
 	margin-top: 0;
 }
+
+/* JSON syntax highlighting — uses VS Code's theme-aware token color variables */
+.json-key {
+	color: var(--vscode-debugTokenExpression-name);
+}
+.json-string {
+	color: var(--vscode-debugTokenExpression-string);
+}
+.json-number {
+	color: var(--vscode-debugTokenExpression-number);
+}
+.json-keyword {
+	color: var(--vscode-debugTokenExpression-boolean);
+}
+.json-punctuation {
+	color: var(--vscode-editor-foreground);
+	opacity: 0.6;
+}
