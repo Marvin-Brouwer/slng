@@ -1,3 +1,6 @@
+import * as fs from 'node:fs'
+import path from 'node:path'
+
 import { SlingResponse } from '@slng/config'
 import * as vscode from 'vscode'
 
@@ -18,6 +21,9 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	private readonly scriptPath: vscode.Uri
 	private readonly stylePath: vscode.Uri
 
+	private jsonColors: JsonTokenColors = {}
+	private currentReference: string | undefined
+
 	constructor(
 		private readonly context: ExtensionContext,
 		extensionUri: vscode.Uri,
@@ -27,6 +33,17 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 		this.distPath = vscode.Uri.joinPath(extensionUri, 'dist')
 		this.scriptPath = vscode.Uri.joinPath(this.distPath, 'response.webview.global.js')
 		this.stylePath = vscode.Uri.joinPath(this.distPath, 'response.webview.css')
+
+		this.jsonColors = resolveJsonTokenColors()
+
+		context.addSubscriptions(
+			vscode.window.onDidChangeActiveColorTheme(() => {
+				this.jsonColors = resolveJsonTokenColors()
+				if (this.currentReference && this.view) {
+					this.update(this.currentReference)
+				}
+			}),
+		)
 	}
 
 	resolveWebviewView(view: vscode.WebviewView) {
@@ -63,6 +80,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	// TODO do we want to show more information when no response? Maybe a send button?
 	public update(reference: string | undefined) {
 		this.context.log.info('update', reference)
+		this.currentReference = reference
 		if (!this.view) return this.context.log.warn('ResponseView not resolved!')
 
 		if (!reference) return this.noSelectionView()
@@ -70,6 +88,14 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 
 		const referencedResponse = this.context.state.get<SlingResponse>(reference)
 		this.view.webview.html = this.responseView(referencedResponse)
+	}
+
+	private buildJsonColorOverrides(): string {
+		const properties = Object.entries(this.jsonColors)
+			.filter(([, value]) => value !== undefined)
+			.map(([key, value]) => `--json-${key}-color: ${value};`)
+		if (properties.length === 0) return ''
+		return `<style nonce="${this.nonces.css}">:root { ${properties.join(' ')} }</style>`
 	}
 
 	private wrapHtml(html: string) {
@@ -89,6 +115,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 				script-src 'nonce-${this.nonces.js}';
 			">
 			<link nonce="${this.nonces.css}" rel="stylesheet" href="${this.styleUri.toString()}" />
+			${this.buildJsonColorOverrides()}
 			<script nonce="${this.nonces.js}" src="${this.scriptUri.toString()}"></script>
 		</head>
 		<body id="response-view">${html}</body>
@@ -248,6 +275,158 @@ function colorizeJson(body: string): string {
 	catch {
 		return escapeHtml(body)
 	}
+}
+
+// ── Theme-based JSON token color resolution ──────────────────
+
+interface JsonTokenColors {
+	key?: string
+	string?: string
+	number?: string
+	keyword?: string
+	punctuation?: string
+}
+
+interface ThemeTokenRule {
+	scope?: string | string[]
+	settings?: { foreground?: string }
+}
+
+interface ThemeData {
+	include?: string
+	tokenColors?: ThemeTokenRule[]
+}
+
+/** The actual TextMate scopes VS Code's JSON grammar assigns to each token type. */
+const jsonTargetScopes: Record<keyof JsonTokenColors, string> = {
+	key: 'support.type.property-name.json',
+	string: 'string.quoted.double.json',
+	number: 'constant.numeric.json',
+	keyword: 'constant.language.json',
+	punctuation: 'punctuation.definition.dictionary.begin.json',
+}
+
+/** Strip single-line and multi-line comments from JSONC, preserving strings. */
+function stripJsonComments(text: string): string {
+	return text.replaceAll(
+		/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g,
+		(match, group: string | undefined) => (group ? '' : match),
+	)
+}
+
+function readThemeFile(filePath: string): ThemeData | undefined {
+	try {
+		const raw = fs.readFileSync(filePath, 'utf8')
+		const cleaned = stripJsonComments(raw).replaceAll(/,\s*([}\]])/g, '$1')
+		return JSON.parse(cleaned) as ThemeData
+	}
+	catch {
+		return undefined
+	}
+}
+
+/** Recursively collect tokenColors from a theme and its `include` chain. */
+function collectTokenColors(themePath: string, depth = 0): ThemeTokenRule[] {
+	if (depth > 5) return []
+
+	const theme = readThemeFile(themePath)
+	if (!theme) return []
+
+	let baseColors: ThemeTokenRule[] = []
+	if (theme.include) {
+		const includePath = path.resolve(path.dirname(themePath), theme.include)
+		baseColors = collectTokenColors(includePath, depth + 1)
+	}
+
+	return [...baseColors, ...(theme.tokenColors ?? [])]
+}
+
+/** Find the JSON file for the currently active VS Code color theme. */
+function findActiveThemePath(): string | undefined {
+	const themeName = vscode.workspace.getConfiguration('workbench').get<string>('colorTheme')
+	if (!themeName) return undefined
+
+	for (const extension of vscode.extensions.all) {
+		const packageJson = extension.packageJSON as Record<string, unknown> | undefined
+		const contributes = packageJson?.contributes as Record<string, unknown> | undefined
+		const themes = contributes?.themes as
+			| Array<{ id?: string, label?: string, path: string }>
+			| undefined
+		if (!themes) continue
+
+		for (const theme of themes) {
+			if (theme.id === themeName || theme.label === themeName) {
+				return path.join(extension.extensionPath, theme.path)
+			}
+		}
+	}
+
+	return undefined
+}
+
+/**
+ * TextMate scope matching: a rule scope `"string"` matches target `"string.quoted.double.json"`
+ * because `string` is a dot-prefix of the target. The most specific (longest) match wins.
+ */
+function resolveTokenColor(tokenColors: ThemeTokenRule[], targetScope: string): string | undefined {
+	let bestMatch: string | undefined
+	let bestSpecificity = -1
+
+	for (const rule of tokenColors) {
+		if (!rule.settings?.foreground) continue
+		const scopes = Array.isArray(rule.scope)
+			? rule.scope
+			: (rule.scope ? [rule.scope] : [])
+
+		for (const scope of scopes) {
+			if (!scope) continue
+			if (targetScope === scope || targetScope.startsWith(scope + '.')) {
+				const specificity = scope.split('.').length
+				if (specificity > bestSpecificity) {
+					bestSpecificity = specificity
+					bestMatch = rule.settings.foreground
+				}
+			}
+		}
+	}
+
+	return bestMatch
+}
+
+/**
+ * Read the active VS Code theme and resolve the actual JSON syntax colors.
+ * Falls back gracefully — returns an empty object if the theme can't be read.
+ */
+function resolveJsonTokenColors(): JsonTokenColors {
+	const result: JsonTokenColors = {}
+
+	try {
+		const themePath = findActiveThemePath()
+		if (!themePath) return result
+
+		const tokenColors = collectTokenColors(themePath)
+		if (tokenColors.length === 0) return result
+
+		// Layer user-level tokenColor overrides on top
+		const customizations = vscode.workspace
+			.getConfiguration('editor')
+			.get<{ textMateRules?: ThemeTokenRule[] }>('tokenColorCustomizations')
+		if (customizations?.textMateRules) {
+			tokenColors.push(...customizations.textMateRules)
+		}
+
+		for (const [key, targetScope] of Object.entries(jsonTargetScopes)) {
+			const color = resolveTokenColor(tokenColors, targetScope)
+			if (color) {
+				result[key as keyof JsonTokenColors] = color
+			}
+		}
+	}
+	catch {
+		// Fall through — CSS fallback variables will be used
+	}
+
+	return result
 }
 
 function getNonce() {

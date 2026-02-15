@@ -84,20 +84,21 @@ pre.body {
 	margin-top: 0;
 }
 
-/* JSON syntax highlighting — uses VS Code's theme-aware token color variables */
+/* JSON syntax highlighting — colors are resolved from the active theme's tokenColors.
+   Injected --json-*-color overrides take priority; debugTokenExpression vars are fallbacks. */
 .json-key {
-	color: var(--vscode-debugTokenExpression-name);
+	color: var(--json-key-color, var(--vscode-debugTokenExpression-name));
 }
 .json-string {
-	color: var(--vscode-debugTokenExpression-string);
+	color: var(--json-string-color, var(--vscode-debugTokenExpression-string));
 }
 .json-number {
-	color: var(--vscode-debugTokenExpression-number);
+	color: var(--json-number-color, var(--vscode-debugTokenExpression-number));
 }
 .json-keyword {
-	color: var(--vscode-debugTokenExpression-boolean);
+	color: var(--json-keyword-color, var(--vscode-debugTokenExpression-boolean));
 }
 .json-punctuation {
-	color: var(--vscode-editor-foreground);
+	color: var(--json-punctuation-color, var(--vscode-editor-foreground));
 	opacity: 0.6;
 }
