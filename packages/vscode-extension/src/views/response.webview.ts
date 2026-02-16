@@ -103,6 +103,9 @@ class CopyButton extends HTMLElement {
 		document.addEventListener('click', () => {
 			this.closeDropdown()
 		})
+		window.addEventListener('blur', () => {
+			this.closeDropdown()
+		})
 
 		this.root.addEventListener('click', (event) => {
 			if (event.target !== dropdownToggle && !dropdownToggle.contains(event.target as Node)) {
