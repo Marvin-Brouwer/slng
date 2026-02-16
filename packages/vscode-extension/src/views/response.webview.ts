@@ -42,6 +42,8 @@ function createElement<TElement extends HTMLElement>(element: string, props?: Pa
 
 class CopyButton extends HTMLElement {
 
+	private styleLink: HTMLLinkElement
+
 	constructor() {
 		super()
 
@@ -49,11 +51,8 @@ class CopyButton extends HTMLElement {
 		const shadow = this.attachShadow({ mode: 'open' })
 
 		// Scoped styles for the split button layout, loaded via <link> to comply with CSP
-		shadow.appendChild(createElement<HTMLLinkElement>('link', {
-			rel: 'stylesheet',
-			href: this.getAttribute('style-src')!,
-			nonce: this.getAttribute('style-nonce')
-		}))
+		// href/nonce are set in connectedCallback, since attributes aren't available in the constructor
+		this.styleLink = createElement<HTMLLinkElement>('link', { rel: 'stylesheet' })
 
 		// Container for the split button
 		const container = createElement('div', { className: 'split-button' })
@@ -142,8 +141,13 @@ class CopyButton extends HTMLElement {
 		})
 
 		// Assemble shadow DOM
+		shadow.appendChild(this.styleLink)
 		shadow.appendChild(container)
 		shadow.appendChild(dropdownMenu)
+	}
+	connectedCallback() {
+		this.styleLink.href = this.getAttribute('style-src')!
+		this.styleLink.nonce = this.getAttribute('style-nonce')!
 	}
 }
 
