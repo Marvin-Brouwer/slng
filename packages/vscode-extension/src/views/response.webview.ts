@@ -1,6 +1,5 @@
 import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import chevronDownSvg from '@vscode/codicons/src/icons/chevron-down.svg'
-import copyButtonStyles from './public/response.copy-button.css'
 import { Button } from '@vscode/webview-ui-toolkit'
 import '../webview'
 
@@ -49,9 +48,9 @@ class CopyButton extends HTMLElement {
 		// Attach shadow DOM
 		const shadow = this.attachShadow({ mode: 'open' })
 
-		// Scoped styles for the split button layout
-		const style = createElement('style')
-		style.textContent = copyButtonStyles
+		// Scoped styles for the split button layout, loaded via <link> to comply with CSP
+		const styleSrc = this.getAttribute('style-src')
+		const link = createElement<HTMLLinkElement>('link', { rel: 'stylesheet', href: styleSrc! })
 
 		// Container for the split button
 		const container = createElement('div', { className: 'split-button' })
@@ -138,7 +137,7 @@ class CopyButton extends HTMLElement {
 		})
 
 		// Assemble shadow DOM
-		shadow.appendChild(style)
+		shadow.appendChild(link)
 		shadow.appendChild(container)
 		shadow.appendChild(dropdownMenu)
 	}

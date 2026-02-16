@@ -12,6 +12,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	private view!: vscode.WebviewView
 	private scriptUri!: vscode.Uri
 	private styleUri!: vscode.Uri
+	private copyButtonStyleUri!: vscode.Uri
 	private readonly nonces: Record<string, string> = {}
 
 	private config: vscode.WorkspaceConfiguration
@@ -19,6 +20,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	private readonly distPath: vscode.Uri
 	private readonly scriptPath: vscode.Uri
 	private readonly stylePath: vscode.Uri
+	private readonly copyButtonStylePath: vscode.Uri
 
 	private jsonColors: JsonTokenColors = {}
 	private currentReference: string | undefined
@@ -32,6 +34,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 		this.distPath = vscode.Uri.joinPath(extensionUri, 'dist')
 		this.scriptPath = vscode.Uri.joinPath(this.distPath, 'response.webview.global.js')
 		this.stylePath = vscode.Uri.joinPath(this.distPath, 'response.webview.css')
+		this.copyButtonStylePath = vscode.Uri.joinPath(this.distPath, 'response.copy-button.css')
 
 		this.jsonColors = resolveJsonTokenColors()
 
@@ -51,6 +54,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 
 		this.scriptUri = view.webview.asWebviewUri(this.scriptPath)!
 		this.styleUri = view.webview.asWebviewUri(this.stylePath)!
+		this.copyButtonStyleUri = view.webview.asWebviewUri(this.copyButtonStylePath)!
 		this.nonces.js = getNonce()
 		this.nonces.css = getNonce()
 
@@ -163,7 +167,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 				<vscode-panel-tab id="tab-request">REQUEST</vscode-panel-tab>
 				<vscode-panel-view id="view-response">
 					<div>
-						<div class="copy-panel"><copy-button /></div>
+						<div class="copy-panel"><copy-button style-src="${this.copyButtonStyleUri.toString()}" /></div>
 						<div class="response-data">${buildResponseDisplay(response)}</div>
 					</div>
 				</vscode-panel-view>
