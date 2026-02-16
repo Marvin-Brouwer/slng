@@ -3,6 +3,8 @@ import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
 
+import { colorizeJson, escapeHtml, isJsonContentType, JsonTokenColors, resolveJsonTokenColors } from './json-colorize'
+
 // TODO figure out a way to add time and bytes https://github.com/rhaldkhein/vscode-xrest-client/tree/master
 export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	public static readonly viewType = 'sling.responseDetails'
@@ -18,6 +20,9 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	private readonly scriptPath: vscode.Uri
 	private readonly stylePath: vscode.Uri
 
+	private jsonColors: JsonTokenColors = {}
+	private currentReference: string | undefined
+
 	constructor(
 		private readonly context: ExtensionContext,
 		extensionUri: vscode.Uri,
@@ -27,6 +32,17 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 		this.distPath = vscode.Uri.joinPath(extensionUri, 'dist')
 		this.scriptPath = vscode.Uri.joinPath(this.distPath, 'response.webview.global.js')
 		this.stylePath = vscode.Uri.joinPath(this.distPath, 'response.webview.css')
+
+		this.jsonColors = resolveJsonTokenColors()
+
+		context.addSubscriptions(
+			vscode.window.onDidChangeActiveColorTheme(() => {
+				this.jsonColors = resolveJsonTokenColors()
+				if (this.currentReference && this.view) {
+					this.update(this.currentReference)
+				}
+			}),
+		)
 	}
 
 	resolveWebviewView(view: vscode.WebviewView) {
@@ -63,6 +79,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	// TODO do we want to show more information when no response? Maybe a send button?
 	public update(reference: string | undefined) {
 		this.context.log.info('update', reference)
+		this.currentReference = reference
 		if (!this.view) return this.context.log.warn('ResponseView not resolved!')
 
 		if (!reference) return this.noSelectionView()
@@ -70,6 +87,26 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 
 		const referencedResponse = this.context.state.get<SlingResponse>(reference)
 		this.view.webview.html = this.responseView(referencedResponse)
+	}
+
+	private buildJsonColorOverrides(): string {
+		const properties: string[] = []
+
+		for (const [key, value] of Object.entries(this.jsonColors)) {
+			if (key === 'bracketColors' || value === undefined) continue
+			properties.push(`--json-${key}-color: ${value as string};`)
+		}
+
+		// Cycle bracket colors to fill all 6 slots (matching VS Code's cycling behavior)
+		const { bracketColors } = this.jsonColors
+		if (bracketColors && bracketColors.length > 0) {
+			for (let index = 0; index < 6; index++) {
+				properties.push(`--json-bracket-${index + 1}-color: ${bracketColors[index % bracketColors.length]};`)
+			}
+		}
+
+		if (properties.length === 0) return ''
+		return `<style nonce="${this.nonces.css}">:root { ${properties.join(' ')} }</style>`
 	}
 
 	private wrapHtml(html: string) {
@@ -89,6 +126,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 				script-src 'nonce-${this.nonces.js}';
 			">
 			<link nonce="${this.nonces.css}" rel="stylesheet" href="${this.styleUri.toString()}" />
+			${this.buildJsonColorOverrides()}
 			<script nonce="${this.nonces.js}" src="${this.scriptUri.toString()}"></script>
 		</head>
 		<body id="response-view">${html}</body>
@@ -151,8 +189,10 @@ function buildResponseDisplay(response: SlingResponse) {
 		.join('\n').replaceAll('\t', '')
 
 	// TODO this may later contain masked values too
-	// TODO color format when JSON or XML/HTML
-	const body = response.body
+	const contentType = response.headers['content-type'] ?? ''
+	const body = isJsonContentType(contentType)
+		? colorizeJson(response.body)
+		: escapeHtml(response.body)
 
 	return [
 		`<pre class="start-line">${startLine}</pre>`,

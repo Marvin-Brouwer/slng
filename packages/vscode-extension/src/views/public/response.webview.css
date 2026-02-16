@@ -83,3 +83,34 @@ pre.start-line {
 pre.body {
 	margin-top: 0;
 }
+
+/* JSON syntax highlighting — colors are resolved from the active theme's tokenColors.
+   Injected --json-*-color overrides take priority; debugTokenExpression vars are fallbacks. */
+.json-key {
+	color: var(--json-key-color, var(--vscode-debugTokenExpression-name));
+}
+.json-string {
+	color: var(--json-string-color, var(--vscode-debugTokenExpression-string));
+}
+.json-number {
+	color: var(--json-number-color, var(--vscode-debugTokenExpression-number));
+}
+.json-keyword {
+	color: var(--json-keyword-color, var(--vscode-debugTokenExpression-boolean));
+}
+.json-punctuation {
+	color: var(--json-punctuation-color, var(--vscode-editor-foreground));
+	opacity: 0.6;
+}
+
+/* Bracket pair colorization — depth-based colors injected from the active theme.
+   Falls back to the punctuation color when bracket colorization is unavailable. */
+.json-bracket {
+	color: var(--json-punctuation-color, var(--vscode-editor-foreground));
+}
+.json-bracket-1 { color: var(--json-bracket-1-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-2 { color: var(--json-bracket-2-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-3 { color: var(--json-bracket-3-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-4 { color: var(--json-bracket-4-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-5 { color: var(--json-bracket-5-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-6 { color: var(--json-bracket-6-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
