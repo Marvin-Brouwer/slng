@@ -55,6 +55,8 @@ class CopyButton extends HTMLElement {
 		this.root = this.attachShadow({ mode: 'open' })
 
 		this.splitContainer = createElement('div', { className: 'split-button' })
+		this.splitContainer.setAttribute('role', 'group')
+		this.splitContainer.setAttribute('aria-label', 'Copy response')
 
 		// Main "Copy" button
 		this.mainButton = createElement<Button>('vscode-button', {
@@ -63,6 +65,7 @@ class CopyButton extends HTMLElement {
 			appearance: 'secondary',
 			className: 'main-button',
 		})
+		this.mainButton.setAttribute('aria-label', 'Copy response to clipboard')
 		this.mainButton.append(createElement('span', {
 			slot: 'start',
 			innerHTML: copyIconSvg,
@@ -78,17 +81,22 @@ class CopyButton extends HTMLElement {
 			className: 'dropdown-toggle',
 			innerHTML: chevronDownSvg,
 		})
+		this.dropdownToggle.setAttribute('aria-label', 'More copy options')
+		this.dropdownToggle.setAttribute('aria-haspopup', 'menu')
+		this.dropdownToggle.setAttribute('aria-expanded', 'false')
 		this.splitContainer.append(this.dropdownToggle)
 
 		// Dropdown menu with "Copy unmasked" option
 		this.dropdownMenu = createElement('div', {
 			className: 'dropdown-menu',
 		})
+		this.dropdownMenu.setAttribute('role', 'menu')
 		this.copyUnmaskedButton = createElement<Button>('vscode-button', {
 			className: 'dropdown-item',
 			textContent: 'Copy unmasked',
 			appearance: 'secondary',
 		})
+		this.copyUnmaskedButton.setAttribute('role', 'menuitem')
 		this.dropdownMenu.append(this.copyUnmaskedButton)
 
 		// Toggle dropdown on chevron click
@@ -156,10 +164,12 @@ class CopyButton extends HTMLElement {
 
 	openDropdown() {
 		this.dropdownMenu.classList.add('open')
+		this.dropdownToggle.setAttribute('aria-expanded', 'true')
 	}
 
 	closeDropdown() {
 		this.dropdownMenu.classList.remove('open')
+		this.dropdownToggle.setAttribute('aria-expanded', 'false')
 	}
 
 	copyDefault() {
