@@ -1,5 +1,3 @@
-import { copyFile } from 'node:fs/promises'
-
 import { defineConfig } from 'tsup'
 
 export default defineConfig([
@@ -25,12 +23,5 @@ export default defineConfig([
 		cjsInterop: true,
 		shims: true,
 		publicDir: './src/views/public',
-		onSuccess: async () => {
-			// Make sure the codicon fonts are accessible
-			await copyFile(
-				'node_modules/@vscode/codicons/dist/codicon.ttf',
-				'dist/codicon.ttf',
-			)
-		},
 	},
 ])
