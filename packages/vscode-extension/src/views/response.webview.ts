@@ -1,3 +1,4 @@
+import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import { Button } from '@vscode/webview-ui-toolkit'
 import '../webview'
 
@@ -54,21 +55,31 @@ class CopyButton extends HTMLElement {
 			appearance: 'secondary'
 		})
 
-		button.appendChild(createElement<Button>('span', {
+		// TODO [CLAUDE] add additional button [📄 Copy ] should become [📄 Copy | ↓ ]
+		// Pressing the expand arrow should show "Copy unmasked" as option and call copyUnmasked.
+
+		// Inline SVG copy icon from @vscode/codicons (inlined at build time via tsup loader)
+		button.appendChild(createElement('span', {
 			slot: 'start',
-			// TODO this doesn't work, fix or find alternative
-			// https://stackoverflow.com/questions/77204002/react-vscode-webview-ui-toolkit-button-not-showing-icon
-			className: 'codicon codicon-copy'
+			innerHTML: copyIconSvg
 		}))
 
-		// Default click handler (can be overridden by adding your own listener)
-		button.addEventListener('click', () => {
+		function copyDefault() {
 			// TODO, I guess postmessage, use vscode clipboard api
 			console.log('Copy button clicked!')
 			copyElementText(document.getElementById('response-data'))
 			// TODO show toast in postmessage instead
 			button.textContent = 'Copy done'
-		})
+		}
+		function copyUnmasked() {
+			// TODO, I guess postmessage, use vscode clipboard api
+			console.log('Copy button clicked 2!')
+			copyElementText(document.getElementById('response-data'))
+			// TODO show toast in postmessage instead
+			button.textContent = 'Copy done 2'
+		}
+		// Default click handler (can be overridden by adding your own listener)
+		button.addEventListener('click', copyDefault)
 
 		// Append to shadow DOM
 		shadow.appendChild(button)

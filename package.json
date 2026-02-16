@@ -3,7 +3,8 @@
 	"private": true,
 	"description": "Sling — a TypeScript-first HTTP client for developers",
 	"scripts": {
-		"build": "pnpm -r run build",
+		"build:all": "pnpm -r run build",
+		"build:vscode": "pnpm -r run build:vscode",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"lint:nofix": "eslint .",

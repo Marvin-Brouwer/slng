@@ -18,6 +18,7 @@
 	],
 	"scripts": {
 		"build": "tsup",
+		"build:vscode": "tsup",
 		"clean": "rm -rf dist"
 	},
 	"dependencies": {

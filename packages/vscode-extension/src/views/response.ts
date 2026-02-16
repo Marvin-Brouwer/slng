@@ -121,7 +121,9 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 			-->
 			<meta http-equiv="Content-Security-Policy" content="
 				default-src 'none';
-				style-src ${this.view.webview.cspSource} 'nonce-${this.nonces.css}' 'unsafe-inline';
+				font-src ${this.view.webview.cspSource};
+				style-src-elem ${this.view.webview.cspSource} 'nonce-${this.nonces.css}';
+				style-src-attr 'unsafe-inline';
 				img-src ${this.view.webview.cspSource} https:;
 				script-src 'nonce-${this.nonces.js}';
 			">
@@ -161,7 +163,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 				<vscode-panel-tab id="tab-request">REQUEST</vscode-panel-tab>
 				<vscode-panel-view id="view-response">
 					<div>
-						<div style="position: absolute; right: 1px;"><copy-button></copy-button></div>
+						<div class="copy-panel"><copy-button /></div>
 						<div class="response-data">${buildResponseDisplay(response)}</div>
 					</div>
 				</vscode-panel-view>

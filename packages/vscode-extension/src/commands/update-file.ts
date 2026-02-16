@@ -39,11 +39,13 @@ function updateFileCommand(context: ExtensionContext): vscode.Disposable {
 			.map((definition) => {
 				if (!isSlingDefinition(definition)) return {
 					responseTag: undefined,
+					hoverHelper: undefined,
 				}
 
 				const response = context.state.get<SlingResponse>(definition.id())
 				if (!response) return {
 					responseTag: undefined,
+					hoverHelper: undefined,
 				}
 
 				const ast = definition.getInternals().tsAst
