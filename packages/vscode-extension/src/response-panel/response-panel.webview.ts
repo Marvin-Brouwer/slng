@@ -4,6 +4,7 @@ import * as vscode from 'vscode'
 import { ExtensionContext } from '../context'
 
 import { buildJsonColorOverrides } from './components/body-display.json.webview'
+import { asyncDependency, nonces } from './webview-helper'
 
 // TODO figure out a way to add time and bytes https://github.com/rhaldkhein/vscode-xrest-client/tree/master
 export class ResponsePanel implements vscode.WebviewViewProvider {
@@ -13,7 +14,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 	private scriptUri!: vscode.Uri
 	private styleUri!: vscode.Uri
 	private copyButtonStyleUri!: vscode.Uri
-	private readonly nonces: Record<string, string> = {}
+	private readonly nonces = nonces('js', 'css', 'copy-button-css', 'json-display-css')
 
 	private config: vscode.WorkspaceConfiguration
 	private readonly extensionUri: vscode.Uri
@@ -24,10 +25,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 
 	private currentReference: string | undefined
 
-	private setVisible = () => void {}
-	private readonly visiblePromise = new Promise<void>((resolve) => {
-		this.setVisible = resolve
-	})
+	private initialized = asyncDependency()
 
 	constructor(
 		private readonly context: ExtensionContext,
@@ -56,10 +54,6 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 		this.scriptUri = view.webview.asWebviewUri(this.scriptPath)!
 		this.styleUri = view.webview.asWebviewUri(this.stylePath)!
 		this.copyButtonStyleUri = view.webview.asWebviewUri(this.copyButtonStylePath)!
-		this.nonces.js = getNonce()
-		this.nonces.css = getNonce()
-		this.nonces.copyButton = getNonce()
-		this.nonces.jsonStyle = getNonce()
 
 		view.webview.options = {
 			enableScripts: true,
@@ -71,7 +65,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 			],
 		}
 		view.webview.html = this.noSelectionView()
-		this.setVisible()
+		this.initialized.resolve()
 	}
 
 	public hide() {
@@ -83,8 +77,10 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 		this.context.log.info('update', reference)
 		const maskSecrets = this.config.get<boolean>('maskSecrets', true)
 		this.context.log.info('shouldmask', maskSecrets)
+		// Focus the window to make vscode initialize it
 		await vscode.commands.executeCommand('sling.response-panel.focus')
-		await this.visiblePromise
+		// Wait for the resolveWebviewView to be called
+		await this.initialized.wait()
 
 		this.currentReference = reference
 		if (!this.view) return this.context.log.warn('ResponseView not resolved!')
@@ -115,13 +111,16 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 			<meta http-equiv="Content-Security-Policy" content="
 				default-src 'none';
 				font-src ${this.view.webview.cspSource};
-				style-src-elem ${this.view.webview.cspSource} 'nonce-${this.nonces.css}' 'nonce-${this.nonces.copyButton}' 'nonce-${this.nonces.jsonStyle}';
+				style-src-elem ${this.view.webview.cspSource}
+					'nonce-${this.nonces('css')}'
+					'nonce-${this.nonces('copy-button-css')}'
+					'nonce-${this.nonces('json-display-css')}';
 				img-src ${this.view.webview.cspSource} https:;
-				script-src 'nonce-${this.nonces.js}';
+				script-src 'nonce-${this.nonces('js')}';
 			">
-			<link nonce="${this.nonces.css}" rel="stylesheet" href="${this.styleUri.toString()}" />
-			${buildJsonColorOverrides(this.nonces.jsonStyle)}
-			<script nonce="${this.nonces.js}" src="${this.scriptUri.toString()}"></script>
+			<link nonce="${this.nonces('css')}" rel="stylesheet" href="${this.styleUri.toString()}" />
+			${buildJsonColorOverrides(this.nonces('json-display-css'))}
+			<script nonce="${this.nonces('js')}" src="${this.scriptUri.toString()}"></script>
 		</head>
 		<body id="response-view">${html}</body>
 		</html>`
@@ -160,7 +159,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 								for="#response-data"
 								type="response"
 								style-src="${this.copyButtonStyleUri.toString()}"
-								style-nonce="${this.nonces.copyButton}"
+								style-nonce="${this.nonces('copy-button-css')}"
 							/>
 						</div>
 						<div id="response-data">${buildResponseDisplay(response)}</div>
@@ -198,15 +197,6 @@ function buildResponseDisplay(response: SlingResponse) {
 		`<br />`,
 		`<body-display content-type=${contentType}>${response.body}</body-display>`,
 	].join('')
-}
-
-function getNonce() {
-	let text = ''
-	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-	for (let index = 0; index < 32; index++) {
-		text += possible.charAt(Math.floor(Math.random() * possible.length))
-	}
-	return text
 }
 
 export function registerResponsePanel(
