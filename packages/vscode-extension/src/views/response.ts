@@ -12,6 +12,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	private view!: vscode.WebviewView
 	private scriptUri!: vscode.Uri
 	private styleUri!: vscode.Uri
+	private codiconFontUri!: vscode.Uri
 	private readonly nonces: Record<string, string> = {}
 
 	private config: vscode.WorkspaceConfiguration
@@ -19,6 +20,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	private readonly distPath: vscode.Uri
 	private readonly scriptPath: vscode.Uri
 	private readonly stylePath: vscode.Uri
+	private readonly codiconFontPath: vscode.Uri
 
 	private jsonColors: JsonTokenColors = {}
 	private currentReference: string | undefined
@@ -32,6 +34,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 		this.distPath = vscode.Uri.joinPath(extensionUri, 'dist')
 		this.scriptPath = vscode.Uri.joinPath(this.distPath, 'response.webview.global.js')
 		this.stylePath = vscode.Uri.joinPath(this.distPath, 'response.webview.css')
+		this.codiconFontPath = vscode.Uri.joinPath(this.distPath, 'codicon.ttf')
 
 		this.jsonColors = resolveJsonTokenColors()
 
@@ -51,6 +54,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 
 		this.scriptUri = view.webview.asWebviewUri(this.scriptPath)!
 		this.styleUri = view.webview.asWebviewUri(this.stylePath)!
+		this.codiconFontUri = view.webview.asWebviewUri(this.codiconFontPath)!
 		this.nonces.js = getNonce()
 		this.nonces.css = getNonce()
 
@@ -121,11 +125,19 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 			-->
 			<meta http-equiv="Content-Security-Policy" content="
 				default-src 'none';
+				font-src ${this.view.webview.cspSource};
 				style-src ${this.view.webview.cspSource} 'nonce-${this.nonces.css}' 'unsafe-inline';
 				img-src ${this.view.webview.cspSource} https:;
 				script-src 'nonce-${this.nonces.js}';
 			">
 			<link nonce="${this.nonces.css}" rel="stylesheet" href="${this.styleUri.toString()}" />
+			<style nonce="${this.nonces.css}">
+				@font-face {
+					font-family: "codicon";
+					font-display: block;
+					src: url("${this.codiconFontUri}") format("truetype");
+				}
+			</style>
 			${this.buildJsonColorOverrides()}
 			<script nonce="${this.nonces.js}" src="${this.scriptUri.toString()}"></script>
 		</head>

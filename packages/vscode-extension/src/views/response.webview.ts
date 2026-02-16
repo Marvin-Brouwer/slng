@@ -47,6 +47,26 @@ class CopyButton extends HTMLElement {
 		// Attach shadow DOM
 		const shadow = this.attachShadow({ mode: 'open' })
 
+		// Codicon CSS rules — the @font-face is injected globally by the
+		// webview provider; font-face declarations are shared across shadow
+		// boundaries so only the class rules are needed here.
+		const style = document.createElement('style')
+		style.textContent = `
+			.codicon[class*='codicon-'] {
+				font: normal normal normal 16px/1 codicon;
+				display: inline-block;
+				text-decoration: none;
+				text-rendering: auto;
+				text-align: center;
+				-webkit-font-smoothing: antialiased;
+				-moz-osx-font-smoothing: grayscale;
+				user-select: none;
+				-webkit-user-select: none;
+			}
+			.codicon-copy::before { content: "\\ebcc"; }
+		`
+		shadow.appendChild(style)
+
 		// Create the vscode-button from the toolkit
 		const button = createElement<Button>('vscode-button', {
 			textContent: 'Copy',
@@ -56,8 +76,6 @@ class CopyButton extends HTMLElement {
 
 		button.appendChild(createElement<Button>('span', {
 			slot: 'start',
-			// TODO this doesn't work, fix or find alternative
-			// https://stackoverflow.com/questions/77204002/react-vscode-webview-ui-toolkit-button-not-showing-icon
 			className: 'codicon codicon-copy'
 		}))
 
