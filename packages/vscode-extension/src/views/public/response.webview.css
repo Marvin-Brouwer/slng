@@ -1,4 +1,4 @@
-.response-data {
+#response-data {
 	/* Pre-like typography */
 	font-family: var(--vscode-editor-font-family, monospace);
 	font-size: var(--vscode-editor-font-size, 12px);

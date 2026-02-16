@@ -168,9 +168,14 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 				<vscode-panel-view id="view-response">
 					<div>
 						<div class="copy-panel">
-							<copy-button style-src="${this.copyButtonStyleUri.toString()}" style-nonce="${this.nonces.copyButton}" />
+							<copy-button
+								for="#response-data"
+								type="response"
+								style-src="${this.copyButtonStyleUri.toString()}"
+								style-nonce="${this.nonces.copyButton}"
+							/>
 						</div>
-						<div class="response-data">${buildResponseDisplay(response)}</div>
+						<div id="response-data">${buildResponseDisplay(response)}</div>
 					</div>
 				</vscode-panel-view>
 				<vscode-panel-view id="view-request">
