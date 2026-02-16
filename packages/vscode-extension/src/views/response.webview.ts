@@ -3,9 +3,6 @@ import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import { Button } from '@vscode/webview-ui-toolkit'
 import '../webview'
 
-// TODO figure out why all te eslint errors are here
-/* eslint-disable */
-
 // TODO client scripts will go here
 /*
 
@@ -28,126 +25,128 @@ import '../webview'
  * Copy the text content of an element to the clipboard (VS Code webview friendly)
  * @param el - HTMLElement to copy from
  */
-function copyElementText(el: HTMLElement) {
-	if (!el) return
+function copyElementText(element: HTMLElement) {
+	if (!element) return
 	// TODO this doesn't work, use Clipboard.writeText when const vscode = acquireVsCodeApi(); becomes available
-	navigator.clipboard.writeText(el.textContent || "")
-		.then(() => console.log("Copied!"))
-		.catch(err => console.error("Copy failed:", err))
+	navigator.clipboard.writeText(element.textContent || '')
+		.then(() => console.log('Copied!'))
+		.catch(error => console.error('Copy failed:', error))
 }
 
-function createElement<TElement extends HTMLElement>(element: string, props?: Partial<TElement>) {
-	return Object.assign(document.createElement(element) as TElement, props ?? {})
+function createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement>) {
+	return Object.assign(document.createElement(element) as TElement, properties ?? {})
 }
 
 class CopyButton extends HTMLElement {
-
-	private styleLink: HTMLLinkElement
+	private root: ShadowRoot
+	private dropdownMenu: HTMLElement
+	private splitContainer: HTMLElement
 
 	constructor() {
 		super()
 
-		// Attach shadow DOM
-		const shadow = this.attachShadow({ mode: 'open' })
+		this.root = this.attachShadow({ mode: 'open' })
 
-		// Scoped styles for the split button layout, loaded via <link> to comply with CSP
-		// href/nonce are set in connectedCallback, since attributes aren't available in the constructor
-		this.styleLink = createElement<HTMLLinkElement>('link', { rel: 'stylesheet' })
-
-		// Container for the split button
-		const container = createElement('div', { className: 'split-button' })
+		this.splitContainer = createElement('div', { className: 'split-button' })
 
 		// Main "Copy" button
 		const mainButton = createElement<Button>('vscode-button', {
 			textContent: 'Copy',
 			type: 'button',
 			appearance: 'secondary',
-			className: 'main-button'
+			className: 'main-button',
 		})
-		mainButton.appendChild(createElement('span', {
+		mainButton.append(createElement('span', {
 			slot: 'start',
-			innerHTML: copyIconSvg
+			innerHTML: copyIconSvg,
 		}))
+		mainButton.addEventListener('click', _event => this.copyDefault())
+		this.splitContainer.append(mainButton)
 
 		// Dropdown toggle button with chevron-down icon
 		const dropdownToggle = createElement<Button>('vscode-button', {
 			type: 'button',
 			appearance: 'secondary',
 			className: 'dropdown-toggle',
-			innerHTML: chevronDownSvg
+			innerHTML: chevronDownSvg,
 		})
+		this.splitContainer.append(dropdownToggle)
 
 		// Dropdown menu with "Copy unmasked" option
-		const dropdownMenu = createElement('div', {
-			className: 'dropdown-menu'
+		this.dropdownMenu = createElement('div', {
+			className: 'dropdown-menu',
 		})
-		const copyUnmaskedItem = createElement('button', {
+		const copyUnmaskedItem = createElement<Button>('vscode-button', {
 			className: 'dropdown-item',
-			textContent: 'Copy unmasked'
+			textContent: 'Copy unmasked',
+			appearance: 'secondary',
 		})
-		dropdownMenu.appendChild(copyUnmaskedItem)
-
-		container.appendChild(mainButton)
-		container.appendChild(dropdownToggle)
-
-		function copyDefault() {
-			// TODO, I guess postmessage, use vscode clipboard api
-			console.log('Copy button clicked!')
-			copyElementText(document.getElementById('response-data'))
-			// TODO show toast in postmessage instead
-			mainButton.textContent = 'Copied!'
-		}
-		function copyUnmasked() {
-			// TODO, I guess postmessage, use vscode clipboard api
-			console.log('Copy unmasked button clicked!')
-			copyElementText(document.getElementById('response-data'))
-			// TODO show toast in postmessage instead
-			mainButton.textContent = 'Copied!'
-			closeDropdown()
-		}
-
-		mainButton.addEventListener('click', copyDefault)
-
-		function openDropdown() {
-			dropdownMenu.classList.add('open')
-		}
-		function closeDropdown() {
-			dropdownMenu.classList.remove('open')
-		}
+		this.dropdownMenu.append(copyUnmaskedItem)
 
 		// Toggle dropdown on chevron click
-		dropdownToggle.addEventListener('click', (e) => {
-			e.stopPropagation()
-			if (dropdownMenu.classList.contains('open')) {
-				closeDropdown()
-			} else {
-				openDropdown()
+		dropdownToggle.addEventListener('click', (event) => {
+			event.stopPropagation()
+			if (this.dropdownMenu.classList.contains('open')) {
+				this.closeDropdown()
+			}
+			else {
+				this.openDropdown()
 			}
 		})
 
-		copyUnmaskedItem.addEventListener('click', (e) => {
-			e.stopPropagation()
-			copyUnmasked()
+		copyUnmaskedItem.addEventListener('click', (event) => {
+			event.stopPropagation()
+			this.copyUnmasked()
 		})
 
 		// Close dropdown when clicking outside
 		document.addEventListener('click', () => {
-			closeDropdown()
-		})
-		shadow.addEventListener('click', (e) => {
-			if (e.target !== dropdownToggle && !dropdownToggle.contains(e.target as Node)) {
-				closeDropdown()
-			}
+			this.closeDropdown()
 		})
 
-		// Assemble shadow DOM
-		shadow.appendChild(this.styleLink)
-		shadow.appendChild(container)
-		shadow.appendChild(dropdownMenu)
+		this.root.addEventListener('click', (event) => {
+			if (event.target !== dropdownToggle && !dropdownToggle.contains(event.target as Node)) {
+				this.closeDropdown()
+			}
+		})
 	}
+
 	connectedCallback() {
-		this.styleLink.href = this.getAttribute('style-src')!
-		this.styleLink.nonce = this.getAttribute('style-nonce')!
+		// Scoped styles for the split button layout, loaded via <link> to comply with CSP
+		// href/nonce are set in connectedCallback, since attributes aren't available in the constructor
+		this.root.append(createElement<HTMLLinkElement>('link', {
+			rel: 'stylesheet',
+			href: this.getAttribute('style-src'),
+			nonce: this.getAttribute('style-nonce'),
+			// Only once the styles are loaded do we show the button
+			onload: () => {
+				this.root.append(this.splitContainer)
+				this.root.append(this.dropdownMenu)
+			},
+		}))
+	}
+
+	openDropdown() {
+		this.dropdownMenu.classList.add('open')
+	}
+
+	closeDropdown() {
+		this.dropdownMenu.classList.remove('open')
+	}
+
+	copyDefault() {
+		// TODO, I guess postmessage, use vscode clipboard api
+		console.log('Copy button clicked!')
+		copyElementText(document.querySelector('#response-data'))
+		// TODO show toast in postmessage
+	}
+
+	copyUnmasked() {
+		// TODO, I guess postmessage, use vscode clipboard api
+		console.log('Copy unmasked button clicked!')
+		copyElementText(document.querySelector('#response-data'))
+		// TODO show toast in postmessage instead
+		this.closeDropdown()
 	}
 }
 
