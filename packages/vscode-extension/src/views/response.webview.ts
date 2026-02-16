@@ -163,15 +163,26 @@ class CopyButton extends HTMLElement {
 			copyElementText(document.getElementById('response-data'))
 			// TODO show toast in postmessage instead
 			mainButton.textContent = 'Copied!'
-			dropdownMenu.classList.remove('open')
+			closeDropdown()
 		}
 
 		mainButton.addEventListener('click', copyDefault)
 
+		function openDropdown() {
+			dropdownMenu.classList.add('open')
+		}
+		function closeDropdown() {
+			dropdownMenu.classList.remove('open')
+		}
+
 		// Toggle dropdown on chevron click
 		dropdownToggle.addEventListener('click', (e) => {
 			e.stopPropagation()
-			dropdownMenu.classList.toggle('open')
+			if (dropdownMenu.classList.contains('open')) {
+				closeDropdown()
+			} else {
+				openDropdown()
+			}
 		})
 
 		copyUnmaskedItem.addEventListener('click', (e) => {
@@ -181,11 +192,11 @@ class CopyButton extends HTMLElement {
 
 		// Close dropdown when clicking outside
 		document.addEventListener('click', () => {
-			dropdownMenu.classList.remove('open')
+			closeDropdown()
 		})
 		shadow.addEventListener('click', (e) => {
 			if (e.target !== dropdownToggle && !dropdownToggle.contains(e.target as Node)) {
-				dropdownMenu.classList.remove('open')
+				closeDropdown()
 			}
 		})
 
