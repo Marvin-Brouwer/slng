@@ -73,6 +73,7 @@
 	},
 	"scripts": {
 		"build": "tsup",
+		"build:vscode": "tsup",
 		"clean": "rm -rf dist",
 		"package": "vsce package --no-dependencies"
 	},

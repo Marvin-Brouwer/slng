@@ -2,21 +2,12 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "build:extension",
+			"label": "build:vscode",
 			"type": "process",
 			"command": "pnpm",
 			"args": [
-				// Recursive
-				"-r",
-				// @slng/config
-				"--filter",
-				"@slng/config",
-				// @slng/vscode-extension
-				"--filter",
-				"@slng/vscode-extension",
-				// Command
 				"run",
-				"build"
+				"build:vscode"
 			],
 			"group": {
 				"kind": "build",

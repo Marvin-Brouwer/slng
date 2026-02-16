@@ -163,7 +163,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 				<vscode-panel-tab id="tab-request">REQUEST</vscode-panel-tab>
 				<vscode-panel-view id="view-response">
 					<div>
-						<div style="position: absolute; right: 1px;"><copy-button></copy-button></div>
+						<div class="copy-panel"><copy-button /></div>
 						<div class="response-data">${buildResponseDisplay(response)}</div>
 					</div>
 				</vscode-panel-view>

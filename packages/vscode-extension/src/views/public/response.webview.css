@@ -17,10 +17,19 @@
 	display: grid;
 	width: 100%;
 	position: relative;
+	z-index: 1;
 	padding: 8px 12px;
 	border-radius: 4px;
 	overflow-x: visible;
 	box-sizing: border-box;
+}
+
+.copy-panel {
+	position: absolute;
+    top: 1.4em;
+    right: 1em;
+	z-index: 999;
+	user-select: none;
 }
 
 
