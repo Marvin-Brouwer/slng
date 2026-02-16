@@ -25,6 +25,7 @@ export default defineConfig([
 		publicDir: './src/views/public',
 		loader: {
 			'.svg': 'text',
+			'.css': 'text',
 		},
 	},
 ])
