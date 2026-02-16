@@ -17,7 +17,8 @@
 				"--skip-release-notes",
 				"--skip-welcome",
 				"${workspaceFolder}/examples",
-				"--disable-extensions", // This ignores all other extensions
+				"--extensions-dir ${workspaceFolder}/.vscode", // This ignores all other extensions without the re-enable popup
+				"--disable-extension vscode.git", // Disable built-in git to disable parent git message
 				"--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
 			],
 			"skipFiles": [

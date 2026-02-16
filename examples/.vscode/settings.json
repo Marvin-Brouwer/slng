@@ -1,0 +1,9 @@
+{
+	// Disable popups + git for example debugging
+	"git.enabled": false,
+	"git.openRepositoryInParentFolders": "never",
+	"extensions": {
+		"recommendations": [],
+		"unwantedRecommendations": []
+	}
+}
