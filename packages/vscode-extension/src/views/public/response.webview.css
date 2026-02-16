@@ -102,3 +102,15 @@ pre.body {
 	color: var(--json-punctuation-color, var(--vscode-editor-foreground));
 	opacity: 0.6;
 }
+
+/* Bracket pair colorization — depth-based colors injected from the active theme.
+   Falls back to the punctuation color when bracket colorization is unavailable. */
+.json-bracket {
+	color: var(--json-punctuation-color, var(--vscode-editor-foreground));
+}
+.json-bracket-1 { color: var(--json-bracket-1-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-2 { color: var(--json-bracket-2-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-3 { color: var(--json-bracket-3-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-4 { color: var(--json-bracket-4-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-5 { color: var(--json-bracket-5-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+.json-bracket-6 { color: var(--json-bracket-6-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }

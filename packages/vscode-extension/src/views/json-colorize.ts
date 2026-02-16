@@ -11,6 +11,7 @@ export interface JsonTokenColors {
 	number?: string
 	keyword?: string
 	punctuation?: string
+	bracketColors?: string[]
 }
 
 interface ThemeTokenRule {
@@ -21,7 +22,20 @@ interface ThemeTokenRule {
 interface ThemeData {
 	include?: string
 	tokenColors?: ThemeTokenRule[]
+	colors?: Record<string, string>
 }
+
+interface CollectedThemeData {
+	tokenColors: ThemeTokenRule[]
+	colors: Record<string, string>
+}
+
+const MAX_BRACKET_PAIR_COLORS = 6
+
+const bracketColorKeys = Array.from(
+	{ length: MAX_BRACKET_PAIR_COLORS },
+	(_, index) => `editorBracketHighlight.foreground${index + 1}`,
+)
 
 // ── JSON → syntax-highlighted HTML ──────────────────────────
 
@@ -37,14 +51,21 @@ export function isJsonContentType(contentType: string): boolean {
 	return mime === 'application/json' || mime.endsWith('+json')
 }
 
+/** Bracket class for the given nesting depth, cycling through 1–6. */
+function bracketClass(depth: number): string {
+	return `json-bracket json-bracket-${(depth % MAX_BRACKET_PAIR_COLORS) + 1}`
+}
+
 /**
  * Recursively converts a parsed JSON value into syntax-highlighted HTML.
  * Uses CSS classes that map to VS Code's theme-aware token color variables.
+ * Brackets/braces get depth-based classes for bracket pair colorization.
  */
 function jsonValueToHtml(value: unknown, indent: number): string {
 	const nextIndent = indent + 1
 	const pad = '  '.repeat(indent)
 	const padInner = '  '.repeat(nextIndent)
+	const bc = bracketClass(indent)
 
 	if (value === null) {
 		return '<span class="json-keyword">null</span>'
@@ -59,19 +80,19 @@ function jsonValueToHtml(value: unknown, indent: number): string {
 		return `<span class="json-string">${escapeHtml(JSON.stringify(value))}</span>`
 	}
 	if (Array.isArray(value)) {
-		if (value.length === 0) return '<span class="json-punctuation">[]</span>'
+		if (value.length === 0) return `<span class="${bc}">[]</span>`
 		const items = value.map(item =>
 			`${padInner}${jsonValueToHtml(item, nextIndent)}`,
 		).join('<span class="json-punctuation">,</span>\n')
-		return `<span class="json-punctuation">[</span>\n${items}\n${pad}<span class="json-punctuation">]</span>`
+		return `<span class="${bc}">[</span>\n${items}\n${pad}<span class="${bc}">]</span>`
 	}
 	if (typeof value === 'object') {
 		const entries = Object.entries(value as Record<string, unknown>)
-		if (entries.length === 0) return '<span class="json-punctuation">{}</span>'
+		if (entries.length === 0) return `<span class="${bc}">{}</span>`
 		const items = entries.map(([key, property]) =>
 			`${padInner}<span class="json-key">${escapeHtml(JSON.stringify(key))}</span><span class="json-punctuation">:</span> ${jsonValueToHtml(property, nextIndent)}`,
 		).join('<span class="json-punctuation">,</span>\n')
-		return `<span class="json-punctuation">{</span>\n${items}\n${pad}<span class="json-punctuation">}</span>`
+		return `<span class="${bc}">{</span>\n${items}\n${pad}<span class="${bc}">}</span>`
 	}
 	return escapeHtml(JSON.stringify(value))
 }
@@ -116,20 +137,23 @@ function readThemeFile(filePath: string): ThemeData | undefined {
 	}
 }
 
-/** Recursively collect tokenColors from a theme and its `include` chain. */
-function collectTokenColors(themePath: string, depth = 0): ThemeTokenRule[] {
-	if (depth > 5) return []
+/** Recursively collect tokenColors and workbench colors from a theme and its `include` chain. */
+function collectThemeData(themePath: string, depth = 0): CollectedThemeData {
+	if (depth > 5) return { tokenColors: [], colors: {} }
 
 	const theme = readThemeFile(themePath)
-	if (!theme) return []
+	if (!theme) return { tokenColors: [], colors: {} }
 
-	let baseColors: ThemeTokenRule[] = []
+	let base: CollectedThemeData = { tokenColors: [], colors: {} }
 	if (theme.include) {
 		const includePath = path.resolve(path.dirname(themePath), theme.include)
-		baseColors = collectTokenColors(includePath, depth + 1)
+		base = collectThemeData(includePath, depth + 1)
 	}
 
-	return [...baseColors, ...(theme.tokenColors ?? [])]
+	return {
+		tokenColors: [...base.tokenColors, ...(theme.tokenColors ?? [])],
+		colors: theme.colors ? { ...base.colors, ...theme.colors } : base.colors,
+	}
 }
 
 /** Find the JSON file for the currently active VS Code color theme. */
@@ -195,9 +219,10 @@ export function resolveJsonTokenColors(): JsonTokenColors {
 		const themePath = findActiveThemePath()
 		if (!themePath) return result
 
-		const tokenColors = collectTokenColors(themePath)
-		if (tokenColors.length === 0) return result
+		const themeData = collectThemeData(themePath)
 
+		// ── Token colors (TextMate scopes) ──
+		const { tokenColors } = themeData
 		// Layer user-level tokenColor overrides on top
 		const customizations = vscode.workspace
 			.getConfiguration('editor')
@@ -210,6 +235,27 @@ export function resolveJsonTokenColors(): JsonTokenColors {
 			const color = resolveTokenColor(tokenColors, targetScope)
 			if (color) {
 				result[key as keyof JsonTokenColors] = color
+			}
+		}
+
+		// ── Bracket pair colors (workbench colors) ──
+		const bracketColorization = vscode.workspace
+			.getConfiguration('editor')
+			.get<boolean>('bracketPairColorization.enabled', true)
+
+		if (bracketColorization) {
+			const userColorOverrides = vscode.workspace
+				.getConfiguration('workbench')
+				.get<Record<string, string>>('colorCustomizations') ?? {}
+
+			const bracketColors: string[] = []
+			for (const key of bracketColorKeys) {
+				const color = userColorOverrides[key] ?? themeData.colors[key]
+				if (color) bracketColors.push(color)
+			}
+
+			if (bracketColors.length > 0) {
+				result.bracketColors = bracketColors
 			}
 		}
 	}

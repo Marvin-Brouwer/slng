@@ -90,9 +90,21 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 	}
 
 	private buildJsonColorOverrides(): string {
-		const properties = Object.entries(this.jsonColors)
-			.filter(([, value]) => value !== undefined)
-			.map(([key, value]) => `--json-${key}-color: ${value};`)
+		const properties: string[] = []
+
+		for (const [key, value] of Object.entries(this.jsonColors)) {
+			if (key === 'bracketColors' || value === undefined) continue
+			properties.push(`--json-${key}-color: ${value as string};`)
+		}
+
+		// Cycle bracket colors to fill all 6 slots (matching VS Code's cycling behavior)
+		const { bracketColors } = this.jsonColors
+		if (bracketColors && bracketColors.length > 0) {
+			for (let index = 0; index < 6; index++) {
+				properties.push(`--json-bracket-${index + 1}-color: ${bracketColors[index % bracketColors.length]};`)
+			}
+		}
+
 		if (properties.length === 0) return ''
 		return `<style nonce="${this.nonces.css}">:root { ${properties.join(' ')} }</style>`
 	}
