@@ -7,18 +7,18 @@ export function addElement<TElement extends HTMLElement>(parent: Element | Shado
 	return newElement
 }
 
-export type SimpleElementConstructor = CustomElementConstructor & { tagName: string }
+export type SimpleElementConstructor = CustomElementConstructor & {
+	tagName: string
+}
 export abstract class SimpleElement extends HTMLElement {
-	private root: ShadowRoot
-
 	static register<TElement extends SimpleElementConstructor>(element: TElement) {
 		customElements.define(element.tagName, element)
 	}
 
 	constructor() {
 		super()
-
-		this.root = this.attachShadow({ mode: 'open' })
+		const root = this.attachShadow({ mode: 'open' })
+		this.appendElementTo(root, 'slot')
 	}
 
 	protected abstract onMount(): void
@@ -30,7 +30,7 @@ export abstract class SimpleElement extends HTMLElement {
 	}
 
 	appendElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement>) {
-		return addElement<TElement>(this.root, element, properties)
+		return addElement<TElement>(this, element, properties)
 	}
 
 	appendElementTo<TElement extends HTMLElement>(parent: Element | ShadowRoot, element: string, properties?: Partial<TElement>) {
@@ -39,5 +39,9 @@ export abstract class SimpleElement extends HTMLElement {
 
 	createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement>) {
 		return createElement<TElement>(element, properties)
+	}
+
+	createHtml<TElement extends HTMLElement>(element: string, properties?: Partial<TElement>) {
+		return createElement<TElement>(element, properties).outerHTML
 	}
 }

@@ -220,10 +220,35 @@ function resolveTokenColor(tokenColors: ThemeTokenRule[], targetScope: string): 
 }
 
 /**
+ * Builds a `<style>` tag with CSS custom property overrides for JSON syntax colors,
+ * resolved from the active VS Code theme. Returns an empty string if no colors are found.
+ */
+export function buildJsonColorOverrides(nonce: string): string {
+	const colors = resolveJsonTokenColors()
+	const properties: string[] = []
+
+	for (const [key, value] of Object.entries(colors)) {
+		if (key === 'bracketColors' || value === undefined) continue
+		properties.push(`--json-${key}-color: ${value as string};`)
+	}
+
+	// Cycle bracket colors to fill all 6 slots (matching VS Code's cycling behavior)
+	const { bracketColors } = colors
+	if (bracketColors && bracketColors.length > 0) {
+		for (let index = 0; index < MAX_BRACKET_PAIR_COLORS; index++) {
+			properties.push(`--json-bracket-${index + 1}-color: ${bracketColors[index % bracketColors.length]};`)
+		}
+	}
+
+	if (properties.length === 0) return ''
+	return `<style nonce="${nonce}">:root { ${properties.join(' ')} }</style>`
+}
+
+/**
  * Read the active VS Code theme and resolve the actual JSON syntax colors.
  * Falls back gracefully — returns an empty object if the theme can't be read.
  */
-export function resolveJsonTokenColors(): JsonTokenColors {
+function resolveJsonTokenColors(): JsonTokenColors {
 	const result: JsonTokenColors = {}
 
 	try {

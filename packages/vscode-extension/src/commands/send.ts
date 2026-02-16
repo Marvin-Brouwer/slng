@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
-import { ResponsePanel } from '../response-panel/response-panel.extension'
+import { ResponsePanel } from '../response-panel/response-panel.webview'
 import { sendRequest } from '../send'
 
 import { updateFile } from './update-file'

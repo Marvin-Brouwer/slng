@@ -13,7 +13,7 @@ export default defineConfig([
 	},
 	{
 		entry: {
-			'response-panel.webview': 'src/response-panel/response-panel.webview.ts',
+			'response-panel': 'src/response-panel/response-panel.ts',
 		},
 		format: ['iife'],
 		dts: true,
