@@ -55,20 +55,31 @@ class CopyButton extends HTMLElement {
 			appearance: 'secondary'
 		})
 
-		// Inline SVG copy icon from @vscode/codicons (inlined at build time via tsup loader)
-		const iconWrapper = document.createElement('span')
-		iconWrapper.setAttribute('slot', 'start')
-		iconWrapper.innerHTML = copyIconSvg
-		button.appendChild(iconWrapper)
+		// TODO [CLAUDE] add additional button [📄 Copy ] should become [📄 Copy | ↓ ]
+		// Pressing the expand arrow should show "Copy unmasked" as option and call copyUnmasked.
 
-		// Default click handler (can be overridden by adding your own listener)
-		button.addEventListener('click', () => {
+		// Inline SVG copy icon from @vscode/codicons (inlined at build time via tsup loader)
+		button.appendChild(createElement('span', {
+			slot: 'start',
+			innerHTML: copyIconSvg
+		}))
+
+		function copyDefault() {
 			// TODO, I guess postmessage, use vscode clipboard api
 			console.log('Copy button clicked!')
 			copyElementText(document.getElementById('response-data'))
 			// TODO show toast in postmessage instead
 			button.textContent = 'Copy done'
-		})
+		}
+		function copyUnmasked() {
+			// TODO, I guess postmessage, use vscode clipboard api
+			console.log('Copy button clicked 2!')
+			copyElementText(document.getElementById('response-data'))
+			// TODO show toast in postmessage instead
+			button.textContent = 'Copy done 2'
+		}
+		// Default click handler (can be overridden by adding your own listener)
+		button.addEventListener('click', copyDefault)
 
 		// Append to shadow DOM
 		shadow.appendChild(button)
