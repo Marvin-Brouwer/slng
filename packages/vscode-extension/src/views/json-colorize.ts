@@ -37,6 +37,16 @@ const bracketColorKeys = Array.from(
 	(_, index) => `editorBracketHighlight.foreground${index + 1}`,
 )
 
+/**
+ * VS Code's hardcoded bracket pair color defaults.
+ * These are built into the editor and not present in theme JSON files.
+ * @see https://github.com/microsoft/vscode/blob/main/src/vs/editor/common/core/editorColorRegistry.ts
+ */
+const defaultBracketColors: Record<'dark' | 'light', string[]> = {
+	dark: ['#FFD700', '#DA70D6', '#179FFF'],
+	light: ['#0431FA', '#319331', '#7B3814'],
+}
+
 // ── JSON → syntax-highlighted HTML ──────────────────────────
 
 export function escapeHtml(text: string): string {
@@ -110,7 +120,8 @@ export function colorizeJson(body: string): string {
 // ── Theme-based JSON token color resolution ─────────────────
 
 /** The actual TextMate scopes VS Code's JSON grammar assigns to each token type. */
-const jsonTargetScopes: Record<keyof JsonTokenColors, string> = {
+type TokenColorKey = Exclude<keyof JsonTokenColors, 'bracketColors'>
+const jsonTargetScopes: Record<TokenColorKey, string> = {
 	key: 'support.type.property-name.json',
 	string: 'string.quoted.double.json',
 	number: 'constant.numeric.json',
@@ -234,7 +245,7 @@ export function resolveJsonTokenColors(): JsonTokenColors {
 		for (const [key, targetScope] of Object.entries(jsonTargetScopes)) {
 			const color = resolveTokenColor(tokenColors, targetScope)
 			if (color) {
-				result[key as keyof JsonTokenColors] = color
+				result[key as TokenColorKey] = color
 			}
 		}
 
@@ -256,6 +267,13 @@ export function resolveJsonTokenColors(): JsonTokenColors {
 
 			if (bracketColors.length > 0) {
 				result.bracketColors = bracketColors
+			}
+			else {
+				// Built-in themes don't define these in their JSON — use VS Code's hardcoded defaults
+				const themeKind = vscode.window.activeColorTheme.kind
+				const isLight = themeKind === vscode.ColorThemeKind.Light
+					|| themeKind === vscode.ColorThemeKind.HighContrastLight
+				result.bracketColors = isLight ? defaultBracketColors.light : defaultBracketColors.dark
 			}
 		}
 	}
