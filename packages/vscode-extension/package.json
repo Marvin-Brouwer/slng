@@ -63,7 +63,7 @@
 		"views": {
 			"resultsContainer": [
 				{
-					"id": "sling.responseDetails",
+					"id": "sling.response-panel",
 					"name": "Sling",
 					"icon": "media/icon.svg",
 					"type": "webview"

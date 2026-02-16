@@ -1,4 +1,3 @@
 import '../webview'
-import { CopyButton } from './components/copy-button'
-
-customElements.define('copy-button', CopyButton)
+import './components/copy-button'
+import './components/body-display'

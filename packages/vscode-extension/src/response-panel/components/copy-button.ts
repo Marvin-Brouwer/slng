@@ -2,6 +2,8 @@ import chevronDownSvg from '@vscode/codicons/src/icons/chevron-down.svg'
 import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import { Button } from '@vscode/webview-ui-toolkit'
 
+import { createElement } from '../element-helper'
+
 // TODO client scripts will go here
 /*
 
@@ -30,10 +32,6 @@ function copyElementText(element: HTMLElement) {
 	navigator.clipboard.writeText(element.textContent || '')
 		.then(() => console.log('Copied!'))
 		.catch(error => console.error('Copy failed:', error))
-}
-
-function createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement>) {
-	return Object.assign(document.createElement(element) as TElement, properties ?? {})
 }
 
 export class CopyButton extends HTMLElement {
@@ -190,3 +188,5 @@ export class CopyButton extends HTMLElement {
 		this.closeDropdown()
 	}
 }
+
+customElements.define('copy-button', CopyButton)

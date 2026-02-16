@@ -1,13 +1,13 @@
 import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
-import { sendRequest } from '../send'
 import { ResponsePanel } from '../response-panel/response-panel.extension'
+import { sendRequest } from '../send'
 
 import { updateFile } from './update-file'
 
 export const sendCommand = 'slng.send'
-export function registerSendCommand(context: ExtensionContext, responseViewProvider: ResponsePanel) {
+export function registerSendCommand(context: ExtensionContext, responsePanel: ResponsePanel) {
 	context.addSubscriptions(
 		vscode.commands.registerCommand(
 			sendCommand,
@@ -27,8 +27,8 @@ export function registerSendCommand(context: ExtensionContext, responseViewProvi
 				await context.state.put(reference, result)
 				// TODO fix ignores
 
-				responseViewProvider.update(reference)
-				responseViewProvider.show()
+				responsePanel.update(reference)
+				responsePanel.show()
 
 				await updateFile()
 			},

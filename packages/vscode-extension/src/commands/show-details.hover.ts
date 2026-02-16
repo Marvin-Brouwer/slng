@@ -17,7 +17,7 @@ function showDetailsFromHoverCommand(log: vscode.LogOutputChannel): vscode.Dispo
 			editor.selection = new vscode.Selection(range.start, range.end)
 		}
 		// do something here
-		vscode.commands.executeCommand('sling.responseDetails.focus')
+		vscode.commands.executeCommand('sling.response-panel.focus')
 	})
 }
 export function registerShowDetailsFromHoverCommand(context: ExtensionContext) {

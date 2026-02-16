@@ -14,7 +14,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 	const context = createContext(vscodeContext)
 	context.log.info('Initializing', vscodeContext.extension.id)
 
-	const responseViewProvider = registerResponsePanel(
+	const responsePanel = registerResponsePanel(
 		context,
 		vscodeContext.extensionUri)
 
@@ -22,7 +22,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 		// Show the logs on screen
 		context.log.show(true)
 		// Reset to standard for developers
-		responseViewProvider.hide()
+		responsePanel.hide()
 		await Promise.all(vscodeContext.workspaceState.keys().map(key => vscodeContext.workspaceState.update(key, void 0)))
 
 		// TODO remove once we fixed the issue where we can't launch vscode with a log level
@@ -35,7 +35,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 
 	registerCodeLens(context)
 
-	registerSendCommand(context, responseViewProvider)
+	registerSendCommand(context, responsePanel)
 	registerUpdateFileCommand(context)
 	registerShowDetailsFromHoverCommand(context)
 

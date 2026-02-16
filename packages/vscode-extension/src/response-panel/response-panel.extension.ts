@@ -212,6 +212,7 @@ function buildResponseDisplay(response: SlingResponse) {
 		`<div class="headers"><table>${headers}</table></div>`,
 		`<br />`,
 		`<pre class="body">${body}</pre>`,
+		`<body-display content-type=${contentType}>${body}</body-display>`,
 	].join('')
 }
 
