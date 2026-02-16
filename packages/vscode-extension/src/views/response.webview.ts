@@ -1,5 +1,5 @@
-import { Button } from '@vscode/webview-ui-toolkit'
 import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
+import { Button } from '@vscode/webview-ui-toolkit'
 import '../webview'
 
 // TODO figure out why all te eslint errors are here
