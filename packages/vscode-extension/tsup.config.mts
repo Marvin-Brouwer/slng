@@ -13,7 +13,7 @@ export default defineConfig([
 	},
 	{
 		entry: {
-			'response.webview': 'src/views/response.webview.ts',
+			'response-panel.webview': 'src/response-panel/response-panel.webview.ts',
 		},
 		format: ['iife'],
 		dts: true,
@@ -22,7 +22,7 @@ export default defineConfig([
 		treeshake: true,
 		cjsInterop: true,
 		shims: true,
-		publicDir: './src/views/public',
+		publicDir: './src/response-panel/public',
 		loader: {
 			'.svg': 'text',
 		},

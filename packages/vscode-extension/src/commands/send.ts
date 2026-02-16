@@ -2,12 +2,12 @@ import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
 import { sendRequest } from '../send'
-import { ResponseViewProvider } from '../response-panel/response'
+import { ResponsePanel } from '../response-panel/response-panel.extension'
 
 import { updateFile } from './update-file'
 
 export const sendCommand = 'slng.send'
-export function registerSendCommand(context: ExtensionContext, responseViewProvider: ResponseViewProvider) {
+export function registerSendCommand(context: ExtensionContext, responseViewProvider: ResponsePanel) {
 	context.addSubscriptions(
 		vscode.commands.registerCommand(
 			sendCommand,

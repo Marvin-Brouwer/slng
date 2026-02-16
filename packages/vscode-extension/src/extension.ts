@@ -7,14 +7,14 @@ import { registerShowDetailsFromHoverCommand } from './commands/show-details.hov
 import { registerUpdateFileCommand, updateFile } from './commands/update-file.js'
 import createContext from './context.js'
 import { launchDebugSession } from './debug/launcher.js'
-import { registerResponseView } from './response-panel/response.js'
+import { registerResponsePanel } from './response-panel/response-panel.extension.js'
 import { registerCodeLens } from './visual/codelens.js'
 
 export async function activate(vscodeContext: vscode.ExtensionContext) {
 	const context = createContext(vscodeContext)
 	context.log.info('Initializing', vscodeContext.extension.id)
 
-	const responseViewProvider = registerResponseView(
+	const responseViewProvider = registerResponsePanel(
 		context,
 		vscodeContext.extensionUri)
 

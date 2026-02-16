@@ -6,8 +6,8 @@ import { ExtensionContext } from '../context'
 import { colorizeJson, escapeHtml, isJsonContentType, JsonTokenColors, resolveJsonTokenColors } from './json-colorize'
 
 // TODO figure out a way to add time and bytes https://github.com/rhaldkhein/vscode-xrest-client/tree/master
-export class ResponseViewProvider implements vscode.WebviewViewProvider {
-	public static readonly viewType = 'sling.responseDetails'
+export class ResponsePanel implements vscode.WebviewViewProvider {
+	public static readonly viewType = 'sling.response-panel'
 
 	private view!: vscode.WebviewView
 	private scriptUri!: vscode.Uri
@@ -32,9 +32,9 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 		this.config = vscode.workspace.getConfiguration('slng')
 		this.extensionUri = extensionUri
 		this.distPath = vscode.Uri.joinPath(extensionUri, 'dist')
-		this.scriptPath = vscode.Uri.joinPath(this.distPath, 'response.webview.global.js')
-		this.stylePath = vscode.Uri.joinPath(this.distPath, 'response.webview.css')
-		this.copyButtonStylePath = vscode.Uri.joinPath(this.distPath, 'response.copy-button.css')
+		this.scriptPath = vscode.Uri.joinPath(this.distPath, 'response-panel.webview.global.js')
+		this.stylePath = vscode.Uri.joinPath(this.distPath, 'response-panel.css')
+		this.copyButtonStylePath = vscode.Uri.joinPath(this.distPath, 'copy-button.css')
 
 		this.jsonColors = resolveJsonTokenColors()
 
@@ -215,31 +215,6 @@ function buildResponseDisplay(response: SlingResponse) {
 	].join('')
 }
 
-// /** https://en.wikipedia.org/wiki/HTTP#Example */
-// function buildRequestDisplay(request: RequestReference) {
-// 	const startLine = `${request.parsed.method} ${request.parsed.url} ${request.parsed.httpVersion}`
-// 	// TODO this may later contain masked values too
-// 	const headers = Object.entries(request.template.values)
-// 		.map(([key, value]) => {
-// 			return `<tr>
-// 				<td class="header-key">${key}:&nbsp;</td>
-// 				<td class="header-value">${value}</td>
-// 			</tr>`
-// 		})
-// 		.join('\n').replaceAll('\t', '')
-
-// 	// TODO this may later contain masked values too
-// 	// TODO color format when JSON or XML/HTML
-// 	const body = response.body
-
-// 	return [
-// 		`<pre class="start-line">${startLine}</pre>`,
-// 		`<div class="headers"><table>${headers}</table></div>`,
-// 		`<br />`,
-// 		`<pre class="body">${body}</pre>`,
-// 	].join('')
-// }
-
 function getNonce() {
 	let text = ''
 	const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -249,15 +224,15 @@ function getNonce() {
 	return text
 }
 
-export function registerResponseView(
+export function registerResponsePanel(
 	context: ExtensionContext,
 	extensionUri: vscode.Uri,
 ) {
-	const responseViewProvider = new ResponseViewProvider(context, extensionUri)
+	const responsePanel = new ResponsePanel(context, extensionUri)
 	context.addSubscriptions(
 		vscode.window.registerWebviewViewProvider(
-			ResponseViewProvider.viewType,
-			responseViewProvider,
+			ResponsePanel.viewType,
+			responsePanel,
 			{
 				webviewOptions: {
 					retainContextWhenHidden: true,
@@ -265,5 +240,5 @@ export function registerResponseView(
 			},
 		),
 	)
-	return responseViewProvider
+	return responsePanel
 }
