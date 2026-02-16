@@ -47,26 +47,6 @@ class CopyButton extends HTMLElement {
 		// Attach shadow DOM
 		const shadow = this.attachShadow({ mode: 'open' })
 
-		// Codicon CSS rules — the @font-face is injected globally by the
-		// webview provider; font-face declarations are shared across shadow
-		// boundaries so only the class rules are needed here.
-		const style = document.createElement('style')
-		style.textContent = `
-			.codicon[class*='codicon-'] {
-				font: normal normal normal 16px/1 codicon;
-				display: inline-block;
-				text-decoration: none;
-				text-rendering: auto;
-				text-align: center;
-				-webkit-font-smoothing: antialiased;
-				-moz-osx-font-smoothing: grayscale;
-				user-select: none;
-				-webkit-user-select: none;
-			}
-			.codicon-copy::before { content: "\\ebcc"; }
-		`
-		shadow.appendChild(style)
-
 		// Create the vscode-button from the toolkit
 		const button = createElement<Button>('vscode-button', {
 			textContent: 'Copy',
@@ -74,10 +54,15 @@ class CopyButton extends HTMLElement {
 			appearance: 'secondary'
 		})
 
-		button.appendChild(createElement<Button>('span', {
-			slot: 'start',
-			className: 'codicon codicon-copy'
-		}))
+		// Inline SVG copy icon (from @vscode/codicons) to avoid font/CSP issues
+		const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+		icon.setAttribute('slot', 'start')
+		icon.setAttribute('width', '16')
+		icon.setAttribute('height', '16')
+		icon.setAttribute('viewBox', '0 0 16 16')
+		icon.setAttribute('fill', 'currentColor')
+		icon.innerHTML = `<path fill-rule="evenodd" clip-rule="evenodd" d="M4 4l1-1h5.414L14 6.586V14l-1 1H5l-1-1V4zm9 3l-3-3H5v10h8V7z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M3 1L2 2v10l1 1V2h6.414l-1-1H3z"/>`
+		button.appendChild(icon)
 
 		// Default click handler (can be overridden by adding your own listener)
 		button.addEventListener('click', () => {
