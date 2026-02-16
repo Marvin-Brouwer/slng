@@ -72,7 +72,7 @@
 		}
 	},
 	"scripts": {
-		"build": "tsup && cp ./node_modules/@vscode/codicons/dist/codicon.ttf ./dist/",
+		"build": "tsup",
 		"clean": "rm -rf dist",
 		"package": "vsce package --no-dependencies"
 	},

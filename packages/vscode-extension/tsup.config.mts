@@ -1,3 +1,5 @@
+import { copyFileSync } from 'fs'
+
 import { defineConfig } from 'tsup'
 
 export default defineConfig([
@@ -23,5 +25,11 @@ export default defineConfig([
 		cjsInterop: true,
 		shims: true,
 		publicDir: './src/views/public',
+		onSuccess: async () => {
+			copyFileSync(
+				'node_modules/@vscode/codicons/dist/codicon.ttf',
+				'dist/codicon.ttf',
+			)
+		},
 	},
 ])
