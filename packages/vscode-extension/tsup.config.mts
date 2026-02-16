@@ -23,5 +23,8 @@ export default defineConfig([
 		cjsInterop: true,
 		shims: true,
 		publicDir: './src/views/public',
+		loader: {
+			'.svg': 'text',
+		},
 	},
 ])

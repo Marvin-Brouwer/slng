@@ -1,4 +1,5 @@
 import { Button } from '@vscode/webview-ui-toolkit'
+import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import '../webview'
 
 // TODO figure out why all te eslint errors are here
@@ -54,15 +55,11 @@ class CopyButton extends HTMLElement {
 			appearance: 'secondary'
 		})
 
-		// Inline SVG copy icon (from @vscode/codicons) to avoid font/CSP issues
-		const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-		icon.setAttribute('slot', 'start')
-		icon.setAttribute('width', '16')
-		icon.setAttribute('height', '16')
-		icon.setAttribute('viewBox', '0 0 16 16')
-		icon.setAttribute('fill', 'currentColor')
-		icon.innerHTML = `<path fill-rule="evenodd" clip-rule="evenodd" d="M4 4l1-1h5.414L14 6.586V14l-1 1H5l-1-1V4zm9 3l-3-3H5v10h8V7z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M3 1L2 2v10l1 1V2h6.414l-1-1H3z"/>`
-		button.appendChild(icon)
+		// Inline SVG copy icon from @vscode/codicons (inlined at build time via tsup loader)
+		const iconWrapper = document.createElement('span')
+		iconWrapper.setAttribute('slot', 'start')
+		iconWrapper.innerHTML = copyIconSvg
+		button.appendChild(iconWrapper)
 
 		// Default click handler (can be overridden by adding your own listener)
 		button.addEventListener('click', () => {
