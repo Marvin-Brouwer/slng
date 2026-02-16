@@ -1,0 +1,56 @@
+:host {
+	display: inline-block;
+	position: relative;
+}
+.split-button {
+	display: inline-flex;
+	align-items: stretch;
+}
+.split-button vscode-button.main-button {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	width: 7em;
+	background: var(--vscode-menu-background, var(--vscode-dropdown-background));
+}
+.split-button vscode-button.dropdown-toggle {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	border-left: 1px solid var(--vscode-button-separator, rgba(255,255,255,0.2));
+	padding: 0;
+	min-width: 0;
+	background: var(--vscode-menu-background, var(--vscode-dropdown-background));
+}
+.split-button vscode-button.dropdown-toggle::part(control) {
+	padding: 0 4px;
+	min-width: 0;
+}
+.dropdown-toggle svg {
+	width: 14px;
+	height: 14px;
+	fill: currentColor;
+}
+.dropdown-menu {
+	display: none;
+	position: absolute;
+	top: 100%;
+	right: 0;
+	margin-top: 2px;
+	z-index: 1000;
+	border: none;
+	padding: 0;
+	width: -webkit-fill-available;
+}
+.dropdown-menu.open {
+	display: block;
+}
+vscode-button.dropdown-item {
+	display: block;
+	width: 100%;
+	padding: 0;
+	background: var(--vscode-menu-background, var(--vscode-dropdown-background));
+	display: flex;
+}
+vscode-button.dropdown-item::part(control) {
+	padding: var(--button-padding-vertical) calc(var(--button-padding-vertical) * 2);
+	display: flex;
+}
