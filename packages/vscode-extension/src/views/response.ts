@@ -57,6 +57,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 		this.codiconFontUri = view.webview.asWebviewUri(this.codiconFontPath)!
 		this.nonces.js = getNonce()
 		this.nonces.css = getNonce()
+		this.nonces.icons = getNonce()
 
 		view.webview.options = {
 			enableScripts: true,
@@ -125,7 +126,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 			-->
 			<meta http-equiv="Content-Security-Policy" content="
 				default-src 'none';
-				font-src ${this.view.webview.cspSource};
+				font-src ${this.view.webview.cspSource} 'nonce-${this.nonces.icons}';
 				style-src ${this.view.webview.cspSource} 'nonce-${this.nonces.css}' 'unsafe-inline';
 				img-src ${this.view.webview.cspSource} https:;
 				script-src 'nonce-${this.nonces.js}';
@@ -135,7 +136,7 @@ export class ResponseViewProvider implements vscode.WebviewViewProvider {
 				@font-face {
 					font-family: "codicon";
 					font-display: block;
-					src: url("${this.codiconFontUri}") format("truetype");
+					src: url("${this.codiconFontUri.toString()}") format("truetype");
 				}
 			</style>
 			${this.buildJsonColorOverrides()}
