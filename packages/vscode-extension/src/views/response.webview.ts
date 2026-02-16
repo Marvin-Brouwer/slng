@@ -1,5 +1,5 @@
-import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import chevronDownSvg from '@vscode/codicons/src/icons/chevron-down.svg'
+import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import { Button } from '@vscode/webview-ui-toolkit'
 import '../webview'
 
@@ -49,8 +49,11 @@ class CopyButton extends HTMLElement {
 		const shadow = this.attachShadow({ mode: 'open' })
 
 		// Scoped styles for the split button layout, loaded via <link> to comply with CSP
-		const styleSrc = this.getAttribute('style-src')
-		const link = createElement<HTMLLinkElement>('link', { rel: 'stylesheet', href: styleSrc! })
+		shadow.appendChild(createElement<HTMLLinkElement>('link', {
+			rel: 'stylesheet',
+			href: this.getAttribute('style-src')!,
+			nonce: this.getAttribute('style-nonce')
+		}))
 
 		// Container for the split button
 		const container = createElement('div', { className: 'split-button' })
@@ -76,7 +79,9 @@ class CopyButton extends HTMLElement {
 		})
 
 		// Dropdown menu with "Copy unmasked" option
-		const dropdownMenu = createElement('div', { className: 'dropdown-menu' })
+		const dropdownMenu = createElement('div', {
+			className: 'dropdown-menu'
+		})
 		const copyUnmaskedItem = createElement('button', {
 			className: 'dropdown-item',
 			textContent: 'Copy unmasked'
@@ -137,7 +142,6 @@ class CopyButton extends HTMLElement {
 		})
 
 		// Assemble shadow DOM
-		shadow.appendChild(link)
 		shadow.appendChild(container)
 		shadow.appendChild(dropdownMenu)
 	}
