@@ -56,7 +56,7 @@ class CopyButton extends HTMLElement {
 
 		this.splitContainer = createElement('div', { className: 'split-button' })
 		this.splitContainer.setAttribute('role', 'group')
-		this.splitContainer.setAttribute('aria-label', 'Copy response')
+		this.splitContainer.setAttribute('aria-label', 'Copy value')
 
 		// Main "Copy" button
 		this.mainButton = createElement<Button>('vscode-button', {
@@ -65,7 +65,7 @@ class CopyButton extends HTMLElement {
 			appearance: 'secondary',
 			className: 'main-button',
 		})
-		this.mainButton.setAttribute('aria-label', 'Copy response to clipboard')
+		this.mainButton.setAttribute('aria-label', 'Copy value to clipboard')
 		this.mainButton.append(createElement('span', {
 			slot: 'start',
 			innerHTML: copyIconSvg,
@@ -146,6 +146,8 @@ class CopyButton extends HTMLElement {
 			if (type) {
 				this.mainButton.title = `Copy the ${type} with sensitive values masked`
 				this.copyUnmaskedButton.title = `Copy the ${type} with sensitive values UNMASKED`
+				this.splitContainer.setAttribute('aria-label', `Copy ${type}`)
+				this.mainButton.setAttribute('aria-label', `Copy ${type} to clipboard`)
 			}
 			// Scoped styles for the split button layout, loaded via <link> to comply with CSP
 			// href/nonce are set in connectedCallback, since attributes aren't available in the constructor
