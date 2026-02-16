@@ -2,7 +2,7 @@ import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
 import { sendRequest } from '../send'
-import { ResponseViewProvider } from '../views/response'
+import { ResponseViewProvider } from '../response-panel/response'
 
 import { updateFile } from './update-file'
 
