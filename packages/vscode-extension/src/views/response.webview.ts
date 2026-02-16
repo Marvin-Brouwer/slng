@@ -1,4 +1,5 @@
 import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
+import chevronDownSvg from '@vscode/codicons/src/icons/chevron-down.svg'
 import { Button } from '@vscode/webview-ui-toolkit'
 import '../webview'
 
@@ -41,48 +42,157 @@ function createElement<TElement extends HTMLElement>(element: string, props?: Pa
 
 class CopyButton extends HTMLElement {
 
-	// TODO call "Copy📄", with icon, add dropdown button, with option for "Copy unmasked"
 	constructor() {
 		super()
 
 		// Attach shadow DOM
 		const shadow = this.attachShadow({ mode: 'open' })
 
-		// Create the vscode-button from the toolkit
-		const button = createElement<Button>('vscode-button', {
+		// Scoped styles for the split button layout
+		const style = createElement('style')
+		style.textContent = /*css*/`
+			:host {
+				display: inline-block;
+				position: relative;
+			}
+			.split-button {
+				display: inline-flex;
+				align-items: stretch;
+			}
+			.split-button vscode-button.main-button {
+				border-top-right-radius: 0;
+				border-bottom-right-radius: 0;
+			}
+			.split-button vscode-button.dropdown-toggle {
+				border-top-left-radius: 0;
+				border-bottom-left-radius: 0;
+				border-left: 1px solid var(--vscode-button-separator, rgba(255,255,255,0.2));
+				padding: 0 4px;
+				min-width: 0;
+			}
+			.split-button vscode-button.dropdown-toggle::part(control) {
+				padding: 0 4px;
+				min-width: 0;
+			}
+			.dropdown-toggle svg {
+				width: 14px;
+				height: 14px;
+				fill: currentColor;
+			}
+			.dropdown-menu {
+				display: none;
+				position: absolute;
+				top: 100%;
+				right: 0;
+				margin-top: 2px;
+				z-index: 1000;
+				background: var(--vscode-menu-background, var(--vscode-dropdown-background));
+				border: 1px solid var(--vscode-menu-border, var(--vscode-dropdown-border));
+				border-radius: 4px;
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+				min-width: 140px;
+				padding: 4px 0;
+			}
+			.dropdown-menu.open {
+				display: block;
+			}
+			.dropdown-item {
+				display: block;
+				width: 100%;
+				padding: 4px 12px;
+				border: none;
+				background: none;
+				color: var(--vscode-menu-foreground, var(--vscode-dropdown-foreground));
+				font-family: var(--vscode-font-family, sans-serif);
+				font-size: var(--vscode-font-size, 13px);
+				text-align: left;
+				cursor: pointer;
+				white-space: nowrap;
+				box-sizing: border-box;
+			}
+			.dropdown-item:hover {
+				background: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground));
+				color: var(--vscode-menu-selectionForeground, var(--vscode-list-hoverForeground));
+			}
+		`
+
+		// Container for the split button
+		const container = createElement('div', { className: 'split-button' })
+
+		// Main "Copy" button
+		const mainButton = createElement<Button>('vscode-button', {
 			textContent: 'Copy',
 			type: 'button',
-			appearance: 'secondary'
+			appearance: 'secondary',
+			className: 'main-button'
 		})
-
-		// TODO [CLAUDE] add additional button [📄 Copy ] should become [📄 Copy | ↓ ]
-		// Pressing the expand arrow should show "Copy unmasked" as option and call copyUnmasked.
-
-		// Inline SVG copy icon from @vscode/codicons (inlined at build time via tsup loader)
-		button.appendChild(createElement('span', {
+		mainButton.appendChild(createElement('span', {
 			slot: 'start',
 			innerHTML: copyIconSvg
 		}))
+
+		// Dropdown toggle button with chevron-down icon
+		const dropdownToggle = createElement<Button>('vscode-button', {
+			type: 'button',
+			appearance: 'secondary',
+			className: 'dropdown-toggle',
+			innerHTML: chevronDownSvg
+		})
+
+		// Dropdown menu with "Copy unmasked" option
+		const dropdownMenu = createElement('div', { className: 'dropdown-menu' })
+		const copyUnmaskedItem = createElement('button', {
+			className: 'dropdown-item',
+			textContent: 'Copy unmasked'
+		})
+		dropdownMenu.appendChild(copyUnmaskedItem)
+
+		container.appendChild(mainButton)
+		container.appendChild(dropdownToggle)
 
 		function copyDefault() {
 			// TODO, I guess postmessage, use vscode clipboard api
 			console.log('Copy button clicked!')
 			copyElementText(document.getElementById('response-data'))
 			// TODO show toast in postmessage instead
-			button.textContent = 'Copy done'
+			mainButton.textContent = 'Copied!'
 		}
 		function copyUnmasked() {
 			// TODO, I guess postmessage, use vscode clipboard api
-			console.log('Copy button clicked 2!')
+			console.log('Copy unmasked button clicked!')
 			copyElementText(document.getElementById('response-data'))
 			// TODO show toast in postmessage instead
-			button.textContent = 'Copy done 2'
+			mainButton.textContent = 'Copied!'
+			dropdownMenu.classList.remove('open')
 		}
-		// Default click handler (can be overridden by adding your own listener)
-		button.addEventListener('click', copyDefault)
 
-		// Append to shadow DOM
-		shadow.appendChild(button)
+		mainButton.addEventListener('click', copyDefault)
+
+		// Toggle dropdown on chevron click
+		dropdownToggle.addEventListener('click', (e) => {
+			e.stopPropagation()
+			dropdownMenu.classList.toggle('open')
+		})
+
+		copyUnmaskedItem.addEventListener('click', (e) => {
+			e.stopPropagation()
+			copyUnmasked()
+		})
+
+		// Close dropdown when clicking outside
+		document.addEventListener('click', () => {
+			dropdownMenu.classList.remove('open')
+		})
+		shadow.addEventListener('click', (e) => {
+			if (e.target !== dropdownToggle && !dropdownToggle.contains(e.target as Node)) {
+				dropdownMenu.classList.remove('open')
+			}
+		})
+
+		// Assemble shadow DOM
+		shadow.appendChild(style)
+		shadow.appendChild(container)
+		shadow.appendChild(dropdownMenu)
 	}
 }
 
