@@ -27,8 +27,7 @@ export function registerSendCommand(context: ExtensionContext, responsePanel: Re
 				await context.state.put(reference, result)
 				// TODO fix ignores
 
-				responsePanel.update(reference)
-				responsePanel.show()
+				await responsePanel.show(reference)
 
 				await updateFile()
 			},

@@ -25,6 +25,11 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 	private jsonColors: JsonTokenColors = {}
 	private currentReference: string | undefined
 
+	private setVisible = () => void {}
+	private readonly visiblePromise = new Promise<void>((resolve) => {
+		this.setVisible = resolve
+	})
+
 	constructor(
 		private readonly context: ExtensionContext,
 		extensionUri: vscode.Uri,
@@ -39,10 +44,10 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 		this.jsonColors = resolveJsonTokenColors()
 
 		context.addSubscriptions(
-			vscode.window.onDidChangeActiveColorTheme(() => {
+			vscode.window.onDidChangeActiveColorTheme(async () => {
 				this.jsonColors = resolveJsonTokenColors()
 				if (this.currentReference && this.view) {
-					this.update(this.currentReference)
+					await this.show(this.currentReference)
 				}
 			}),
 		)
@@ -69,26 +74,32 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 			],
 		}
 		view.webview.html = this.noSelectionView()
+		this.setVisible()
 	}
 
 	public hide() {
 		this.context.log.warn('TODO', 'Figure out if closing is possible')
 	}
 
-	public show() {
+	// TODO do we want to show more information when no response? Maybe a send button?
+	public async show(reference: string | undefined) {
+		this.context.log.info('update', reference)
 		const maskSecrets = this.config.get<boolean>('maskSecrets', true)
 		this.context.log.info('shouldmask', maskSecrets)
-		this.view.show(false)
-	}
+		await vscode.commands.executeCommand('sling.response-panel.focus')
+		await this.visiblePromise
 
-	// TODO do we want to show more information when no response? Maybe a send button?
-	public update(reference: string | undefined) {
-		this.context.log.info('update', reference)
 		this.currentReference = reference
 		if (!this.view) return this.context.log.warn('ResponseView not resolved!')
 
-		if (!reference) return this.noSelectionView()
-		if (!this.context.state.includesKey(reference)) return this.noSelectionView()
+		if (!reference) {
+			this.view.webview.html = this.noSelectionView()
+			return
+		}
+		if (!this.context.state.includesKey(reference)) {
+			this.view.webview.html = this.noSelectionView()
+			return
+		}
 
 		const referencedResponse = this.context.state.get<SlingResponse>(reference)
 		this.view.webview.html = this.responseView(referencedResponse)
@@ -212,7 +223,7 @@ function buildResponseDisplay(response: SlingResponse) {
 		`<div class="headers"><table>${headers}</table></div>`,
 		`<br />`,
 		`<pre class="body">${body}</pre>`,
-		`<body-display content-type=${contentType}>${body}</body-display>`,
+		`<body-display content-type=${contentType.split(';')[0]}>${body}</body-display>`,
 	].join('')
 }
 
