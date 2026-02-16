@@ -5,8 +5,13 @@
 			"name": "Launch Extension",
 			"type": "extensionHost",
 			"request": "launch",
-			"runtimeExecutable": "",
-			"autoAttachChildProcesses": true,
+			"showAsyncStacks": true,
+			// TODO we disabled this to remove the 4 console windows on startup
+			// Figure out if we even need this flag
+			// "autoAttachChildProcesses": true,
+			"windows": {
+				"internalConsoleOptions": "neverOpen"
+			},
 			"args": [
 				// TODO figure out a way to have vscode actually work with the correct log level
 				"--log-level trace",
@@ -17,7 +22,7 @@
 				"--skip-release-notes",
 				"--skip-welcome",
 				"${workspaceFolder}/examples",
-				"--extensions-dir ${workspaceFolder}/.vscode", // This ignores all other extensions without the re-enable popup
+				"--extensions-dir=${workspaceFolder}/.vscode", // This ignores all other extensions without the re-enable popup
 				"--disable-extension vscode.git", // Disable built-in git to disable parent git message
 				"--extensionDevelopmentPath=${workspaceFolder}/packages/vscode-extension"
 			],
