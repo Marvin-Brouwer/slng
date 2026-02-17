@@ -2,7 +2,7 @@ import chevronDownSvg from '@vscode/codicons/src/icons/chevron-down.svg'
 import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import { Button } from '@vscode/webview-ui-toolkit'
 
-import { createElement, SimpleElement } from '../element-helper'
+import { SimpleElement } from '../element-helper'
 
 // TODO client scripts will go here
 /*
@@ -47,7 +47,7 @@ export class CopyButton extends SimpleElement {
 		const type = this.getAttribute('type') ?? 'value'
 		const valueSelector = this.getAttribute('for') ?? undefined
 
-		const splitContainer = this.createElement('div', {
+		const splitContainer = this.appendElement('div', {
 			className: 'split-button',
 			role: 'group',
 			ariaLabel: `Copy ${type}`,
@@ -71,7 +71,7 @@ export class CopyButton extends SimpleElement {
 			this.closeDropdown(dropdownMenu, dropdownToggle)
 		})
 
-		const dropdownMenu = this.createElement('div', {
+		const dropdownMenu = this.appendElement('div', {
 			className: 'dropdown-menu',
 			role: 'menu',
 		})
@@ -125,30 +125,19 @@ export class CopyButton extends SimpleElement {
 				this.closeDropdown(dropdownMenu, dropdownToggle)
 			}
 		})
-
-		this.append(createElement<HTMLLinkElement>('link', {
-			rel: 'stylesheet',
-			href: this.getAttribute('style-src'),
-			nonce: this.getAttribute('style-nonce'),
-			// Only once the styles are loaded do we show the button
-			onload: () => {
-				this.append(splitContainer)
-				this.append(dropdownMenu)
-			},
-		}))
 	}
 
-	openDropdown(dropdownMenu: HTMLElement, dropdownToggle: HTMLElement) {
+	private openDropdown(dropdownMenu: HTMLElement, dropdownToggle: HTMLElement) {
 		dropdownMenu.classList.add('open')
 		dropdownToggle.setAttribute('aria-expanded', 'true')
 	}
 
-	closeDropdown(dropdownMenu: HTMLElement, dropdownToggle: HTMLElement) {
+	private closeDropdown(dropdownMenu: HTMLElement, dropdownToggle: HTMLElement) {
 		dropdownMenu.classList.remove('open')
 		dropdownToggle.setAttribute('aria-expanded', 'false')
 	}
 
-	copyDefault(element: HTMLElement) {
+	private copyDefault(element: HTMLElement) {
 		if (!element) return
 		// TODO, I guess postmessage, use vscode clipboard api
 		console.log('Copy button clicked!')
@@ -156,7 +145,7 @@ export class CopyButton extends SimpleElement {
 		// TODO show toast in postmessage
 	}
 
-	copyUnmasked(element: HTMLElement) {
+	private copyUnmasked(element: HTMLElement) {
 		if (!element) return
 		// TODO, I guess postmessage, use vscode clipboard api
 		console.log('Copy unmasked button clicked!')

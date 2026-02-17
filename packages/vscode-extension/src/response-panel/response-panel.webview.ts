@@ -119,6 +119,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 				script-src 'nonce-${this.nonces('js')}';
 			">
 			<link nonce="${this.nonces('css')}" rel="stylesheet" href="${this.styleUri.toString()}" />
+			<link nonce="${this.nonces('copy-button-css')}" rel="stylesheet" href="${this.copyButtonStyleUri.toString()}" />
 			${buildJsonColorOverrides(this.nonces('json-display-css'))}
 			<script nonce="${this.nonces('js')}" src="${this.scriptUri.toString()}"></script>
 		</head>
@@ -154,12 +155,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 				<vscode-panel-view id="view-response">
 					<div>
 						<div class="copy-panel">
-							<copy-button
-								for="#response-data"
-								type="response"
-								style-src="${this.copyButtonStyleUri.toString()}"
-								style-nonce="${this.nonces('copy-button-css')}"
-							/>
+							<copy-button for="#response-data" type="response" />
 						</div>
 						<http-response>${JSON.stringify(response)}</http-response>
 					</div>
