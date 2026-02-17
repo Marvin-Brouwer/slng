@@ -22,6 +22,16 @@ export class HttpResponseDisplay extends SimpleElement {
 		const responseDataDiv = this.createElement('div', {
 			id: 'response-data',
 		})
+		const copyPanel = this.appendElementTo(responseDataDiv, 'div', {
+			className: 'copy-panel',
+		})
+		this.appendElementTo(copyPanel, 'copy-button', {
+			attributes: {
+				for: '#response-data',
+				type: 'response',
+			},
+		})
+
 		this.appendElementTo(responseDataDiv, 'pre', {
 			className: 'start-line',
 			textContent: startLine,
@@ -60,17 +70,15 @@ export class HttpRequestDisplay extends SimpleElement {
 		const responseDataDiv = this.createElement('div', {
 			id: 'request-data',
 		})
-		// const copyPanel = this.appendElementTo(responseDataDiv, 'div', {
-		// 	className: 'copy-panel',
-		// })
-		// this.appendElementTo(copyPanel, 'copy-button', {
-		// 	attributes: {
-		// 		for: '#response-data',
-		// 		type: 'response',
-		// 		// 'style-src': this.copyButtonStyleUri.toString(),
-		// 		// 'style-nonce': this.nonces(\'copy-button-css\')
-		// 	},
-		// })
+		const copyPanel = this.appendElementTo(responseDataDiv, 'div', {
+			className: 'copy-panel',
+		})
+		this.appendElementTo(copyPanel, 'copy-button', {
+			attributes: {
+				for: '#response-data',
+				type: 'response',
+			},
+		})
 
 		this.appendElementTo(responseDataDiv, 'pre', {
 			className: 'start-line',

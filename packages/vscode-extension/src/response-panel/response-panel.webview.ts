@@ -153,12 +153,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 				</vscode-panel-tab>
 				<vscode-panel-tab id="tab-request">REQUEST</vscode-panel-tab>
 				<vscode-panel-view id="view-response">
-					<div>
-						<div class="copy-panel">
-							<copy-button for="#response-data" type="response" />
-						</div>
-						<http-response>${JSON.stringify(response)}</http-response>
-					</div>
+					<http-response>${JSON.stringify(response)}</http-response>
 				</vscode-panel-view>
 				<vscode-panel-view id="view-request">
 					<http-request>${JSON.stringify(response.request)}</http-request>
