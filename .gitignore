@@ -16,3 +16,6 @@ coverage/
 .DS_Store
 Thumbs.db
 .envrc
+
+# Claude
+.claude/settings.local.json

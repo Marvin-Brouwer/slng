@@ -1,6 +1,19 @@
-import { SimpleElement } from '../element-helper'
+import type { BodyAstNode, JsonAstNode } from '@slng/config'
+import type { BodyRenderer } from './body-display'
+
+function isJsonContentType(contentType: string): boolean {
+	return contentType === 'application/json' || contentType.endsWith('+json')
+}
+
+export const jsonBodyRenderer: BodyRenderer = {
+	canProcess: mimeType => isJsonContentType(mimeType),
+	renderAst(nodes: BodyAstNode[]): string {
+		return nodes.map(node => renderJsonAst(node as JsonAstNode, 0)).join('')
+	},
+}
 
 const MAX_BRACKET_PAIR_COLORS = 6
+const INDENT = '  '
 
 function escapeHtml(text: string): string {
 	return text
@@ -14,176 +27,79 @@ function bracketClass(depth: number): string {
 }
 
 /**
- * Tokenizes a JSONC string and returns syntax-highlighted HTML.
- * Supports single-line (//) and block comments.
- * On failure, returns the raw input string.
+ * Render a JSON AST node to syntax-highlighted HTML with pretty-printing.
  */
-export function buildJson(input: string): string {
-	try {
-		return colorizeJsonc(input)
-	}
-	catch {
-		return input
-	}
-}
-
-function colorizeJsonc(input: string): string {
-	const html: string[] = []
-	let index = 0
-	let depth = 0
-	const contextStack: ('object' | 'array')[] = []
-	let expectingKey = false
-
-	while (index < input.length) {
-		const ch = input[index]
-
-		// Whitespace
-		if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
-			html.push(ch)
-			index++
-			continue
+export function renderJsonAst(node: JsonAstNode, depth: number): string {
+	switch (node.type) {
+		case 'object': {
+			return renderObject(node.entries, depth)
 		}
-
-		// Line comment
-		if (ch === '/' && input[index + 1] === '/') {
-			const end = input.indexOf('\n', index)
-			const comment = end === -1 ? input.slice(index) : input.slice(index, end)
-			html.push(`<span class="json-comment">${escapeHtml(comment)}</span>`)
-			index += comment.length
-			continue
+		case 'array': {
+			return renderArray(node.items, depth)
 		}
-
-		// Block comment
-		if (ch === '/' && input[index + 1] === '*') {
-			const end = input.indexOf('*/', index + 2)
-			const comment = end === -1 ? input.slice(index) : input.slice(index, end + 2)
-			html.push(`<span class="json-comment">${escapeHtml(comment)}</span>`)
-			index += comment.length
-			continue
+		case 'string': {
+			return `<span class="json-string">${escapeHtml(JSON.stringify(node.value))}</span>`
 		}
-
-		// Open brace
-		if (ch === '{') {
-			html.push(`<span class="${bracketClass(depth)}">{</span>`)
-			depth++
-			contextStack.push('object')
-			expectingKey = true
-			index++
-			continue
+		case 'number': {
+			return `<span class="json-number">${escapeHtml(node.value)}</span>`
 		}
-
-		// Close brace
-		if (ch === '}') {
-			depth--
-			contextStack.pop()
-			html.push(`<span class="${bracketClass(depth)}">}</span>`)
-			index++
-			continue
+		case 'boolean': {
+			return `<span class="json-keyword">${node.value}</span>`
 		}
-
-		// Open bracket
-		if (ch === '[') {
-			html.push(`<span class="${bracketClass(depth)}">[</span>`)
-			depth++
-			contextStack.push('array')
-			index++
-			continue
+		case 'null': {
+			return `<span class="json-keyword">null</span>`
 		}
-
-		// Close bracket
-		if (ch === ']') {
-			depth--
-			contextStack.pop()
-			html.push(`<span class="${bracketClass(depth)}">]</span>`)
-			index++
-			continue
+		case 'masked': {
+			return `<masked-value data-index="${node.index}">${escapeHtml(node.mask)}</masked-value>`
 		}
-
-		// Colon
-		if (ch === ':') {
-			html.push('<span class="json-punctuation">:</span>')
-			expectingKey = false
-			index++
-			continue
-		}
-
-		// Comma
-		if (ch === ',') {
-			html.push('<span class="json-punctuation">,</span>')
-			if (contextStack.at(-1) === 'object') {
-				expectingKey = true
-			}
-			index++
-			continue
-		}
-
-		// String
-		if (ch === '"') {
-			let stringEnd = index + 1
-			while (stringEnd < input.length) {
-				if (input[stringEnd] === '\\') {
-					stringEnd += 2
-					continue
-				}
-				if (input[stringEnd] === '"') {
-					stringEnd++
-					break
-				}
-				stringEnd++
-			}
-			const raw = input.slice(index, stringEnd)
-			const cssClass = expectingKey ? 'json-key' : 'json-string'
-			html.push(`<span class="${cssClass}">${escapeHtml(raw)}</span>`)
-			if (expectingKey) expectingKey = false
-			index = stringEnd
-			continue
-		}
-
-		// Number
-		if (ch === '-' || (ch >= '0' && ch <= '9')) {
-			let numberEnd = index + 1
-			while (numberEnd < input.length && /[\d.eE+-]/.test(input[numberEnd])) numberEnd++
-			html.push(`<span class="json-number">${input.slice(index, numberEnd)}</span>`)
-			index = numberEnd
-			continue
-		}
-
-		// Keywords
-		if (input.startsWith('true', index)) {
-			html.push('<span class="json-keyword">true</span>')
-			index += 4
-			continue
-		}
-		if (input.startsWith('false', index)) {
-			html.push('<span class="json-keyword">false</span>')
-			index += 5
-			continue
-		}
-		if (input.startsWith('null', index)) {
-			html.push('<span class="json-keyword">null</span>')
-			index += 4
-			continue
-		}
-
-		// Anything else
-		html.push(escapeHtml(ch))
-		index++
-	}
-
-	return html.join('')
-}
-
-export class HttpJsonBody extends SimpleElement {
-	static tagName = 'json-body-display'
-	static canProcess(mimeType: string) {
-		return mimeType === 'application/json' || mimeType.endsWith('+json')
-	}
-
-	protected onMount() {
-		this.innerHTML = this.createHtml('pre', {
-			innerHTML: colorizeJsonc(this.textContent),
-		})
 	}
 }
 
-SimpleElement.register(HttpJsonBody)
+function renderObject(entries: [JsonAstNode, JsonAstNode][], depth: number): string {
+	if (entries.length === 0) {
+		return `<span class="${bracketClass(depth)}">{</span><span class="${bracketClass(depth)}">}</span>`
+	}
+
+	const innerIndent = INDENT.repeat(depth + 1)
+	const outerIndent = INDENT.repeat(depth)
+
+	const items = entries.map(([key, value], index) => {
+		const keyHtml = key.type === 'string'
+			? `<span class="json-key">${escapeHtml(JSON.stringify(key.value))}</span>`
+			: renderJsonAst(key, depth + 1)
+		const valueHtml = renderJsonAst(value, depth + 1)
+		const comma = index < entries.length - 1
+			? '<span class="json-punctuation">,</span>'
+			: ''
+		return `${innerIndent}${keyHtml}<span class="json-punctuation">: </span>${valueHtml}${comma}`
+	})
+
+	return [
+		`<span class="${bracketClass(depth)}">{</span>`,
+		...items,
+		`${outerIndent}<span class="${bracketClass(depth)}">}</span>`,
+	].join('\n')
+}
+
+function renderArray(items: JsonAstNode[], depth: number): string {
+	if (items.length === 0) {
+		return `<span class="${bracketClass(depth)}">[</span><span class="${bracketClass(depth)}">]</span>`
+	}
+
+	const innerIndent = INDENT.repeat(depth + 1)
+	const outerIndent = INDENT.repeat(depth)
+
+	const rendered = items.map((item, index) => {
+		const valueHtml = renderJsonAst(item, depth + 1)
+		const comma = index < items.length - 1
+			? '<span class="json-punctuation">,</span>'
+			: ''
+		return `${innerIndent}${valueHtml}${comma}`
+	})
+
+	return [
+		`<span class="${bracketClass(depth)}">[</span>`,
+		...rendered,
+		`${outerIndent}<span class="${bracketClass(depth)}">]</span>`,
+	].join('\n')
+}

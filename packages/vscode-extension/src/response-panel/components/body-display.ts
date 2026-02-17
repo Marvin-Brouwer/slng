@@ -1,31 +1,34 @@
-import { SimpleElement, SimpleElementConstructor } from '../element-helper'
+import { SimpleElement } from '../element-helper'
 
-import { HttpJsonBody } from './body-display.json'
+import { jsonBodyRenderer } from './body-display.json'
+import { renderTextBodyAst } from './body-display.text'
 
-export type BodyDisplayElementConstructor = SimpleElementConstructor & {
+import type { BodyAstNode } from '@slng/config'
+
+export interface BodyRenderer {
 	canProcess(mimeType: string): boolean
+	renderAst(nodes: BodyAstNode[]): string
 }
 
-const contentTypeMap = new Set<BodyDisplayElementConstructor>([
-	HttpJsonBody,
-])
+const bodyRenderers: BodyRenderer[] = [
+	jsonBodyRenderer,
+]
 
 export class HttpBody extends SimpleElement {
 	static tagName = 'body-display'
 
-	private findDisplay(contentType: string | undefined) {
-		if (contentType === undefined) return 'pre'
-		return contentTypeMap.values()
-			.find(entry => entry.canProcess(contentType))
-			?.tagName ?? 'pre'
-	}
-
 	protected onMount(): void {
-		const contentType = this.getAttribute('content-type')?.trim()?.toLowerCase()
-		const contentDisplay = this.findDisplay(contentType)
+		const raw = this.textContent?.trim()
 
-		this.innerHTML = this.createHtml(contentDisplay, {
-			textContent: this.textContent,
+		if (!raw) return
+
+		const contentType = this.getAttribute('content-type') ?? ''
+		const ast = JSON.parse(raw) as BodyAstNode[]
+		const renderer = bodyRenderers.find(r => r.canProcess(contentType))
+		const renderAst = renderer ? renderer.renderAst : renderTextBodyAst
+
+		this.innerHTML = this.createHtml('pre', {
+			innerHTML: renderAst(ast),
 		})
 
 		// There needs to be an empty line before the body

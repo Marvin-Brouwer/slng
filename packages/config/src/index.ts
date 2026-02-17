@@ -14,6 +14,8 @@ export * from './masking/mask.js'
 export { secret } from './masking/secret.js'
 export { sensitive } from './masking/sensitive.js'
 export { isSlingDefinition } from './definition.js'
+export { buildBodyAst, parseTemplateDisplay } from './display-parser.js'
+export { isJsonContentType } from './display-parser.json.js'
 export {
 	parseHttpText,
 	resolveInterpolation,
@@ -42,4 +44,9 @@ export type {
 	JsonOptions,
 	ParsedHttpRequest,
 	RequestReference,
+	DisplayHttpRequest,
+	MaskedReference,
+	JsonAstNode,
+	PlainTextAstNode,
+	BodyAstNode,
 } from './types.js'

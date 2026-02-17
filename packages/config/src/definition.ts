@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 
+import { buildBodyAst, parseTemplateDisplay } from './display-parser.js'
 import { isMask } from './masking/mask.js'
 import {
 	parseTemplatePreview,
@@ -42,6 +43,9 @@ export function createDefinition(
 	// Parse a preview (with deferred values as placeholders)
 	const parsed = parseTemplatePreview(strings, values)
 
+	// Build display version with masked references and body AST
+	const display = parseTemplateDisplay(strings, values, maskedValues)
+
 	// Response cache (shared across execute/json calls)
 	let cached: CachedResponse | undefined
 
@@ -50,6 +54,7 @@ export function createDefinition(
 		tsAst: undefined!, // added by the runtime
 		template: { strings: [...strings], values },
 		parsed,
+		display,
 		maskedValues,
 	}
 
@@ -253,6 +258,7 @@ async function executeRequest(
 		name: internals.tsAst.exportName,
 		template: internals.template,
 		parsed: resolved,
+		display: internals.display,
 	}
 	const fetchResponse = await performFetch(resolved, options)
 
@@ -268,6 +274,7 @@ async function executeRequest(
 
 			headers: {},
 			body: fetchErrorMessage,
+			bodyAst: undefined,
 
 			// We make this gettable to hide it for the console completely
 			raw: fetchResponse as unknown as Response,
@@ -280,6 +287,12 @@ async function executeRequest(
 	// Convert headers
 	const responseHeaders = Object.fromEntries(fetchResponse.headers as unknown as Iterable<[string, string]>)
 
+	// Build body AST from response content-type
+	const responseContentType = fetchResponse.headers.get('content-type')?.split(';')[0].trim()
+	const responseBodyAst = responseBody
+		? buildBodyAst(responseBody, responseContentType)
+		: undefined
+
 	// TODO, we don't want the console to expand the headers or body, however,
 	// using toJSON will also fail in the vscode extensionState object, since it's apparently serialized.
 	// Maybe create a custom formatter for the loggers and tag the values somehow?
@@ -291,6 +304,7 @@ async function executeRequest(
 
 		headers: responseHeaders,
 		body: responseBody,
+		bodyAst: responseBodyAst,
 
 		// We make this gettable to hide it for the console completely
 		raw: fetchResponse,

@@ -1,6 +1,6 @@
-import { RequestReference, SlingResponse } from '@slng/config'
-
 import { SimpleElement } from '../element-helper'
+
+import type { MaskedReference, RequestReference, SlingResponse } from '@slng/config'
 
 /** https://en.wikipedia.org/wiki/HTTP#Example */
 export class HttpResponseDisplay extends SimpleElement {
@@ -8,16 +8,12 @@ export class HttpResponseDisplay extends SimpleElement {
 
 	protected onMount(): void {
 		const response = JSON.parse(this.textContent) as SlingResponse
-		const startLine = `${response.request.parsed.httpVersion} ${response.status} ${response.statusText}`
-		// TODO this may later contain masked values too
+		const startLine = `${response.request.display.httpVersion} ${response.status} ${response.statusText}`
 		const headers = Object.entries(response.headers)
 			.map(([key, value]) => {
 				return `<header-row key=${key}>${value}</header-row>`
 			})
 			.join('\n').replaceAll('\t', '')
-
-		// TODO this may later contain masked values too
-		const contentType = getContentTypeHeader(response.headers)
 
 		const responseDataDiv = this.createElement('div', {
 			id: 'response-data',
@@ -41,9 +37,9 @@ export class HttpResponseDisplay extends SimpleElement {
 			innerHTML: headers,
 		})
 		this.appendElementTo(responseDataDiv, 'body-display', {
-			textContent: response.body,
+			textContent: response.bodyAst ? JSON.stringify(response.bodyAst) : '',
 			attributes: {
-				'content-type': contentType,
+				'content-type': response.request.display.contentType ?? '',
 			},
 		})
 		this.innerHTML = responseDataDiv.outerHTML
@@ -56,54 +52,52 @@ export class HttpRequestDisplay extends SimpleElement {
 
 	protected onMount(): void {
 		const request = JSON.parse(this.textContent) as RequestReference
-		const startLine = `${request.parsed.method} ${request.parsed.url} ${request.parsed.httpVersion}`
-		// TODO resolve masked values with a peek button
-		const headers = Object.entries(request.parsed.headers)
+		const display = request.display
+		const startLine = `${display.method} ${display.url} ${display.httpVersion}`
+
+		const headers = Object.entries(display.headers)
 			.map(([key, value]) => {
-				return `<header-row key=${key}>${value}</header-row>`
+				const displayValue = isMaskedReference(value)
+					? value.mask
+					: value
+				return `<header-row key=${key}>${displayValue}</header-row>`
 			})
 			.join('\n').replaceAll('\t', '')
 
-		// TODO this may later contain masked values too
-		const contentType = getContentTypeHeader(request.parsed.headers)
-
-		const responseDataDiv = this.createElement('div', {
+		const requestDataDiv = this.createElement('div', {
 			id: 'request-data',
 		})
-		const copyPanel = this.appendElementTo(responseDataDiv, 'div', {
+		const copyPanel = this.appendElementTo(requestDataDiv, 'div', {
 			className: 'copy-panel',
 		})
 		this.appendElementTo(copyPanel, 'copy-button', {
 			attributes: {
-				for: '#response-data',
-				type: 'response',
+				for: '#request-data',
+				type: 'request',
 			},
 		})
 
-		this.appendElementTo(responseDataDiv, 'pre', {
+		this.appendElementTo(requestDataDiv, 'pre', {
 			className: 'start-line',
 			textContent: startLine,
 		})
-		this.appendElementTo(responseDataDiv, 'header-display', {
+		this.appendElementTo(requestDataDiv, 'header-display', {
 			className: 'start-line',
 			innerHTML: headers,
 		})
-		this.appendElementTo(responseDataDiv, 'body-display', {
-			textContent: request.parsed.body,
+		this.appendElementTo(requestDataDiv, 'body-display', {
+			textContent: display.body ? JSON.stringify(display.body) : '',
 			attributes: {
-				'content-type': contentType,
+				'content-type': display.contentType ?? '',
 			},
 		})
-		this.innerHTML = responseDataDiv.outerHTML
+		this.innerHTML = requestDataDiv.outerHTML
 	}
 }
 
 SimpleElement.register(HttpResponseDisplay)
 SimpleElement.register(HttpRequestDisplay)
 
-function getContentTypeHeader(headers: Record<string, string | undefined>) {
-	for (const [key, value] of Object.entries(headers)) {
-		if (key.toLowerCase() === 'content-type') return value.split(';')[0]
-	}
-	return void 0
+function isMaskedReference(value: string | MaskedReference): value is MaskedReference {
+	return typeof value === 'object' && 'index' in value && 'mask' in value
 }
