@@ -13,15 +13,23 @@ const contentTypeMap = new Set<BodyDisplayElementConstructor>([
 export class HttpBody extends SimpleElement {
 	static tagName = 'body-display'
 
-	protected onMount(): void {
-		const contentType = this.getAttribute('content-type').trim().toLowerCase()
-		const contentDisplay = contentTypeMap.values()
+	private findDisplay(contentType: string | undefined) {
+		if (contentType === undefined) return 'pre'
+		return contentTypeMap.values()
 			.find(entry => entry.canProcess(contentType))
 			?.tagName ?? 'pre'
+	}
+
+	protected onMount(): void {
+		const contentType = this.getAttribute('content-type')?.trim()?.toLowerCase()
+		const contentDisplay = this.findDisplay(contentType)
 
 		this.innerHTML = this.createHtml(contentDisplay, {
 			textContent: this.textContent,
 		})
+
+		// There needs to be an empty line before the body
+		this.prepend(this.createElement('br'))
 	}
 }
 

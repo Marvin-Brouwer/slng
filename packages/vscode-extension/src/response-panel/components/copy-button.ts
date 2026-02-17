@@ -28,13 +28,22 @@ import { createElement } from '../element-helper'
  */
 function copyElementText(element: HTMLElement) {
 	if (!element) return
-	// TODO this doesn't work, use Clipboard.writeText when const vscode = acquireVsCodeApi(); becomes available
-	navigator.clipboard.writeText(element.textContent || '')
+	element.focus()
+	// eslint-disable-next-line unicorn/prefer-dom-node-text-content -- innerText preserves visual line breaks
+	const plainText = (element.innerText || '').replaceAll('\u00A0\t', ' ')
+	const html = element.innerHTML
+	const item = new ClipboardItem({
+		'text/plain': new Blob([plainText], { type: 'text/plain' }),
+		'text/html': new Blob([html], { type: 'text/html' }),
+	})
+	navigator.clipboard.write([item])
 		.then(() => console.log('Copied!'))
 		.catch(error => console.error('Copy failed:', error))
+	// TODO  use postmessage for a toast when const vscode = acquireVsCodeApi(); becomes available
 }
 
 export class CopyButton extends HTMLElement {
+	private valueSelector: string | undefined
 	private valueElement: HTMLElement | undefined
 
 	private root: ShadowRoot
@@ -128,17 +137,8 @@ export class CopyButton extends HTMLElement {
 	}
 
 	connectedCallback() {
-		const valueSelector = this.getAttribute('for')
+		this.valueSelector = this.getAttribute('for') ?? undefined
 		requestAnimationFrame(() => {
-			this.valueElement = valueSelector ? document.querySelector(valueSelector) : undefined
-			if (!this.valueElement) {
-				this.mainButton.disabled = true
-				this.mainButton.title = 'Copy unavailable'
-				this.copyUnmaskedButton.disabled = true
-				this.dropdownToggle.disabled = true
-				this.dropdownToggle.title = 'Copy unavailable'
-			}
-
 			const type = this.getAttribute('type')
 			if (type) {
 				this.mainButton.title = `Copy the ${type} with sensitive values masked`
@@ -161,6 +161,13 @@ export class CopyButton extends HTMLElement {
 		})
 	}
 
+	private resolveValueElement(): HTMLElement | undefined {
+		if (!this.valueElement && this.valueSelector) {
+			this.valueElement = document.querySelector(this.valueSelector) ?? undefined
+		}
+		return this.valueElement
+	}
+
 	openDropdown() {
 		this.dropdownMenu.classList.add('open')
 		this.dropdownToggle.setAttribute('aria-expanded', 'true')
@@ -172,18 +179,20 @@ export class CopyButton extends HTMLElement {
 	}
 
 	copyDefault() {
-		if (!this.valueElement) return
+		const element = this.resolveValueElement()
+		if (!element) return
 		// TODO, I guess postmessage, use vscode clipboard api
 		console.log('Copy button clicked!')
-		copyElementText(this.valueElement)
+		copyElementText(element)
 		// TODO show toast in postmessage
 	}
 
 	copyUnmasked() {
-		if (!this.valueElement) return
+		const element = this.resolveValueElement()
+		if (!element) return
 		// TODO, I guess postmessage, use vscode clipboard api
 		console.log('Copy unmasked button clicked!')
-		copyElementText(this.valueElement)
+		copyElementText(element)
 		// TODO show toast in postmessage instead
 		this.closeDropdown()
 	}

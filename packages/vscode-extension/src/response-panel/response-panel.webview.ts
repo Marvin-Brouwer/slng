@@ -162,7 +162,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 								style-nonce="${this.nonces('copy-button-css')}"
 							/>
 						</div>
-						<div id="response-data">${buildResponseDisplay(response)}</div>
+						<http-response>${JSON.stringify(response)}</http-response>
 					</div>
 				</vscode-panel-view>
 				<vscode-panel-view id="view-request">
@@ -173,30 +173,6 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 
 		return this.wrapHtml(view)
 	}
-}
-
-/** https://en.wikipedia.org/wiki/HTTP#Example */
-function buildResponseDisplay(response: SlingResponse) {
-	const startLine = `${response.request.parsed.httpVersion} ${response.status} ${response.statusText}`
-	// TODO this may later contain masked values too
-	const headers = Object.entries(response.headers)
-		.map(([key, value]) => {
-			return `<tr>
-				<td class="header-key">${key}:&nbsp;</td>
-				<td class="header-value">${value}</td>
-			</tr>`
-		})
-		.join('\n').replaceAll('\t', '')
-
-	// TODO this may later contain masked values too
-	const contentType = response.headers['content-type']?.split(';')[0] ?? ''
-
-	return [
-		`<pre class="start-line">${startLine}</pre>`,
-		`<div class="headers"><table>${headers}</table></div>`,
-		`<br />`,
-		`<body-display content-type=${contentType}>${response.body}</body-display>`,
-	].join('')
 }
 
 export function registerResponsePanel(

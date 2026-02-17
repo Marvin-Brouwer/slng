@@ -23,6 +23,9 @@
 	overflow-x: visible;
 	box-sizing: border-box;
 }
+#response-data > div {
+	width: 100%;
+}
 
 .copy-panel {
 	position: absolute;
@@ -87,6 +90,7 @@ pre.start-line {
 	font-weight: bolder;
 	padding: 0;
 	margin-bottom: 0;
+	width: min-content;
 }
 pre.body {
 	margin-top: 0;
@@ -122,3 +126,13 @@ pre.body {
 .json-bracket-4 { color: var(--json-bracket-4-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
 .json-bracket-5 { color: var(--json-bracket-5-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
 .json-bracket-6 { color: var(--json-bracket-6-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
+
+
+http-response,
+header-display,
+body-display {
+	display: block;
+	position: relative;
+	width: 100%;
+	min-width: 0;
+}

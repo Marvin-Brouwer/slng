@@ -1,8 +1,16 @@
-export function createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement>) {
-	return Object.assign(document.createElement(element) as TElement, properties ?? {})
+export type AttributeConstructor = {
+	attributes?: Record<string, string>
 }
-export function addElement<TElement extends HTMLElement>(parent: Element | ShadowRoot, element: string, properties?: Partial<TElement>) {
+export function createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement> | AttributeConstructor) {
+	const assignablePropserties = { ...properties, attributes: undefined }
+	delete assignablePropserties.attributes
+	return Object.assign(document.createElement(element) as TElement, assignablePropserties)
+}
+export function addElement<TElement extends HTMLElement>(parent: Element | ShadowRoot, element: string, properties?: Partial<TElement> | AttributeConstructor) {
 	const newElement = createElement<TElement>(element, properties)
+	for (const [key, value] of Object.entries((properties as AttributeConstructor)?.attributes ?? {})) {
+		newElement.setAttribute(key, value)
+	}
 	parent.append(newElement)
 	return newElement
 }
@@ -29,19 +37,19 @@ export abstract class SimpleElement extends HTMLElement {
 		})
 	}
 
-	appendElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement>) {
+	appendElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement> | AttributeConstructor) {
 		return addElement<TElement>(this, element, properties)
 	}
 
-	appendElementTo<TElement extends HTMLElement>(parent: Element | ShadowRoot, element: string, properties?: Partial<TElement>) {
+	appendElementTo<TElement extends HTMLElement>(parent: Element | ShadowRoot, element: string, properties?: Partial<TElement> | AttributeConstructor) {
 		return addElement<TElement>(parent, element, properties)
 	}
 
-	createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement>) {
+	createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement> | AttributeConstructor) {
 		return createElement<TElement>(element, properties)
 	}
 
-	createHtml<TElement extends HTMLElement>(element: string, properties?: Partial<TElement>) {
+	createHtml<TElement extends HTMLElement>(element: string, properties?: Partial<TElement> | AttributeConstructor) {
 		return createElement<TElement>(element, properties).outerHTML
 	}
 }
