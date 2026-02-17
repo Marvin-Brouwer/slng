@@ -1,5 +1,7 @@
 import { defineConfig } from 'tsup'
 
+const isDevelopment = process.env.NODE_ENV !== 'production'
+
 export default defineConfig([
 	{
 		entry: {
@@ -10,6 +12,9 @@ export default defineConfig([
 		clean: true,
 		sourcemap: true,
 		external: ['vscode'],
+		define: {
+			__DEV__: JSON.stringify(isDevelopment),
+		},
 	},
 	{
 		entry: {
@@ -17,7 +22,7 @@ export default defineConfig([
 		},
 		format: ['iife'],
 		dts: true,
-		sourcemap: true,
+		sourcemap: 'inline',
 		platform: 'browser',
 		treeshake: true,
 		cjsInterop: true,

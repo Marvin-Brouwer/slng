@@ -14,7 +14,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 	private scriptUri!: vscode.Uri
 	private styleUri!: vscode.Uri
 	private copyButtonStyleUri!: vscode.Uri
-	private readonly nonces = nonces('js', 'css', 'copy-button-css', 'json-display-css')
+	private readonly nonces = nonces('js', 'css', 'copy-button-css', 'json-display-css', 'toolkit-css')
 
 	private config: vscode.WorkspaceConfiguration
 	private readonly extensionUri: vscode.Uri
@@ -104,6 +104,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 		<head>
 			<meta charset="UTF-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
+			<meta property="csp-nonce" content="${this.nonces('toolkit-css')}">
 			<!--
 				Use a content security policy to only allow loading images from https or from our extension directory,
 				and only allow scripts that have a specific nonce.
@@ -114,9 +115,12 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 				style-src-elem ${this.view.webview.cspSource}
 					'nonce-${this.nonces('css')}'
 					'nonce-${this.nonces('copy-button-css')}'
-					'nonce-${this.nonces('json-display-css')}';
+					'nonce-${this.nonces('json-display-css')}'
+					'nonce-${this.nonces('toolkit-css')}';
+				style-src-attr 'unsafe-inline';
 				img-src ${this.view.webview.cspSource} https:;
 				script-src 'nonce-${this.nonces('js')}';
+				${__DEV__ ? `connect-src ${this.view.webview.cspSource};` : ''}
 			">
 			<link nonce="${this.nonces('css')}" rel="stylesheet" href="${this.styleUri.toString()}" />
 			<link nonce="${this.nonces('copy-button-css')}" rel="stylesheet" href="${this.copyButtonStyleUri.toString()}" />
