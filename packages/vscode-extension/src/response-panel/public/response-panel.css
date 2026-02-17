@@ -1,4 +1,4 @@
-#response-data {
+#response-data, #request-data {
 	/* Pre-like typography */
 	font-family: var(--vscode-editor-font-family, monospace);
 	font-size: var(--vscode-editor-font-size, 12px);
@@ -22,9 +22,6 @@
 	border-radius: 4px;
 	overflow-x: visible;
 	box-sizing: border-box;
-}
-#response-data > div {
-	width: 100%;
 }
 
 .copy-panel {
@@ -127,8 +124,8 @@ pre.body {
 .json-bracket-5 { color: var(--json-bracket-5-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
 .json-bracket-6 { color: var(--json-bracket-6-color, var(--json-punctuation-color, var(--vscode-editor-foreground))); }
 
-
 http-response,
+http-request,
 header-display,
 body-display {
 	display: block;

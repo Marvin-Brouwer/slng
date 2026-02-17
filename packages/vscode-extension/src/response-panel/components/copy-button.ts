@@ -2,7 +2,7 @@ import chevronDownSvg from '@vscode/codicons/src/icons/chevron-down.svg'
 import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import { Button } from '@vscode/webview-ui-toolkit'
 
-import { createElement } from '../element-helper'
+import { createElement, SimpleElement } from '../element-helper'
 
 // TODO client scripts will go here
 /*
@@ -42,144 +42,113 @@ function copyElementText(element: HTMLElement) {
 	// TODO  use postmessage for a toast when const vscode = acquireVsCodeApi(); becomes available
 }
 
-export class CopyButton extends HTMLElement {
-	private valueSelector: string | undefined
-	private valueElement: HTMLElement | undefined
+export class CopyButton extends SimpleElement {
+	protected onMount(): void {
+		const type = this.getAttribute('type') ?? 'value'
+		const valueSelector = this.getAttribute('for') ?? undefined
 
-	private root: ShadowRoot
+		const splitContainer = this.createElement('div', {
+			className: 'split-button',
+			role: 'group',
+			ariaLabel: `Copy ${type}`,
+		})
 
-	private mainButton: Button
-	private copyUnmaskedButton: Button
-	private dropdownToggle: Button
-
-	private dropdownMenu: HTMLElement
-	private splitContainer: HTMLElement
-
-	constructor() {
-		super()
-
-		this.root = this.attachShadow({ mode: 'open' })
-
-		this.splitContainer = createElement('div', { className: 'split-button' })
-		this.splitContainer.setAttribute('role', 'group')
-		this.splitContainer.setAttribute('aria-label', 'Copy value')
-
-		// Main "Copy" button
-		this.mainButton = createElement<Button>('vscode-button', {
+		const mainButton = this.appendElementTo<Button>(splitContainer, 'vscode-button', {
 			textContent: 'Copy',
 			type: 'button',
 			appearance: 'secondary',
 			className: 'main-button',
+
+			title: `Copy the ${type} with sensitive values masked`,
+			ariaLabel: `Copy ${type} to clipboard`,
 		})
-		this.mainButton.setAttribute('aria-label', 'Copy value to clipboard')
-		this.mainButton.append(createElement('span', {
+		this.appendElementTo(mainButton, 'span', {
 			slot: 'start',
 			innerHTML: copyIconSvg,
-		}))
-		this.mainButton.addEventListener('click', _event => this.copyDefault())
-		this.splitContainer.append(this.mainButton)
+		})
+		mainButton.addEventListener('click', (_event) => {
+			this.copyDefault(this.resolveValueElement(valueSelector))
+			this.closeDropdown(dropdownMenu, dropdownToggle)
+		})
 
-		// Dropdown toggle button with chevron-down icon
-		this.dropdownToggle = createElement<Button>('vscode-button', {
+		const dropdownMenu = this.createElement('div', {
+			className: 'dropdown-menu',
+			role: 'menu',
+		})
+
+		const dropdownToggle = this.appendElementTo<Button>(splitContainer, 'vscode-button', {
 			type: 'button',
 			title: 'More options',
 			appearance: 'secondary',
 			className: 'dropdown-toggle',
 			innerHTML: chevronDownSvg,
-		})
-		this.dropdownToggle.setAttribute('aria-label', 'More copy options')
-		this.dropdownToggle.setAttribute('aria-haspopup', 'menu')
-		this.dropdownToggle.setAttribute('aria-expanded', 'false')
-		this.splitContainer.append(this.dropdownToggle)
 
-		// Dropdown menu with "Copy unmasked" option
-		this.dropdownMenu = createElement('div', {
-			className: 'dropdown-menu',
+			ariaLabel: 'More copy options',
+			ariaHasPopup: 'menu',
+			ariaExpanded: 'false',
 		})
-		this.dropdownMenu.setAttribute('role', 'menu')
-		this.copyUnmaskedButton = createElement<Button>('vscode-button', {
+		dropdownToggle.addEventListener('click', (event) => {
+			event.stopPropagation()
+			if (dropdownMenu.classList.contains('open')) {
+				this.closeDropdown(dropdownMenu, dropdownToggle)
+			}
+			else {
+				this.openDropdown(dropdownMenu, dropdownToggle)
+			}
+		})
+
+		const copyUnmaskedButton = this.appendElementTo<Button>(dropdownMenu, 'vscode-button', {
 			className: 'dropdown-item',
 			textContent: 'Copy unmasked',
 			appearance: 'secondary',
-		})
-		this.copyUnmaskedButton.setAttribute('role', 'menuitem')
-		this.dropdownMenu.append(this.copyUnmaskedButton)
 
-		// Toggle dropdown on chevron click
-		this.dropdownToggle.addEventListener('click', (event) => {
-			event.stopPropagation()
-			if (this.dropdownMenu.classList.contains('open')) {
-				this.closeDropdown()
-			}
-			else {
-				this.openDropdown()
-			}
+			title: `Copy the ${type} with sensitive values UNMASKED`,
+			role: 'menuitem',
+			ariaLabel: `Copy ${type} to clipboard with masked values revealed`,
 		})
-
-		this.copyUnmaskedButton.addEventListener('click', (event) => {
+		copyUnmaskedButton.addEventListener('click', (event) => {
 			event.stopPropagation()
-			this.copyUnmasked()
+			this.copyUnmasked(this.resolveValueElement(valueSelector))
+			this.closeDropdown(dropdownMenu, dropdownToggle)
 		})
 
 		// Close dropdown when clicking outside
 		document.addEventListener('click', () => {
-			this.closeDropdown()
+			this.closeDropdown(dropdownMenu, dropdownToggle)
 		})
 		window.addEventListener('blur', () => {
-			this.closeDropdown()
+			this.closeDropdown(dropdownMenu, dropdownToggle)
 		})
 
-		this.root.addEventListener('click', (event) => {
-			if (event.target !== this.dropdownToggle && !this.dropdownToggle.contains(event.target as Node)) {
-				this.closeDropdown()
+		this.addEventListener('click', (event) => {
+			if (event.target !== dropdownToggle && !dropdownToggle.contains(event.target as Node)) {
+				this.closeDropdown(dropdownMenu, dropdownToggle)
 			}
 		})
+
+		this.append(createElement<HTMLLinkElement>('link', {
+			rel: 'stylesheet',
+			href: this.getAttribute('style-src'),
+			nonce: this.getAttribute('style-nonce'),
+			// Only once the styles are loaded do we show the button
+			onload: () => {
+				this.append(splitContainer)
+				this.append(dropdownMenu)
+			},
+		}))
 	}
 
-	connectedCallback() {
-		this.valueSelector = this.getAttribute('for') ?? undefined
-		requestAnimationFrame(() => {
-			const type = this.getAttribute('type')
-			if (type) {
-				this.mainButton.title = `Copy the ${type} with sensitive values masked`
-				this.copyUnmaskedButton.title = `Copy the ${type} with sensitive values UNMASKED`
-				this.splitContainer.setAttribute('aria-label', `Copy ${type}`)
-				this.mainButton.setAttribute('aria-label', `Copy ${type} to clipboard`)
-			}
-			// Scoped styles for the split button layout, loaded via <link> to comply with CSP
-			// href/nonce are set in connectedCallback, since attributes aren't available in the constructor
-			this.root.append(createElement<HTMLLinkElement>('link', {
-				rel: 'stylesheet',
-				href: this.getAttribute('style-src'),
-				nonce: this.getAttribute('style-nonce'),
-				// Only once the styles are loaded do we show the button
-				onload: () => {
-					this.root.append(this.splitContainer)
-					this.root.append(this.dropdownMenu)
-				},
-			}))
-		})
+	openDropdown(dropdownMenu: HTMLElement, dropdownToggle: HTMLElement) {
+		dropdownMenu.classList.add('open')
+		dropdownToggle.setAttribute('aria-expanded', 'true')
 	}
 
-	private resolveValueElement(): HTMLElement | undefined {
-		if (!this.valueElement && this.valueSelector) {
-			this.valueElement = document.querySelector(this.valueSelector) ?? undefined
-		}
-		return this.valueElement
+	closeDropdown(dropdownMenu: HTMLElement, dropdownToggle: HTMLElement) {
+		dropdownMenu.classList.remove('open')
+		dropdownToggle.setAttribute('aria-expanded', 'false')
 	}
 
-	openDropdown() {
-		this.dropdownMenu.classList.add('open')
-		this.dropdownToggle.setAttribute('aria-expanded', 'true')
-	}
-
-	closeDropdown() {
-		this.dropdownMenu.classList.remove('open')
-		this.dropdownToggle.setAttribute('aria-expanded', 'false')
-	}
-
-	copyDefault() {
-		const element = this.resolveValueElement()
+	copyDefault(element: HTMLElement) {
 		if (!element) return
 		// TODO, I guess postmessage, use vscode clipboard api
 		console.log('Copy button clicked!')
@@ -187,14 +156,16 @@ export class CopyButton extends HTMLElement {
 		// TODO show toast in postmessage
 	}
 
-	copyUnmasked() {
-		const element = this.resolveValueElement()
+	copyUnmasked(element: HTMLElement) {
 		if (!element) return
 		// TODO, I guess postmessage, use vscode clipboard api
 		console.log('Copy unmasked button clicked!')
 		copyElementText(element)
 		// TODO show toast in postmessage instead
-		this.closeDropdown()
+	}
+
+	private resolveValueElement(valueSelector: string): HTMLElement | undefined {
+		return document.querySelector(valueSelector) ?? undefined
 	}
 }
 

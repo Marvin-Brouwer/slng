@@ -137,7 +137,6 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 	}
 
 	private responseView(response: SlingResponse) {
-		const { request } = response
 		const view = `
 			<h2>${response.request.name}</h2>
 			<vscode-divider></vscode-divider>
@@ -166,7 +165,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 					</div>
 				</vscode-panel-view>
 				<vscode-panel-view id="view-request">
-					<pre>${JSON.stringify(request.parsed, undefined, 2)}</pre>
+					<http-request>${JSON.stringify(response.request)}</http-request>
 				</vscode-panel-view>
 			</vscode-panels>
 		`

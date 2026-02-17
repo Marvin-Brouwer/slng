@@ -92,6 +92,30 @@ export function assembleTemplate(
 }
 
 /**
+ * Remove common leading indentation from a multi-line string.
+ * Finds the minimum indentation across all non-empty lines and strips it.
+ */
+function dedent(text: string): string {
+	const lines = text.split(/\r?\n/)
+	const indentedLines = lines.filter(line => line.trim().length > 0)
+	if (indentedLines.length === 0) return ''
+
+	const minIndent = Math.min(
+		...indentedLines.map(line => {
+			const match = /^[ \t]*/.exec(line)
+			return match ? match[0].length : 0
+		}),
+	)
+
+	if (minIndent === 0) return text.trim()
+
+	return lines
+		.map(line => line.slice(minIndent))
+		.join('\n')
+		.trim()
+}
+
+/**
  * Parse raw HTTP text into structured components.
  *
  * Expected format:
@@ -107,7 +131,7 @@ export function assembleTemplate(
  * The blank line separates headers from body.
  */
 export function parseHttpText(raw: string): ParsedHttpRequest {
-	const trimmed = raw.trim()
+	const trimmed = dedent(raw)
 	const lines = trimmed.split(/\r?\n/)
 
 	// First non-empty line is the request line

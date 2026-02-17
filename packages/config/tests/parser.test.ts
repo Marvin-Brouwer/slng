@@ -83,7 +83,7 @@ describe('parseHttpText', () => {
 		}
 	})
 
-	it('parses multiline body', () => {
+	it('parses multiline body with dedented indentation', () => {
 		const result = parseHttpText(`
       POST https://example.com HTTP/1.1
 
@@ -95,8 +95,7 @@ describe('parseHttpText', () => {
       }
     `)
 
-		expect(result.body).toContain('"name": "test"')
-		expect(result.body).toContain('"value": 42')
+		expect(result.body).toBe('{\n  "name": "test",\n  "value": 42\n}')
 	})
 })
 
