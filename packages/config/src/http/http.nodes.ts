@@ -80,8 +80,8 @@ export const request = (
 export const response = (
 	protocol: typeof ProtocolNodes.allowed[number]['protocol'],
 	version: typeof ProtocolNodes.allowed[number]['version'],
-	status: TextNode | ErrorNode,
-	statusCode: TextNode | ErrorNode,
+	status: TextNode,
+	statusCode: TextNode,
 ): ResponseNode => ({
 	type: 'response',
 	status,
