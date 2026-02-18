@@ -1,13 +1,29 @@
-import { document, HttpDocument, Metadata, response, text } from '../http.nodes'
+import { body, document, header, HttpDocument, Metadata, response, text } from '../http.nodes'
 
-export function buildHttpResponse(fetchResponse: Response): HttpDocument | undefined {
+export async function buildHttpResponse(fetchResponse: Response): Promise<HttpDocument> {
+	const metadata = new Metadata()
+
 	const startLine = response('HTTP', '1.1', text(fetchResponse.status), text(fetchResponse.statusText))
-	// TODO headers // TODO content-type to meta
-	// TODO body
+
+	const headers = [...fetchResponse.headers.entries()].map(([k, v]) => header(text(k), text(v)))
+	metadata.contentType = fetchResponse.headers.get('contentType')?.split(';')[0] ?? undefined
+
+	const bodyNode = body(await makeBody(fetchResponse, metadata.contentType))
+
 	return document({
 		startLine,
-		// TODO headers
-		// TODO body
-		metadata: new Metadata(),
+		headers,
+		body: bodyNode,
+		metadata,
 	})
+}
+
+function makeBody(fetchResponse: Response, contentType: string | undefined) {
+	/* eslint-disable @typescript-eslint/switch-exhaustiveness-check, unicorn/switch-case-braces */
+	switch (contentType) {
+		// TODO return colorized json
+		case 'application/json': return fetchResponse.text()
+	}
+	return fetchResponse.text()
+	/* eslint-enable @typescript-eslint/switch-exhaustiveness-check, unicorn/switch-case-braces */
 }
