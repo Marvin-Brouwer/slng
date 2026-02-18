@@ -14,7 +14,7 @@ export class Metadata {
 }
 export interface HttpDocument extends BaseNode {
 	type: 'http'
-	startLine: RequestNode | ErrorNode
+	startLine: RequestNode | ResponseNode | ErrorNode
 	headers?: (HeaderNode | ErrorNode)[]
 	body?: BodyNode
 	metadata: Metadata
@@ -46,6 +46,12 @@ export interface RequestNode extends BaseNode {
 	url: ValueNode | ValuesNode | ErrorNode
 	protocol: ProtocolNode
 }
+export interface ResponseNode extends BaseNode {
+	type: 'response'
+	protocol: ProtocolNode
+	status: TextNode | ErrorNode
+	statusCode: TextNode | ErrorNode
+}
 export class ProtocolNodes {
 	public static allowed = [
 		{ protocol: 'HTTP', version: '1.1' },
@@ -65,6 +71,21 @@ export const request = (
 	type: 'request',
 	method,
 	url,
+	protocol: {
+		type: 'protocol',
+		value: protocol.toUpperCase(),
+		version: version,
+	},
+})
+export const response = (
+	protocol: typeof ProtocolNodes.allowed[number]['protocol'],
+	version: typeof ProtocolNodes.allowed[number]['version'],
+	status: TextNode | ErrorNode,
+	statusCode: TextNode | ErrorNode,
+): ResponseNode => ({
+	type: 'response',
+	status,
+	statusCode,
 	protocol: {
 		type: 'protocol',
 		value: protocol.toUpperCase(),
