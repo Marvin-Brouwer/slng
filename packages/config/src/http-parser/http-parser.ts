@@ -35,13 +35,26 @@ export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderN
 		if (colonIndex === -1) {
 			headers.push(error({
 				reason: 'Header must contain a colon separator (name: value)',
+				suggestions: ['sling.append-header-key'],
 			}))
 			continue
 		}
 
-		// Extract Name
+		// Extract Name // TODO implement meta header support
 		const rawName = rawLineFragment.slice(0, colonIndex).trim()
-		const nameNode = text(rawName)
+		if (rawName.length === 0) {
+			headers.push(error({
+				reason: 'Empty header name',
+			}))
+			continue
+		}
+		if (!/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(rawName)) {
+			headers.push(error({
+				reason: 'Illegal header name, invalid characters',
+			}))
+			continue
+		}
+		const nameNode = text(rawName.toLowerCase())
 
 		// Extract Value Parts
 		// This logic handles the case where the value starts in the same string part as the colon

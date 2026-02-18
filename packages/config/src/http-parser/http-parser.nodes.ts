@@ -72,6 +72,15 @@ export const request = (
 	},
 })
 
+/**
+ * ```
+ * field-name = token
+ * token = 1*tchar
+ * tchar = "!" / "#" / "$" / "%" / "&" / "'" / "*"
+ *       / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+ *       / DIGIT / ALPHA
+ * ```
+ */
 export interface HeaderNode extends BaseNode {
 	type: 'header'
 	name: TextNode | ErrorNode

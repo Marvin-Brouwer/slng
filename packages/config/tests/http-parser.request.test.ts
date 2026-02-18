@@ -138,11 +138,11 @@ describe('parseHttpRequest', () => {
 				),
 				headers: [
 					nodes.header(
-						nodes.text('Authorization'),
+						nodes.text('authorization'),
 						nodes.values(nodes.text('Bearer '), nodes.masked(0, '●●●●●'), nodes.text('')),
 					),
 					nodes.header(
-						nodes.text('Content-Type'),
+						nodes.text('content-type'),
 						nodes.text('text/plain'),
 					),
 				],
@@ -203,11 +203,11 @@ describe('parseHttpRequest', () => {
 				),
 				headers: [
 					nodes.header(
-						nodes.text('Authorization'),
+						nodes.text('authorization'),
 						nodes.values(nodes.text('Bearer '), nodes.masked(0, '●●●●●'), nodes.text('')),
 					),
 					nodes.header(
-						nodes.text('Content-Type'),
+						nodes.text('content-type'),
 						nodes.text('text/plain'),
 					),
 				],
@@ -216,6 +216,67 @@ describe('parseHttpRequest', () => {
 					maskedValues: [token],
 					contentType: 'text/plain',
 				}),
+			}),
+		)
+	})
+
+	test('illegal header name', () => {
+		// ARRANGE
+		const request = http`
+			GET https://someurl.com HTTP/1.1
+			Content Type: text/plain
+			Age: today
+		`
+
+		// ACT
+		const result = parseHttpRequest(request)
+
+		// ASSERT
+		expect(result).toEqual(
+			nodes.document({
+				startLine: nodes.request(
+					nodes.text('GET'),
+					nodes.text('https://someurl.com'),
+					'HTTP', '1.1',
+				),
+				headers: [
+					nodes.error({
+						reason: 'Illegal header name, invalid characters',
+					}),
+					nodes.header(
+						nodes.text('age'),
+						nodes.text('today'),
+					),
+				],
+				metadata: meta(),
+			}),
+		)
+	})
+
+	test('missing header name', () => {
+		// ARRANGE
+		const request = http`
+			GET https://someurl.com HTTP/1.1
+			: no name here
+		`
+
+		// ACT
+		const result = parseHttpRequest(request)
+
+		// ASSERT
+		expect(result).toEqual(
+			nodes.document({
+				startLine: nodes.request(
+					nodes.text('GET'),
+					nodes.text('https://someurl.com'),
+					'HTTP', '1.1',
+				),
+				headers: [
+					nodes.error({
+						reason: 'Empty header name',
+					}),
+				],
+				metadata: meta(),
 			}),
 		)
 	})
