@@ -1,9 +1,8 @@
 import { Position } from 'estree'
 
-import { isMask, Masked } from '../masking/mask'
-import { PrimitiveValue } from '../types'
-
-import { body, BodyNode, error, ErrorNode, header, HeaderNode, masked, Metadata, text, ValueNode, values, ValuesNode } from './http-parser.nodes'
+import { isMask, Masked } from '../../masking/mask'
+import { PrimitiveValue } from '../../types'
+import { body, BodyNode, error, ErrorNode, header, HeaderNode, masked, Metadata, text, ValueNode, values, ValuesNode } from '../http.nodes'
 
 export type TemplateLines = TemplateLine[]
 export type TemplateLine = TemplatePart[]

@@ -24,7 +24,7 @@ export {
 	SlingParseError,
 } from './parser.js'
 
-export * as nodes from './http-parser/http-parser.nodes.js'
+export * as nodes from './http/http.nodes.js'
 
 // Error types
 export { HttpError, InvalidJsonPathError } from './types.js'

@@ -1,8 +1,6 @@
 import { Position } from 'estree'
 
-import { ResolvedStringTemplate } from '../types'
-
-import { advanceLine, parseBody, parseHeaders, resolveCompoundNode, resolveSingleNode, TemplateLine, TemplateLines } from './http-parser'
+import { ResolvedStringTemplate } from '../../types'
 import {
 	document,
 	HttpDocument,
@@ -12,7 +10,9 @@ import {
 	ErrorNode,
 	error,
 	request,
-} from './http-parser.nodes'
+} from '../http.nodes'
+
+import { advanceLine, parseBody, parseHeaders, resolveCompoundNode, resolveSingleNode, TemplateLine, TemplateLines } from './http-parser'
 
 export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpDocument | ErrorNode | undefined {
 	const { strings, values } = requestTemplate

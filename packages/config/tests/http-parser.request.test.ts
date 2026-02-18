@@ -2,8 +2,8 @@ import { describe, test, expect } from 'vitest'
 
 import { secret } from '../dist'
 import { nodes } from '../src'
-import { Metadata } from '../src/http-parser/http-parser.nodes'
-import { parseHttpRequest } from '../src/http-parser/http-parser.request'
+import { parseHttpRequest } from '../src/http/http-parser/http-parser.request'
+import { Metadata } from '../src/http/http.nodes'
 import { Masked } from '../src/masking/mask'
 import { PrimitiveValue, ResolvedStringTemplate } from '../src/types'
 
