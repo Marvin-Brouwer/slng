@@ -126,6 +126,10 @@ export type SlingInterpolation
 	| DataAccessor
 	| MaskedDataAccessor
 
+export type ResolvedStringTemplate = {
+	readonly strings: ReadonlyArray<string>
+	readonly values: ReadonlyArray<PrimitiveValue | Masked<PrimitiveValue>>
+}
 // ── HTTP types ───────────────────────────────────────────────
 
 /**
