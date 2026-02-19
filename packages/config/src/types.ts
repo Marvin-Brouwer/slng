@@ -261,14 +261,13 @@ export interface ExecuteOptions extends CacheOptions {
 export interface SlingResponse {
 	readonly status: number
 	readonly statusText: string
-	readonly headers: Record<string, string>
-	readonly body: string
-	/** Parsed body structure for display rendering. */
-	readonly bodyAst: BodyAstNode[] | undefined
-	/** The raw fetch Response, if available. */
-	readonly raw: Response
 	/** Total duration in milliseconds. */
 	readonly duration: number
+
+	readonly responseAst: HttpDocument
+
+	/** The raw fetch Response. */
+	fetchResponse(): Response | Error
 
 	readonly request: RequestReference
 }
@@ -284,7 +283,7 @@ export type RequestReference = {
 	/** The resolved template parts, for re-rendering with masking. */
 	readonly templateAst: HttpDocument
 	/** Parsed HTTP request for fetch request. */
-	readonly fetchRequest: ParsedHttpRequest | Error | undefined
+	fetchRequest(): ParsedHttpRequest | Error | undefined
 }
 
 /**

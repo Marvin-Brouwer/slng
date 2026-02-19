@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 
-import { buildBodyAst } from './display-parser.js'
+import { buildHttpResponse } from './http/http-builder/http-builder.js'
 import { parseHttpRequest } from './http/http-parser/http-parser.request.js'
-import { NodeError } from './http/http.nodes.js'
+import { Metadata, body, document, error, NodeError, response, text } from './http/http.nodes'
 import {
 	buildRequest as buildRequest,
 } from './parser.js'
@@ -186,7 +186,7 @@ function createDataAccessor(
 		}
 
 		try {
-			const body: unknown = JSON.parse(response.body)
+			const body: unknown = 'JSON.parse(response.body)'
 			const value = resolveJsonPath(body, jsonPath)
 			return { value, found: value !== undefined }
 		}
@@ -249,7 +249,7 @@ async function executeRequest(
 	const request: RequestReference = {
 		reference: definition.id(),
 		name: internals.tsAst.exportName,
-		fetchRequest,
+		fetchRequest: () => fetchRequest,
 		templateAst,
 	}
 	const fetchResponse = await performFetch(fetchRequest, options)
@@ -258,32 +258,30 @@ async function executeRequest(
 		const fetchError = fetchResponse as FetchError
 		let fetchErrorMessage = fetchError.message
 		if (fetchError.code === 'ENOTFOUND') fetchErrorMessage = `Hostname '${fetchError.hostname}' could not be found!`
+
+		const metadata = new Metadata()
+		metadata.errors?.push(error({
+			reason: fetchErrorMessage,
+		}))
 		return {
 			status: fetchError.errno,
 			statusText: fetchError.code,
 			duration: 0,
 			request,
 
-			headers: {},
-			body: fetchErrorMessage,
-			bodyAst: undefined,
+			responseAst: document({
+				startLine: response('HTTP', '1.1', text(fetchError.errno), text(fetchError.code)),
+				body: body('text/error', text(fetchError.toString())),
+				metadata,
+			}),
 
-			// We make this gettable to hide it for the console completely
-			raw: fetchResponse as unknown as Response,
+			fetchResponse: () => fetchResponse,
 		}
 	}
 
 	const duration = performance.now() - startTime
-	const responseBody = await fetchResponse.text()
 
-	// Convert headers
-	const responseHeaders = Object.fromEntries(fetchResponse.headers as unknown as Iterable<[string, string]>)
-
-	// Build body AST from response content-type
-	const responseContentType = fetchResponse.headers.get('content-type')?.split(';')[0].trim()
-	const responseBodyAst = responseBody
-		? buildBodyAst(responseBody, responseContentType)
-		: undefined
+	const responseAst = await buildHttpResponse(fetchResponse)
 
 	// TODO, we don't want the console to expand the headers or body, however,
 	// using toJSON will also fail in the vscode extensionState object, since it's apparently serialized.
@@ -294,12 +292,9 @@ async function executeRequest(
 		duration,
 		request,
 
-		headers: responseHeaders,
-		body: responseBody,
-		bodyAst: responseBodyAst,
+		responseAst,
 
-		// We make this gettable to hide it for the console completely
-		raw: fetchResponse,
+		fetchResponse: () => fetchResponse,
 	}
 
 	if (options?.verbose) {
