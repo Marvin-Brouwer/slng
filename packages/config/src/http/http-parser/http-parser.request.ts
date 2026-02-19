@@ -1,6 +1,7 @@
 import { Position } from 'estree'
 
 import { ResolvedStringTemplate } from '../../types'
+import { parseHttpBody } from '../body-parser/body-parser'
 import {
 	document,
 	HttpDocument,
@@ -12,9 +13,9 @@ import {
 	request,
 } from '../http.nodes'
 
-import { advanceLine, parseBody, parseHeaders, resolveCompoundNode, resolveSingleNode, TemplateLine, TemplateLines } from './http-parser'
+import { advanceLine, parseHeaders, resolveCompoundNode, resolveSingleNode, TemplateLine, TemplateLines } from './http-parser'
 
-export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpDocument | ErrorNode | undefined {
+export async function parseHttpRequest(requestTemplate: ResolvedStringTemplate): Promise<HttpDocument | ErrorNode | undefined> {
 	const { strings, values } = requestTemplate
 	const metadata = new Metadata()
 
@@ -109,10 +110,13 @@ export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpD
 		}))
 	}
 
+	const headers = parseHeaders(headerLines, metadata)
+	const body = await parseHttpBody(metadata, bodyLines)
+
 	return document({
 		startLine,
-		headers: parseHeaders(headerLines, metadata),
-		body: parseBody(bodyLines),
+		headers,
+		body,
 		metadata,
 	})
 }

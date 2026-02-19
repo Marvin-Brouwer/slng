@@ -113,13 +113,15 @@ export const header = (name: TextNode | ErrorNode, value: ValueNode | ValuesNode
 	value,
 })
 
-export interface BodyNode extends BaseNode {
+export interface BodyNode<T extends BaseNode = BaseNode> extends BaseNode {
 	type: 'body'
-	value: string
+	contentType: string
+	value: T
 }
-export const body = (value: PrimitiveValue): BodyNode => ({
+export const body = <T extends BaseNode = BaseNode>(contentType: string, value: T): BodyNode => ({
 	type: 'body',
-	value: String(value),
+	contentType,
+	value,
 })
 
 export interface ValuesNode extends BaseNode {

@@ -20,14 +20,14 @@ export function http(
 }
 
 describe('parseHttpRequest', () => {
-	test('single line', () => {
+	test('single line', async () => {
 		// ARRANGE
 		const request = http`
 			GET https://someurl.com HTTP/1.1
 		`
 
 		// ACT
-		const result = parseHttpRequest(request)
+		const result = await parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -41,7 +41,7 @@ describe('parseHttpRequest', () => {
 			}),
 		)
 	})
-	test('single line + parameter', () => {
+	test('single line + parameter', async () => {
 		// ARRANGE
 		const someurl = secret('someurl')
 		const request = http`
@@ -49,7 +49,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = parseHttpRequest(request)
+		const result = await parseHttpRequest(request)
 
 		// ASSERT
 		console.log(JSON.stringify(result, undefined, 2))
@@ -72,12 +72,12 @@ describe('parseHttpRequest', () => {
 			}),
 		)
 	})
-	test('empty line', () => {
+	test('empty line', async () => {
 		// ARRANGE
 		const request = http``
 
 		// ACT
-		const result = parseHttpRequest(request)
+		const result = await parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(nodes.error({
@@ -85,12 +85,12 @@ describe('parseHttpRequest', () => {
 			autoFix: 'sling.initial-format',
 		}))
 	})
-	test('Incorrect whitespace', () => {
+	test('Incorrect whitespace', async () => {
 		// ARRANGE
 		const request = http`GET https://someurl.com HTTP/1.1`
 
 		// ACT
-		const result = parseHttpRequest(request)
+		const result = await parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -116,7 +116,7 @@ describe('parseHttpRequest', () => {
 		)
 	})
 
-	test('with headers only', () => {
+	test('with headers only', async () => {
 		// ARRANGE
 		const token = secret('token')
 		const request = http`
@@ -126,7 +126,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = parseHttpRequest(request)
+		const result = await parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -154,7 +154,7 @@ describe('parseHttpRequest', () => {
 		)
 	})
 
-	test('with body only', () => {
+	test('with body only', async () => {
 		// ARRANGE
 		const request = http`
 			GET https://someurl.com HTTP/1.1
@@ -163,7 +163,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = parseHttpRequest(request)
+		const result = await parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -173,13 +173,13 @@ describe('parseHttpRequest', () => {
 					nodes.text('https://someurl.com'),
 					'HTTP', '1.1',
 				),
-				body: nodes.body('This is body content'),
+				body: nodes.body('text/undefined', nodes.text('This is body content')),
 				metadata: meta(),
 			}),
 		)
 	})
 
-	test('full request', () => {
+	test('full request', async () => {
 		// ARRANGE
 		const token = secret('token')
 		const request = http`
@@ -191,7 +191,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = parseHttpRequest(request)
+		const result = await parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -211,7 +211,7 @@ describe('parseHttpRequest', () => {
 						nodes.text('text/plain'),
 					),
 				],
-				body: nodes.body('This is body content'),
+				body: nodes.body('text/plain', nodes.text('This is body content')),
 				metadata: meta({
 					maskedValues: [token],
 					contentType: 'text/plain',
@@ -220,7 +220,7 @@ describe('parseHttpRequest', () => {
 		)
 	})
 
-	test('illegal header name', () => {
+	test('illegal header name', async () => {
 		// ARRANGE
 		const request = http`
 			GET https://someurl.com HTTP/1.1
@@ -229,7 +229,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = parseHttpRequest(request)
+		const result = await parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -253,7 +253,7 @@ describe('parseHttpRequest', () => {
 		)
 	})
 
-	test('missing header name', () => {
+	test('missing header name', async () => {
 		// ARRANGE
 		const request = http`
 			GET https://someurl.com HTTP/1.1
@@ -261,7 +261,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = parseHttpRequest(request)
+		const result = await parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(

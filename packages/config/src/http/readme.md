@@ -18,3 +18,8 @@ The requests are built from the `ResolvedStringTemplate`, a combination of strin
 In no situation **EVER** may the masked values make it into the AST. \
 We store the values in the metadata and keep a reference to there. \
 _The same goes for any body parsers_
+
+## Responses
+
+To prevent us from having to maintain 2 versions of tokenizers, we treat response body the same as request bodies.  
+Therefore, also JSON is read as `response.text()` and tokenized by our own solution.

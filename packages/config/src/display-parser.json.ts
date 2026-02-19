@@ -7,7 +7,7 @@ import type {
 	JsonAstNode,
 } from './types.js'
 
-export function isJsonContentType(contentType: string | undefined): boolean {
+export function isJsonContentType(contentType: string | undefined): contentType is string {
 	if (!contentType) return false
 	return contentType === 'application/json' || contentType.endsWith('+json')
 }

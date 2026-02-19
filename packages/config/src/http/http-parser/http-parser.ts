@@ -2,7 +2,7 @@ import { Position } from 'estree'
 
 import { isMask, Masked } from '../../masking/mask'
 import { PrimitiveValue } from '../../types'
-import { body, BodyNode, error, ErrorNode, header, HeaderNode, masked, Metadata, text, ValueNode, values, ValuesNode } from '../http.nodes'
+import { error, ErrorNode, header, HeaderNode, masked, Metadata, text, ValueNode, values, ValuesNode } from '../http.nodes'
 
 export type TemplateLines = TemplateLine[]
 export type TemplateLine = TemplatePart[]
@@ -123,18 +123,6 @@ export function resolveSingleNode<T extends ValueNode = ValueNode>(part: Templat
 	}
 
 	return text(part.part) as T
-}
-
-export function parseBody(lines: TemplateLines): BodyNode | undefined {
-	if (lines.length === 0) return undefined
-
-	const bodyContent = lines
-		.map(line => line.map(lp => (isMask(lp.part) ? lp.part.value : String(lp.part))).join(''))
-		.join('\n').trim()
-
-	if (!bodyContent) return undefined
-
-	return body(bodyContent)
 }
 
 // Helper to advance positions based on text content
