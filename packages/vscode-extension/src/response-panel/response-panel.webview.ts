@@ -157,10 +157,10 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 				</vscode-panel-tab>
 				<vscode-panel-tab id="tab-request">REQUEST</vscode-panel-tab>
 				<vscode-panel-view id="view-response">
-					<http-response>${JSON.stringify(response.responseAst)}</http-response>
+					<http-response>${JSON.stringify(response.responseAst, undefined, __DEV__ ? 2 : 0)}</http-response>
 				</vscode-panel-view>
 				<vscode-panel-view id="view-request">
-					<http-request>${JSON.stringify(response.request.templateAst)}</http-request>
+					<http-request>${JSON.stringify(response.request.templateAst, undefined, __DEV__ ? 2 : 0)}</http-request>
 				</vscode-panel-view>
 			</vscode-panels>
 		`
