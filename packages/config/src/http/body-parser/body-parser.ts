@@ -14,17 +14,17 @@ export async function parseHttpBody(metadata: Metadata, body: TemplateLines | Re
 }
 
 async function createJsonBody(metadata: Metadata, bodyValue: TemplateLines | Response) {
-	const jsonBody = bodyValue instanceof Request
+	const jsonBody = isResponseOrResponseProxy(bodyValue)
 		? stringToTemplate(await bodyValue.text())
-		: bodyValue as TemplateLines
+		: bodyValue
 
 	return body(metadata.contentType!, convertToJsonAst(metadata, jsonBody))
 }
 
 async function createTextBody(metadata: Metadata, bodyValue: TemplateLines | Response) {
-	const textBody = bodyValue instanceof Request
+	const textBody = isResponseOrResponseProxy(bodyValue)
 		? stringToTemplate(await bodyValue.text())
-		: bodyValue as TemplateLines
+		: bodyValue
 
 	const contentType = metadata.contentType ?? 'text/undefined'
 
@@ -47,4 +47,8 @@ function stringToTemplate(value: string): TemplateLines {
 			part: value,
 		}],
 	]
+}
+
+function isResponseOrResponseProxy(bodyValue: TemplateLines | Response): bodyValue is Response {
+	return typeof bodyValue === 'object' && typeof (bodyValue as unknown as Request).text === 'function'
 }

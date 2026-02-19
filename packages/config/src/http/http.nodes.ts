@@ -164,6 +164,7 @@ export type HTTPNode
 	= HttpDocument
 	| ErrorNode
 	| RequestNode
+	| ResponseNode
 	| ProtocolNode
 	| HeaderNode
 	| BodyNode
