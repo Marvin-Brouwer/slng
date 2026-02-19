@@ -1,7 +1,7 @@
 import { isMaskedDataAccessor, isPrimitiveMask, Masked, MaskedDataAccessor, resolveAsyncMask } from './masking/mask'
-import { DataAccessor, PrimitiveValue, ResolvedStringTemplate, SlingInterpolation } from './types'
+import { DataAccessor, PrimitiveValue, ResolvedStringTemplate, SlingInterpolation, StringTemplate } from './types'
 
-export function readHttpTemplate(strings: TemplateStringsArray, ...values: (PrimitiveValue | Masked<PrimitiveValue>)[]): ResolvedStringTemplate {
+export function readHttpTemplate(strings: TemplateStringsArray, values: SlingInterpolation[]): StringTemplate {
 	return {
 		strings: Object.freeze(strings),
 		values: Object.freeze(values),
@@ -15,7 +15,7 @@ function isPrimitiveValue(value: SlingInterpolation): value is PrimitiveValue {
 	return false
 }
 
-export async function resolveTemplateDependencies(template: ResolvedStringTemplate): Promise<ResolvedStringTemplate> {
+export async function resolveTemplateDependencies(template: StringTemplate): Promise<ResolvedStringTemplate> {
 	const { strings, values } = template
 	const resolvedValues = new Array<PrimitiveValue | Masked<PrimitiveValue> | undefined>()
 

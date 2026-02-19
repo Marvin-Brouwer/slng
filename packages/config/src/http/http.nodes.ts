@@ -40,11 +40,18 @@ export function error(constructor: Omit<ErrorNode, 'type'>): ErrorNode {
 		...constructor,
 	}
 }
+
+export class NodeError extends Error {
+	constructor(public readonly errorNode: ErrorNode) {
+		super(errorNode.reason)
+	}
+}
 export interface RequestNode extends BaseNode {
 	type: 'request'
 	method: TextNode | ErrorNode
 	url: ValueNode | ValuesNode | ErrorNode
-	protocol: ProtocolNode
+	// TODO check allowed protocols and versions
+	protocol: ProtocolNode | ErrorNode
 }
 export interface ResponseNode extends BaseNode {
 	type: 'response'

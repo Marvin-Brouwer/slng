@@ -1,7 +1,7 @@
 import { isJsonContentType } from '../../display-parser.json'
 import { isMask } from '../../masking/mask'
 import { TemplateLines } from '../http-parser/http-parser'
-import { body, BodyNode, text, Metadata } from '../http.nodes'
+import { body, BodyNode, masked, Metadata, text, values } from '../http.nodes'
 
 import { convertToJsonAst } from './body-parser.json'
 
@@ -26,15 +26,19 @@ async function createTextBody(metadata: Metadata, bodyValue: TemplateLines | Res
 		? stringToTemplate(await bodyValue.text())
 		: bodyValue as TemplateLines
 
+	const contentType = metadata.contentType ?? 'text/undefined'
+
 	if (textBody.length === 0) return
 
-	const bodyContent = textBody
-		.map(line => line.map(lp => (isMask(lp.part) ? lp.part.value : String(lp.part))).join(''))
-		.join('\n').trim()
+	const bodyNodes = textBody.flatMap(line => line.map(lp => (isMask(lp.part) ? lp.part : lp.part))).map((part) => {
+		if (isMask(part)) return masked(metadata.appendMaskedValue(part), part.value)
+		return text(part)
+	})
 
-	if (!bodyContent) return
+	if (bodyNodes.length === 0) return
+	if (bodyNodes.length === 1) return body(contentType, bodyNodes[0])
 
-	return body(metadata.contentType ?? 'text/undefined', text(bodyContent))
+	return body(contentType, values(...bodyNodes))
 }
 
 function stringToTemplate(value: string): TemplateLines {

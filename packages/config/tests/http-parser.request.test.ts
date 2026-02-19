@@ -10,7 +10,7 @@ import { PrimitiveValue } from '../src/types'
 
 // TODO call the http parser from sling, then call the resolver
 async function http(strings: TemplateStringsArray, ...values: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
-	const template = readHttpTemplate(strings, ...values)
+	const template = readHttpTemplate(strings, values)
 	return await resolveTemplateDependencies(template)
 }
 
@@ -48,7 +48,6 @@ describe('parseHttpRequest', () => {
 		const result = await parseHttpRequest(request)
 
 		// ASSERT
-		console.log(JSON.stringify(result, undefined, 2))
 		expect(result).toEqual(
 			nodes.document({
 				startLine: nodes.request(

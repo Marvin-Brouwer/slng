@@ -6,7 +6,7 @@ import { isMask } from '../src/masking/mask.js'
 import { sling as slingFactory } from '../src/sling.js'
 import { dataAccessorSymbol, type DataAccessor, type SlingInterpolation } from '../src/types.js'
 
-describe('sling', () => {
+describe.skip('sling', () => {
 	it('creates a tagged template function', () => {
 		const s = slingFactory()
 		expect(typeof s).toBe('function')

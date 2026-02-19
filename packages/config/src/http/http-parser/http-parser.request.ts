@@ -19,7 +19,7 @@ export async function parseHttpRequest(requestTemplate: ResolvedStringTemplate):
 	const { strings, values } = requestTemplate
 	const metadata = new Metadata()
 
-	if (values.length === 0 && strings.join('').trim().length === 0)
+	if (!values || (values.length === 0 && strings.join('').trim().length === 0))
 		return error({
 			reason: 'HTTP requests cannot be empty string',
 			autoFix: 'sling.initial-format',
@@ -75,7 +75,7 @@ export async function parseHttpRequest(requestTemplate: ResolvedStringTemplate):
 
 			currentPos = { ...currentPos, column: currentPos.column + 1 }
 
-			lines.at(-1)!.push({
+			if (value) lines.at(-1)!.push({
 				part: value,
 			})
 		}
@@ -111,7 +111,7 @@ export async function parseHttpRequest(requestTemplate: ResolvedStringTemplate):
 	}
 
 	const headers = parseHeaders(headerLines, metadata)
-	const body = await parseHttpBody(metadata, bodyLines)
+	const body = await parseHttpBody(metadata, bodyLines.slice(0, endsWithNewline ? bodyLines.length - 1 : bodyLines.length - 2))
 
 	return document({
 		startLine,

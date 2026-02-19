@@ -1,3 +1,4 @@
+import { HttpDocument } from './http/http.nodes.js'
 import { AstData } from './loader/file-loader.js'
 import { namedMask, Masked, MaskedDataAccessor } from './masking/mask'
 import { secret } from './masking/secret'
@@ -200,17 +201,10 @@ export type SlingInternals = {
 	/** File AST information for cross referencing in editor-plugins, added when loading the file */
 	readonly tsAst: AstData
 
-	/** The original template parts, for re-rendering with masking. */
-	readonly template: {
-		readonly strings: ReadonlyArray<string>
-		readonly values: ReadonlyArray<SlingInterpolation>
-	}
-	/** Parsed HTTP request for fetch request. */
-	readonly parsed: ParsedHttpRequest
-	/** Display HTTP request for UI — masked values + body AST. */
-	readonly display: DisplayHttpRequest
-	/** Collected masked values from this definition. */
-	readonly maskedValues: ReadonlyArray<Masked<unknown>>
+	/** The original template parts, for reference. */
+	readonly template: StringTemplate
+	/** The resolved template parts, for re-rendering with masking. */
+	resolvedTemplate: ResolvedStringTemplate | undefined
 }
 
 // ── Options ──────────────────────────────────────────────────
@@ -281,17 +275,16 @@ export interface SlingResponse {
 
 export type RequestReference = {
 	/**
-		 * The id of the request definition that initiated the request
-		 * This is a unique value made up of the shape of the request in code, meaning the id changes if a user modifies the call.
-		 * */
+	 * The id of the request definition that initiated the request
+	 * This is a unique value made up of the shape of the request in code, meaning the id changes if a user modifies the call.
+	 */
 	readonly reference: string
 	/** The export name of the request definition that initiated the request */
 	readonly name: string
-	readonly template: SlingInternals['template']
-	/** The parsed HTTP request */
-	readonly parsed: ParsedHttpRequest
-	/** Display HTTP request for UI — masked values + body AST. */
-	readonly display: DisplayHttpRequest
+	/** The resolved template parts, for re-rendering with masking. */
+	readonly templateAst: HttpDocument
+	/** Parsed HTTP request for fetch request. */
+	readonly fetchRequest: ParsedHttpRequest | Error | undefined
 }
 
 /**
@@ -305,7 +298,7 @@ export interface SlingDefinition {
 	/** Access the definition's internal data (parsed request, template parts, etc.). */
 	getInternals(): SlingInternals
 	/** Execute the request, resolving all lazy interpolations. */
-	execute: (options?: ExecuteOptions) => Promise<SlingResponse>
+	execute: (options?: ExecuteOptions) => Promise<SlingResponse | HttpError>
 	/**
    * Create a data accessor that extracts a value from the JSON response body
    * using a simple path expression.

@@ -3,6 +3,7 @@ import { namedMask } from './masking/mask.js'
 import { secret } from './masking/secret.js'
 import { sensitive } from './masking/sensitive.js'
 import { createSlingParameters } from './parameters.js'
+import { readHttpTemplate } from './template-reader.js'
 import {
 	type ConfiguredSling,
 	type SlingContext,
@@ -67,7 +68,8 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
 		strings: TemplateStringsArray,
 		...values: SlingInterpolation[]
 	) {
-		return createDefinition(strings, values, context)
+		const template = readHttpTemplate(strings, values)
+		return createDefinition(template, context)
 	} as SlingTemplateBuilder
 
 	// Attach parameters

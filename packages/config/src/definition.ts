@@ -1,27 +1,27 @@
 import { createHash } from 'node:crypto'
 
-import { buildBodyAst, parseTemplateDisplay } from './display-parser.js'
-import { isMask } from './masking/mask.js'
+import { buildBodyAst } from './display-parser.js'
+import { parseHttpRequest } from './http/http-parser/http-parser.request.js'
+import { NodeError } from './http/http.nodes.js'
 import {
-	parseTemplatePreview,
-	parseTemplateResolved,
-	assembleTemplate,
-	resolveInterpolationDisplay,
+	buildRequest as buildRequest,
 } from './parser.js'
+import { resolveTemplateDependencies } from './template-reader.js'
 import {
 	HttpError,
 	InvalidJsonPathError,
 	type DataAccessor,
 	dataAccessorSymbol,
+	RequestReference,
 	type ResponseJsonAccessor,
 	type SlingDefinition,
 	type SlingInternals,
-	type SlingInterpolation,
 	type SlingResponse,
 	type SlingContext,
 	type ExecuteOptions,
 	type JsonOptions,
 	type ParsedHttpRequest,
+	StringTemplate,
 } from './types.js'
 
 interface CachedResponse {
@@ -33,29 +33,17 @@ interface CachedResponse {
  * Create a SlingDefinition from a tagged template invocation.
  */
 export function createDefinition(
-	strings: TemplateStringsArray,
-	values: SlingInterpolation[],
+	template: StringTemplate,
 	_context: SlingContext,
 ): SlingDefinition {
-	// Collect masked values
-	const maskedValues = values.filter(v => isMask(v))
-
-	// Parse a preview (with deferred values as placeholders)
-	const parsed = parseTemplatePreview(strings, values)
-
-	// Build display version with masked references and body AST
-	const display = parseTemplateDisplay(strings, values, maskedValues)
-
 	// Response cache (shared across execute/json calls)
 	let cached: CachedResponse | undefined
 
 	const internals: SlingInternals = {
 		version: 'v1',
 		tsAst: undefined!, // added by the runtime
-		template: { strings: [...strings], values },
-		parsed,
-		display,
-		maskedValues,
+		template,
+		resolvedTemplate: undefined!, // added on request
 	}
 
 	const definition: SlingDefinition = {
@@ -63,6 +51,8 @@ export function createDefinition(
 		id() {
 			// This SHOULD never happen
 			if (!internals.tsAst) return '<unknown>'
+			if (!internals.resolvedTemplate) return '<unknown>'
+
 			return createHash('sha256')
 				.update(internals.tsAst.sourcePath).update('\0')
 				.update(internals.tsAst.exportName).update('\0')
@@ -70,7 +60,7 @@ export function createDefinition(
 				.digest('hex')
 		},
 
-		async execute(options?: ExecuteOptions): Promise<SlingResponse> {
+		async execute(options?: ExecuteOptions): Promise<SlingResponse | HttpError> {
 			const readFromCache = options?.readFromCache !== false
 			const cacheTime = options?.cacheTime
 			const cachingDisabled = cacheTime === false || cacheTime === 0
@@ -84,10 +74,11 @@ export function createDefinition(
 				}
 			}
 
-			const response = await executeRequest(this, strings, values, options)
-
+			internals.resolvedTemplate = await resolveTemplateDependencies(template)
+			const response = await executeRequest(this, options)
+			if (response instanceof Error && !(response instanceof HttpError)) throw response
 			// Store in cache (unless caching is explicitly disabled)
-			if (!cachingDisabled) {
+			if (!cachingDisabled && !(response instanceof HttpError)) {
 				cached = { response, timestamp: Date.now() }
 			}
 
@@ -164,9 +155,10 @@ function createDataAccessor(
 	async function extract(): Promise<
 		{ value: unknown, found: boolean } | HttpError
 	> {
-		let response: SlingResponse
+		let response: SlingResponse | HttpError
 		try {
 			response = await definition.execute(options)
+			if (response instanceof HttpError) return response
 		}
 		catch (error) {
 			return new HttpError(
@@ -242,25 +234,25 @@ type FetchError = Error & {
  */
 async function executeRequest(
 	definition: SlingDefinition,
-	strings: ReadonlyArray<string>,
-	values: ReadonlyArray<SlingInterpolation>,
 	options?: ExecuteOptions,
-): Promise<SlingResponse> {
+): Promise<SlingResponse | Error> {
 	const startTime = performance.now()
 
 	const internals = definition.getInternals()
+	const templateAst = await parseHttpRequest(internals.resolvedTemplate!)
+	if (!templateAst) return new Error('Unreachable code detected, empty http request')
+	if (templateAst.type === 'error') return new NodeError(templateAst)
 
-	// Resolve all interpolations (including async accessors for chaining)
-	const resolved = await parseTemplateResolved(strings, values)
+	const fetchRequest = buildRequest(templateAst)
+	if (fetchRequest instanceof Error) throw fetchRequest
 
-	const request = {
+	const request: RequestReference = {
 		reference: definition.id(),
 		name: internals.tsAst.exportName,
-		template: internals.template,
-		parsed: resolved,
-		display: internals.display,
+		fetchRequest,
+		templateAst,
 	}
-	const fetchResponse = await performFetch(resolved, options)
+	const fetchResponse = await performFetch(fetchRequest, options)
 
 	if (fetchResponse instanceof Error) {
 		const fetchError = fetchResponse as FetchError
@@ -311,7 +303,9 @@ async function executeRequest(
 	}
 
 	if (options?.verbose) {
-		logRequest(strings, values, resolved, slingResponse, options.maskOutput)
+		// TODO add a logger to the context, let the runner resolve the level
+		// logRequest(strings, values, resolved, slingResponse, options.maskOutput)
+		// context.log.verbose(request url + status + statusmessage)
 	}
 
 	return slingResponse
@@ -341,28 +335,6 @@ async function performFetch(
 		}
 		throw error
 	}
-}
-
-function logRequest(
-	strings: ReadonlyArray<string>,
-	values: ReadonlyArray<SlingInterpolation>,
-	parsed: ParsedHttpRequest,
-	response: SlingResponse,
-	mask?: boolean,
-): void {
-	// When mask is true, show display values (with secrets masked).
-	// When mask is false, show the resolved (real) values.
-	const displayValues = mask === false
-		? values.map(String)
-		: values.map(v => resolveInterpolationDisplay(v))
-
-	const displayText = assembleTemplate(strings, displayValues)
-
-	console.warn('\u2500'.repeat(60))
-	console.warn(`\u2192 ${parsed.method} ${parsed.url}`)
-	console.warn(displayText.trim())
-	console.warn(`\u2190 ${response.status} ${response.statusText} (${Math.round(response.duration)}ms)`)
-	console.warn('\u2500'.repeat(60))
 }
 
 /**
