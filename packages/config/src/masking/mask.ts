@@ -124,6 +124,12 @@ export function isMaskedDataAccessor(value: unknown): value is MaskedDataAccesso
 	return isMask(value) && isAsyncMask(value)
 }
 
+export async function resolveAsyncMask(maskedDataAccessor: MaskedDataAccessor) {
+	const maskedValueResult = await maskedDataAccessor.unmask()
+	if (maskedValueResult instanceof Error) throw maskedValueResult
+	return createMask(maskedValueResult, maskedDataAccessor.value, (maskedDataAccessor as unknown as { [inspect.custom]: () => string })[inspect.custom]())
+}
+
 export const maskTransformer = {
 	displayReplacer(_key: string, value: unknown): unknown {
 		if (isTaggedSerialized(value, serializeId)) {

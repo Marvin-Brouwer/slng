@@ -5,24 +5,19 @@ import { nodes } from '../src'
 import { parseHttpRequest } from '../src/http/http-parser/http-parser.request'
 import { Metadata } from '../src/http/http.nodes'
 import { Masked } from '../src/masking/mask'
-import { PrimitiveValue, ResolvedStringTemplate } from '../src/types'
+import { readHttpTemplate, resolveTemplateDependencies } from '../src/template-reader'
+import { PrimitiveValue } from '../src/types'
 
 // TODO call the http parser from sling, then call the resolver
-export function http(
-	strings: TemplateStringsArray,
-	...values: (PrimitiveValue | Masked<PrimitiveValue>)[]
-): ResolvedStringTemplate {
-	return {
-		// We convert to a standard ReadonlyArray to match your ResolvedStringTemplate type
-		strings: Object.freeze([...strings]),
-		values: Object.freeze([...values]),
-	}
+async function http(strings: TemplateStringsArray, ...values: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
+	const template = readHttpTemplate(strings, ...values)
+	return await resolveTemplateDependencies(template)
 }
 
 describe('parseHttpRequest', () => {
 	test('single line', async () => {
 		// ARRANGE
-		const request = http`
+		const request = await http`
 			GET https://someurl.com HTTP/1.1
 		`
 
@@ -41,11 +36,12 @@ describe('parseHttpRequest', () => {
 			}),
 		)
 	})
-	test('single line + parameter', async () => {
+	test('single line + parameters', async () => {
 		// ARRANGE
-		const someurl = secret('someurl')
-		const request = http`
-			GET https://${someurl}.com HTTP/1.1
+		const someUrl = 'someurl'
+		const someSecret = secret('someSecret')
+		const request = await http`
+			GET https://${someUrl}.com/${someSecret} HTTP/1.1
 		`
 
 		// ACT
@@ -59,14 +55,15 @@ describe('parseHttpRequest', () => {
 					nodes.text('GET'),
 					nodes.values(
 						nodes.text('https://'),
+						nodes.text('someurl'),
+						nodes.text('.com/'),
 						nodes.masked(0, '●●●●●'),
-						nodes.text('.com'),
 					),
 					'HTTP', '1.1',
 				),
 				metadata: meta({
 					maskedValues: [
-						someurl,
+						someSecret,
 					],
 				}),
 			}),
@@ -74,7 +71,7 @@ describe('parseHttpRequest', () => {
 	})
 	test('empty line', async () => {
 		// ARRANGE
-		const request = http``
+		const request = await http``
 
 		// ACT
 		const result = await parseHttpRequest(request)
@@ -87,7 +84,7 @@ describe('parseHttpRequest', () => {
 	})
 	test('Incorrect whitespace', async () => {
 		// ARRANGE
-		const request = http`GET https://someurl.com HTTP/1.1`
+		const request = await http`GET https://someurl.com HTTP/1.1`
 
 		// ACT
 		const result = await parseHttpRequest(request)
@@ -119,7 +116,7 @@ describe('parseHttpRequest', () => {
 	test('with headers only', async () => {
 		// ARRANGE
 		const token = secret('token')
-		const request = http`
+		const request = await http`
 			GET https://someurl.com HTTP/1.1
 			Authorization: Bearer ${token}
 			Content-Type: text/plain
@@ -156,7 +153,7 @@ describe('parseHttpRequest', () => {
 
 	test('with body only', async () => {
 		// ARRANGE
-		const request = http`
+		const request = await http`
 			GET https://someurl.com HTTP/1.1
 
 			This is body content
@@ -182,7 +179,7 @@ describe('parseHttpRequest', () => {
 	test('full request', async () => {
 		// ARRANGE
 		const token = secret('token')
-		const request = http`
+		const request = await http`
 			GET https://someurl.com HTTP/1.1
 			Authorization: Bearer ${token}
 			Content-Type: text/plain
@@ -222,7 +219,7 @@ describe('parseHttpRequest', () => {
 
 	test('illegal header name', async () => {
 		// ARRANGE
-		const request = http`
+		const request = await http`
 			GET https://someurl.com HTTP/1.1
 			Content Type: text/plain
 			Age: today
@@ -255,7 +252,7 @@ describe('parseHttpRequest', () => {
 
 	test('missing header name', async () => {
 		// ARRANGE
-		const request = http`
+		const request = await http`
 			GET https://someurl.com HTTP/1.1
 			: no name here
 		`

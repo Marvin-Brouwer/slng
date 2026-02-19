@@ -128,7 +128,11 @@ export type SlingInterpolation
 
 export type ResolvedStringTemplate = {
 	readonly strings: ReadonlyArray<string>
-	readonly values: ReadonlyArray<PrimitiveValue | Masked<PrimitiveValue>>
+	readonly values: ReadonlyArray<PrimitiveValue | Masked<PrimitiveValue> | undefined>
+}
+export type StringTemplate = {
+	readonly strings: ReadonlyArray<string>
+	readonly values: ReadonlyArray<SlingInterpolation>
 }
 // ── HTTP types ───────────────────────────────────────────────
 
