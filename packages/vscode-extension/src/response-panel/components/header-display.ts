@@ -1,4 +1,4 @@
-import { HeaderNode } from '../../../../config/src/http/http.nodes'
+import { HeaderNode } from '../../../../definition/src/http/http.nodes'
 import { SimpleElement } from '../element-helper'
 import { assertNotError } from '../node-helper'
 import { resolveElements } from '../node-helper.component'

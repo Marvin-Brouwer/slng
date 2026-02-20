@@ -149,7 +149,7 @@ function parseString(state: ParserState, variant: 'key' | 'value' = 'value') {
 			continue
 		}
 		if (token.type === 'json-token:masked') {
-			parts.push(jsonMask(state.metadata, (token as MaskedToken).value))
+			parts.push(jsonMask(state.metadata, token.value))
 			advance(state)
 			continue
 		}

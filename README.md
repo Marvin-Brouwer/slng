@@ -27,11 +27,11 @@ Sling sits between tools like Postman (heavy GUI, no version control) and raw `c
 
 ```bash
 # Install
-pnpm add @slng/config @slng/cli
+pnpm add @slng/definition @slng/cli
 
 # Create config
 cat > slng.config.mts << 'EOF'
-import sling, { useDotEnv } from '@slng/config'
+import sling, { useDotEnv } from '@slng/definition'
 export default sling(useDotEnv('local'))
 EOF
 
@@ -52,7 +52,7 @@ npx @slng/cli --file ./api.mts
 
 | Package | Description |
 |---------|-------------|
-| [`@slng/config`](./packages/config) | Core library — sling factory, parser, plugins, masking utilities |
+| [`@slng/definition`](./packages/definition) | Core library — sling factory, parser, plugins, masking utilities |
 | [`@slng/cli`](./packages/cli) | CLI tool — run definitions from the terminal |
 | [`@slng/vscode-extension`](./packages/vscode-extension) | VS Code extension — CodeLens, response viewer, debug integration |
 

@@ -33,7 +33,7 @@ pnpm lint
 ```
 sling/
 ├── packages/
-│   ├── config/           # @slng/config — core library
+│   ├── definition/       # @slng/definition — core library
 │   │   ├── src/
 │   │   │   ├── index.ts          # Public API barrel
 │   │   │   ├── types.ts          # All TypeScript types
@@ -85,7 +85,7 @@ Each package uses `tsup` for building. During development:
 
 ```bash
 # Watch mode for a specific package
-cd packages/config
+cd packages/definition
 pnpm build --watch
 
 # Run tests in watch mode (from root)
@@ -116,14 +116,14 @@ Plugins are applied synchronously where possible. If your plugin needs async set
 The project is structured to support multiple editors. To add support for a new editor (e.g., JetBrains/Rider):
 
 1. Create `packages/<editor>-extension/`
-2. Depend on `@slng/config`
+2. Depend on `@slng/definition`
 3. Implement:
    - Definition discovery (scan for `export ... = sling\`...\`` patterns)
    - Send action (import module, call `.execute()`)
    - Debug action (launch debugger with the runner script pattern from `vscode-extension/src/debug/launcher.ts`)
    - Response display
 
-The core execution logic lives in `@slng/config` — editor extensions are thin wrappers.
+The core execution logic lives in `@slng/definition` — editor extensions are thin wrappers.
 
 ### Code Style
 

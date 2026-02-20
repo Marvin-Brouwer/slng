@@ -19,7 +19,7 @@ export type MaskedDataAccessor = Masked<Promise<string | HttpError | InvalidJson
  *
  * @example
  * ```ts
- * import { namedMask } from '@slng/config'
+ * import { namedMask } from '@slng/definition'
 import { isAsyncFunction } from 'node:util/types';
  *
  * const auth_token = namedMask('TOKEN', process.env.TOKEN);

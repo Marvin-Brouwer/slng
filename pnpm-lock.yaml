@@ -65,9 +65,9 @@ importers:
 
   examples:
     dependencies:
-      '@slng/config':
+      '@slng/definition':
         specifier: workspace:*
-        version: link:../packages/config
+        version: link:../packages/definition
     devDependencies:
       '@types/node':
         specifier: ^25.2.1
@@ -81,9 +81,9 @@ importers:
 
   packages/cli:
     dependencies:
-      '@slng/config':
+      '@slng/definition':
         specifier: workspace:*
-        version: link:../config
+        version: link:../definition
       glob:
         specifier: ^11.0.0
         version: 11.1.0
@@ -98,7 +98,7 @@ importers:
         specifier: ^5.5.0
         version: 5.9.3
 
-  packages/config:
+  packages/definition:
     dependencies:
       '@babel/parser':
         specifier: ^7.29.0
@@ -134,9 +134,9 @@ importers:
 
   packages/vscode-extension:
     dependencies:
-      '@slng/config':
+      '@slng/definition':
         specifier: workspace:*
-        version: link:../config
+        version: link:../definition
       '@vscode/codicons':
         specifier: ^0.0.36
         version: 0.0.36

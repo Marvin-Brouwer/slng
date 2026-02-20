@@ -9,7 +9,7 @@ import { mask, Masked, MaskedDataAccessor } from './mask'
  *
  * @example
  * ```ts
- * import { secret } from '@slng/config'
+ * import { secret } from '@slng/definition'
  *
  * const apiKey = secret(process.env.API_KEY);
  *

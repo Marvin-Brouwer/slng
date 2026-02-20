@@ -1,4 +1,4 @@
-import { ErrorNode, HttpNode, RequestNode, ResponseNode } from '../../../config/src/http/http.nodes'
+import { ErrorNode, HttpNode, RequestNode, ResponseNode } from '../../../definition/src/http/http.nodes'
 
 export function assertResponse(node: HttpNode): asserts node is ResponseNode {}
 export function assertRequest(node: HttpNode): asserts node is RequestNode {}

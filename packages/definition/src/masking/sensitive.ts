@@ -13,7 +13,7 @@ const DEFAULT_VISIBLE_CHARS = 6
  *
  * @example
  * ```ts
- * import { sensitive } from '@slng/config'
+ * import { sensitive } from '@slng/definition'
  *
  * sensitive("marvin.brouwer@gmail.com")
  * // Displays: "marvin.*****************"

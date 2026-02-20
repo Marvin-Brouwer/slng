@@ -5,6 +5,7 @@ export function createComponent<TComponent extends SimpleElement>(component: (ne
 	return createElement<TComponent>(component.tagName, properties)
 }
 export function createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement> | AttributeConstructor) {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars
 	const { attributes, ...assignableProperties } = { ...properties }
 	const newElement = Object.assign(document.createElement(element) as TElement, assignableProperties)
 

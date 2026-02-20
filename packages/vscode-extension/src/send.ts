@@ -1,4 +1,4 @@
-import { isSlingDefinition, loadDefinitionFile, SlingResponse } from '@slng/config'
+import { isSlingDefinition, loadDefinitionFile, SlingResponse } from '@slng/definition'
 import * as vscode from 'vscode'
 
 export async function sendRequest(

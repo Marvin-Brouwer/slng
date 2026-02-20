@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"description": "Sling usage examples",
 	"dependencies": {
-		"@slng/config": "workspace:*"
+		"@slng/definition": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/node": "^25.2.1",

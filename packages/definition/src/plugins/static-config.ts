@@ -16,7 +16,7 @@ import type { SlingPlugin } from '../types.js'
  *
  * @example
  * ```ts
- * import sling, { useConfig } from '@slng/config'
+ * import sling, { useConfig } from '@slng/definition'
  *
  * export default sling(
  *   useConfig({

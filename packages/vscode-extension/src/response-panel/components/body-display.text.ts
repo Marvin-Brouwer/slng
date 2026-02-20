@@ -1,4 +1,4 @@
-import { ValueNode, ValuesNode, BodyNode } from '../../../../config/src/http/http.nodes'
+import { ValueNode, ValuesNode, BodyNode } from '../../../../definition/src/http/http.nodes'
 import { addComponent, createElement } from '../element-helper'
 
 import { BodyRenderer } from './body-display'

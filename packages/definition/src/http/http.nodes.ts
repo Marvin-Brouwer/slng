@@ -19,9 +19,9 @@ export interface HttpDocument extends BaseNode {
 	body?: BodyNode
 	metadata: Metadata
 }
-export const document = (props: Omit<HttpDocument, 'type'>): HttpDocument => ({
+export const document = (properties: Omit<HttpDocument, 'type'>): HttpDocument => ({
 	type: 'http',
-	...props,
+	...properties,
 })
 
 type CommandString = `sling.${string}`

@@ -22,7 +22,7 @@
 		"_clean": "rm -rf dist"
 	},
 	"dependencies": {
-		"@slng/config": "workspace:*",
+		"@slng/definition": "workspace:*",
 		"glob": "^11.0.0"
 	},
 	"devDependencies": {

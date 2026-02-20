@@ -27,7 +27,7 @@ export interface DotEnvOptions {
  *
  * @example
  * ```ts
- * import sling, { useDotEnv } from '@slng/config'
+ * import sling, { useDotEnv } from '@slng/definition'
  *
  * // Simple — resolve .env files from process.cwd()
  * export default sling(

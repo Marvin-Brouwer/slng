@@ -1,4 +1,4 @@
-import { SlingResponse } from '@slng/config'
+import { SlingResponse } from '@slng/definition'
 import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'

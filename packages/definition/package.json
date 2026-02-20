@@ -1,5 +1,5 @@
 {
-	"name": "@slng/config",
+	"name": "@slng/definition",
 	"version": "0.1.0",
 	"description": "Sling configuration and core HTTP request definitions",
 	"type": "module",
@@ -39,6 +39,6 @@
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/slng/sling",
-		"directory": "packages/config"
+		"directory": "packages/definition"
 	}
 }

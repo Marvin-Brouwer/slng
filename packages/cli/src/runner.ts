@@ -1,7 +1,7 @@
-import { HttpError } from '@slng/config'
+import { HttpError } from '@slng/definition'
 
 import type { LoadedDefinition } from './loader.js'
-import type { SlingResponse, ExecuteOptions } from '@slng/config'
+import type { SlingResponse, ExecuteOptions } from '@slng/definition'
 
 type AnyValueNode
 	= | { type: 'text', value: string }

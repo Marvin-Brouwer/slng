@@ -1,4 +1,4 @@
-import { maskTransformer } from '@slng/config'
+import { maskTransformer } from '@slng/definition'
 import * as vscode from 'vscode'
 
 export interface State {

@@ -1,4 +1,4 @@
-import { HttpDocument } from '../../../../config/src/http/http.nodes'
+import { HttpDocument } from '../../../../definition/src/http/http.nodes'
 import { SimpleElement } from '../element-helper'
 import { assertNoErrors, assertNotError, assertRequest, assertResponse } from '../node-helper'
 import { resolveElements } from '../node-helper.component'

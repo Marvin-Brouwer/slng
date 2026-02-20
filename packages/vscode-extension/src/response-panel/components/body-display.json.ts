@@ -1,5 +1,5 @@
-import { JsonArrayNode, JsonAstNode, JsonCommentNode, JsonCompositeValueNode, JsonDocument, JsonMaskedNode, JsonObjectNode, JsonPunctuationNode, JsonWhitespaceNode } from '../../../../config/src/http/body-parser/json/json.nodes'
-import { BodyNode } from '../../../../config/src/http/http.nodes'
+import { JsonArrayNode, JsonAstNode, JsonCommentNode, JsonCompositeValueNode, JsonDocument, JsonMaskedNode, JsonObjectNode, JsonPunctuationNode, JsonWhitespaceNode } from '../../../../definition/src/http/body-parser/json/json.nodes'
+import { BodyNode } from '../../../../definition/src/http/http.nodes'
 import { addComponent, addElement, createElement } from '../element-helper'
 import { escapeHtml } from '../node-helper'
 

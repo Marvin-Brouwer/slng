@@ -1,10 +1,10 @@
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { isSlingDefinition } from '@slng/config'
+import { isSlingDefinition } from '@slng/definition'
 import { glob } from 'glob'
 
-import type { SlingDefinition } from '@slng/config'
+import type { SlingDefinition } from '@slng/definition'
 
 export interface LoadedDefinition {
 	name: string

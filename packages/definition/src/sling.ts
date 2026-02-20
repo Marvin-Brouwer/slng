@@ -23,7 +23,7 @@ import {
  * @example
  * ```ts
  * // slng.config.mts
- * import sling, { useDotEnv } from '@slng/config'
+ * import sling, { useDotEnv } from '@slng/definition'
  *
  * export default sling(
  *   useDotEnv('local', 'staging'),

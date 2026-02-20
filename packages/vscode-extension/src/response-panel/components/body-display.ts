@@ -1,4 +1,4 @@
-import { BodyNode } from '../../../../config/src/http/http.nodes'
+import { BodyNode } from '../../../../definition/src/http/http.nodes'
 import { SimpleElement } from '../element-helper'
 
 import { jsonBodyRenderer } from './body-display.json'

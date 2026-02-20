@@ -1,4 +1,4 @@
-import { ValueNode, ValuesNode } from '../../../config/src/http/http.nodes'
+import { ValueNode, ValuesNode } from '../../../definition/src/http/http.nodes'
 
 import { MaskedValue } from './components/masked-value'
 import { addComponent } from './element-helper'

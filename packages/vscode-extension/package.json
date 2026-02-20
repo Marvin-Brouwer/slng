@@ -78,7 +78,7 @@
 		"package": "vsce package --no-dependencies"
 	},
 	"dependencies": {
-		"@slng/config": "workspace:*",
+		"@slng/definition": "workspace:*",
 		"@vscode/codicons": "^0.0.36",
 		"@vscode/webview-ui-toolkit": "^1.4.0"
 	},
