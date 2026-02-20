@@ -247,7 +247,6 @@ async function executeRequest(
 	const request: RequestReference = {
 		reference: definition.id(),
 		name: internals.tsAst.exportName,
-		fetchRequest: () => fetchRequest,
 		templateAst,
 	}
 	const fetchResponse = await performFetch(fetchRequest, options)
@@ -272,8 +271,6 @@ async function executeRequest(
 				body: body('text/error', text(fetchError.toString())),
 				metadata,
 			}),
-
-			fetchResponse: () => fetchResponse,
 		}
 	}
 
@@ -291,8 +288,6 @@ async function executeRequest(
 		request,
 
 		responseAst,
-
-		fetchResponse: () => fetchResponse,
 	}
 
 	if (options?.verbose) {

@@ -46,6 +46,7 @@ function buildHeaders(metadata: Metadata, headerNodes: (ErrorNode | HeaderNode)[
 
 function buildBody(metadata: Metadata, resolvedTemplate: ResolvedStringTemplate | undefined) {
 	if (resolvedTemplate === undefined) return
+	if (metadata.contentType === undefined) return
 
 	if (metadata.contentType === 'application/json') return buildBodyTextFromTemplate(resolvedTemplate)
 	if (metadata.contentType === 'text/plain') return buildBodyTextFromTemplate(resolvedTemplate)

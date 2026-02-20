@@ -3,8 +3,6 @@ import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
 
-import { createHoverUrl } from './show-details.hover'
-
 const updateFileCid = 'sling.update-file'
 
 const responseTag = vscode.window.createTextEditorDecorationType({
@@ -63,24 +61,22 @@ function updateFileCommand(context: ExtensionContext): vscode.Disposable {
 					},
 				}
 
-				const originalRequest = response.request.fetchRequest()
-				if (originalRequest instanceof Error) throw originalRequest
-
-				const mdRequestLine = mdCode([
-					originalRequest.method.toUpperCase(),
-					originalRequest.url,
-					originalRequest.httpVersion,
-				].join(' '))
-				const mdResponseLine = mdCode(`${response.status} ${response.statusText}`)
-					+ (response.responseAst.metadata.contentType ? ': ' + mdCode(response.responseAst.metadata.contentType) : '')
-				const detailUrl = createHoverUrl(activeEditor.document, ast.exportLocation.start.line)
-				const mdDetailLinkLine = `<a href="${detailUrl}" title="show details">show details</a>`
-				const md = createMarkdown(
-					mdRequestLine,
-					mdResponseLine,
-					'',
-					mdDetailLinkLine,
-				)
+				// TODO build from AST
+				// const mdRequestLine = mdCode([
+				// 	response.request.fetchInformation.method.toUpperCase(),
+				// 	response.request.fetchInformation.url,
+				// 	response.request.fetchInformation.httpVersion,
+				// ].join(' '))
+				// const mdResponseLine = mdCode(`${response.status} ${response.statusText}`)
+				// 	+ (response.responseAst.metadata.contentType ? ': ' + mdCode(response.responseAst.metadata.contentType) : '')
+				// const detailUrl = createHoverUrl(activeEditor.document, ast.exportLocation.start.line)
+				// const mdDetailLinkLine = `<a href="${detailUrl}" title="show details">show details</a>`
+				// const md = createMarkdown(
+				// 	mdRequestLine,
+				// 	mdResponseLine,
+				// 	'',
+				// 	mdDetailLinkLine,
+				// )
 				// One line down, lineAt is always one to low so +1 is not needed, TODO search text for HTTP/
 				const httpLine = activeEditor.document.lineAt(ast.literalLocation.start.line)
 				return {
@@ -97,7 +93,7 @@ function updateFileCommand(context: ExtensionContext): vscode.Disposable {
 							ast.literalLocation.start.line, ast.literalLocation.start.column,
 							ast.literalLocation.end.line, ast.literalLocation.end.column,
 						), // After the sling text
-						hoverMessage: md,
+						// hoverMessage: md,
 					},
 				}
 			})
@@ -114,15 +110,15 @@ export async function updateFile() {
 	await vscode.commands.executeCommand(updateFileCid)
 }
 
-const codeTag = '`'
-const mdCode = (text: string) => codeTag + text + codeTag
-function createMarkdown(...md: string[]) {
-	return md
-		.map((line) => {
-			const mdLine = new vscode.MarkdownString()
-			mdLine.isTrusted = true
-			mdLine.supportHtml = true
-			mdLine.value = line.replaceAll('\n', '').replaceAll('\t', '')
-			return mdLine
-		})
-}
+// const codeTag = '`'
+// const mdCode = (text: string) => codeTag + text + codeTag
+// function createMarkdown(...md: string[]) {
+// 	return md
+// 		.map((line) => {
+// 			const mdLine = new vscode.MarkdownString()
+// 			mdLine.isTrusted = true
+// 			mdLine.supportHtml = true
+// 			mdLine.value = line.replaceAll('\n', '').replaceAll('\t', '')
+// 			return mdLine
+// 		})
+// }

@@ -22,14 +22,14 @@ export const jsonBodyRenderer: BodyRenderer<JsonDocument> = {
 		const wrapper = createElement('pre')
 
 		for (const node of bodyNode.value.value) {
-			renderJson(wrapper, node)
+			renderJson(wrapper, node, 0)
 		}
 
 		return wrapper
 	},
 }
 
-function renderJson(container: HTMLElement, node: JsonAstNode, appendContainerGrammar = true, depth = 0) {
+function renderJson(container: HTMLElement, node: JsonAstNode, depth: number, appendStringQuotes = true) {
 	if (node.type === 'json:unknown') return void 0
 
 	if (node.type === 'json:punctuation') return addElement(container, 'span', {
@@ -49,14 +49,15 @@ function renderJson(container: HTMLElement, node: JsonAstNode, appendContainerGr
 	if (node.type === 'json:string') {
 		const stringElement = addElement(container, 'span', {
 			className: node.variant === 'key' ? 'json-key' : 'json-string',
-			textContent: escapeHtml(JSON.stringify(node.value)),
+			textContent: escapeHtml(String(node.value)),
 		})
 
-		if (appendContainerGrammar) stringElement.prepend('"')
-		if (appendContainerGrammar) stringElement.append('"')
+		if (appendStringQuotes) stringElement.prepend('"')
+		if (appendStringQuotes) stringElement.append('"')
+		return
 	}
 	if (node.type === 'json:number') return addElement(container, 'span', {
-		className: node.variant === 'key' ? 'json-key' : 'json-string',
+		className: node.variant === 'key' ? 'json-key' : 'json-number',
 		textContent: escapeHtml(JSON.stringify(node.value)),
 	})
 	if (node.type === 'json:boolean') return addElement(container, 'span', {
@@ -73,12 +74,12 @@ function renderJson(container: HTMLElement, node: JsonAstNode, appendContainerGr
 		const jsonElement = addElement(container, 'span', {
 			className: 'json-string',
 		})
-		if (appendContainerGrammar) jsonElement.append('"')
+		if (appendStringQuotes) jsonElement.append('"')
 		addComponent(jsonElement, MaskedValue, {
 			mask: maskedNode.mask,
 			reference: maskedNode.reference,
 		})
-		if (appendContainerGrammar) jsonElement.append('"')
+		if (appendStringQuotes) jsonElement.append('"')
 		return
 	}
 	if (node.type === 'json:masked:number') {
@@ -104,21 +105,21 @@ function renderJson(container: HTMLElement, node: JsonAstNode, appendContainerGr
 	if (node.type === 'json:composite:string') {
 		const compositeNode = node as JsonCompositeValueNode<string>
 		for (const valueNode of compositeNode.parts) {
-			renderJson(container, valueNode, false, depth)
+			renderJson(container, valueNode, depth, false)
 		}
 		return
 	}
 
 	if (node.type === 'json:array') {
 		const arrayNode = node as JsonArrayNode
-		if (appendContainerGrammar) addElement(container, 'span', {
+		addElement(container, 'span', {
 			className: bracketClass(depth),
 			textContent: '[',
 		})
 		for (const valueNode of arrayNode.items) {
-			renderJson(container, valueNode, false, depth)
+			renderJson(container, valueNode, depth + 1, appendStringQuotes)
 		}
-		if (appendContainerGrammar) addElement(container, 'span', {
+		addElement(container, 'span', {
 			className: bracketClass(depth),
 			textContent: ']',
 		})
@@ -127,14 +128,14 @@ function renderJson(container: HTMLElement, node: JsonAstNode, appendContainerGr
 
 	if (node.type === 'json:object') {
 		const objectNode = node as JsonObjectNode
-		if (appendContainerGrammar) addElement(container, 'span', {
+		addElement(container, 'span', {
 			className: bracketClass(depth),
 			textContent: '{',
 		})
 		for (const valueNode of objectNode.children) {
-			renderJson(container, valueNode, false, depth)
+			renderJson(container, valueNode, depth + 1, appendStringQuotes)
 		}
-		if (appendContainerGrammar) addElement(container, 'span', {
+		addElement(container, 'span', {
 			className: bracketClass(depth),
 			textContent: '}',
 		})

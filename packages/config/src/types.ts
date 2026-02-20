@@ -265,10 +265,6 @@ export interface SlingResponse {
 	readonly duration: number
 
 	readonly responseAst: HttpDocument
-
-	/** The raw fetch Response. */
-	fetchResponse(): Response | Error
-
 	readonly request: RequestReference
 }
 
@@ -282,8 +278,6 @@ export type RequestReference = {
 	readonly name: string
 	/** The resolved template parts, for re-rendering with masking. */
 	readonly templateAst: HttpDocument
-	/** Parsed HTTP request for fetch request. */
-	fetchRequest(): ParsedHttpRequest | Error | undefined
 }
 
 /**
