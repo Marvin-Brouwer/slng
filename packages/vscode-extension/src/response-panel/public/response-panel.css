@@ -116,7 +116,6 @@ pre.body {
 }
 .json-punctuation {
 	color: var(--json-punctuation-color, var(--vscode-editor-foreground));
-	opacity: 0.6;
 }
 
 /* Bracket pair colorization — depth-based colors injected from the active theme.

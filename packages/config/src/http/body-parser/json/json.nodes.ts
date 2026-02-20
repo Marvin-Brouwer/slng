@@ -56,13 +56,16 @@ export interface JsonArrayNode extends JsonNode {
 }
 export interface JsonCompositeValueNode<T extends string | number> extends JsonNode {
 	type: `json:composite:${'string' | 'number'}`
+	variant: 'key' | 'value'
 	parts: (JsonValueNode<T> | JsonMaskedNode)[]
 }
 export const composite = <T extends string | number>(
 	type: 'string' | 'number',
 	parts: (JsonValueNode<T> | JsonMaskedNode)[],
+	variant: 'key' | 'value' = 'value',
 ): JsonCompositeValueNode<T> => ({
 	type: `json:composite:${type}`,
+	variant,
 	parts,
 })
 export const array = (items: JsonAstNode[]): JsonArrayNode => ({

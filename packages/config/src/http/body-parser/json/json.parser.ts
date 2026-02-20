@@ -33,7 +33,7 @@ export function parseJsonTokens(tokens: LexerToken[], metadata: Metadata): JsonA
 	return nodes
 }
 
-function parseNode(state: ParserState): JsonAstNode | undefined {
+function parseNode(state: ParserState, variant: 'key' | 'value' = 'value'): JsonAstNode | undefined {
 	const token = peek(state)
 	if (!token) return undefined
 
@@ -60,12 +60,12 @@ function parseNode(state: ParserState): JsonAstNode | undefined {
 		}
 
 		case '"': {
-			return parseString(state)
+			return parseString(state, variant)
 		}
 
 		case 'json-token:literal': {
 			advance(state)
-			return parseLiteralValue(token.value)
+			return parseLiteralValue(token.value, variant)
 		}
 
 		case 'json-token:masked': {
@@ -90,13 +90,27 @@ function parseNode(state: ParserState): JsonAstNode | undefined {
 function parseObject(state: ParserState): JsonObjectNode {
 	advance(state) // Skip '{'
 	const children: JsonAstNode[] = []
+	let position: 'key' | 'value' = 'key'
 
-	// TODO differentiate between property and value
 	while (state.cursor < state.tokens.length) {
 		const token = peek(state)
 		if (isPunctuationToken(token, '}') || isEnd(token)) break
 
-		const node = parseNode(state)
+		if (isPunctuationToken(token, ':')) {
+			advance(state)
+			children.push(punctuation(':'))
+			position = 'value'
+			continue
+		}
+
+		if (isPunctuationToken(token, ',')) {
+			advance(state)
+			children.push(punctuation(','))
+			position = 'key'
+			continue
+		}
+
+		const node = parseNode(state, position)
 		if (node) children.push(node)
 	}
 
@@ -121,7 +135,7 @@ function parseArray(state: ParserState) {
 	return array(items)
 }
 
-function parseString(state: ParserState) {
+function parseString(state: ParserState, variant: 'key' | 'value' = 'value') {
 	advance(state) // Skip opening '"'
 	const parts: (JsonValueNode<string> | JsonMaskedNode)[] = []
 
@@ -130,7 +144,7 @@ function parseString(state: ParserState) {
 		if (isPunctuationToken(token, '"') || isEnd(token)) break
 
 		if (isValueToken(token, 'json-token:string-content')) {
-			parts.push(string(token.value, 'value'))
+			parts.push(string(token.value, variant))
 			advance(state)
 			continue
 		}
@@ -151,7 +165,7 @@ function parseString(state: ParserState) {
 		return parts[0]
 	}
 
-	return composite('string', parts)
+	return composite('string', parts, variant)
 }
 
 function parseComment(state: ParserState) {
@@ -180,7 +194,7 @@ function parseComment(state: ParserState) {
 	return variant === 'line' ? commentLine(value) : commentBlock(value)
 }
 
-function parseLiteralValue(value: string): JsonAstNode {
+function parseLiteralValue(value: string, variant: 'key' | 'value' = 'value'): JsonAstNode {
 	if (value === 'true') return boolean(true)
 	if (value === 'false') return boolean(false)
 	if (value === 'null') return _null()
@@ -188,7 +202,7 @@ function parseLiteralValue(value: string): JsonAstNode {
 	if (value === 'undefined') return _null()
 
 	const numberValue = Number(value)
-	if (!Number.isNaN(numberValue)) return number(numberValue, 'value')
+	if (!Number.isNaN(numberValue)) return number(numberValue, variant)
 
 	// Unknown values are handled here, this SHOULD never happen
 	return unknown(value)
