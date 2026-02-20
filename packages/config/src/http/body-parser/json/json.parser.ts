@@ -130,7 +130,7 @@ function parseString(state: ParserState) {
 		if (isPunctuationToken(token, '"') || isEnd(token)) break
 
 		if (isValueToken(token, 'json-token:string-content')) {
-			parts.push(string(token.value))
+			parts.push(string(token.value, 'value'))
 			advance(state)
 			continue
 		}
@@ -188,7 +188,7 @@ function parseLiteralValue(value: string): JsonAstNode {
 	if (value === 'undefined') return _null()
 
 	const numberValue = Number(value)
-	if (!Number.isNaN(numberValue)) return number(numberValue)
+	if (!Number.isNaN(numberValue)) return number(numberValue, 'value')
 
 	// Unknown values are handled here, this SHOULD never happen
 	return unknown(value)

@@ -48,7 +48,7 @@ function renderJson(container: HTMLElement, node: JsonAstNode, appendContainerGr
 	})
 	if (node.type === 'json:string') {
 		const stringElement = addElement(container, 'span', {
-			className: 'json-string',
+			className: node.variant === 'key' ? 'json-key' : 'json-string',
 			textContent: escapeHtml(JSON.stringify(node.value)),
 		})
 
@@ -56,7 +56,7 @@ function renderJson(container: HTMLElement, node: JsonAstNode, appendContainerGr
 		if (appendContainerGrammar) stringElement.append('"')
 	}
 	if (node.type === 'json:number') return addElement(container, 'span', {
-		className: 'json-number',
+		className: node.variant === 'key' ? 'json-key' : 'json-string',
 		textContent: escapeHtml(JSON.stringify(node.value)),
 	})
 	if (node.type === 'json:boolean') return addElement(container, 'span', {

@@ -23,17 +23,21 @@ export const unknown = (value: unknown): JsonUnknownNode => ({
 })
 export interface JsonValueNode<T> extends JsonNode {
 	value: T
+	variant: 'key' | 'value'
 }
-export const string = (value: string): JsonValueNode<string> => ({
+export const string = (value: string, variant: 'key' | 'value'): JsonValueNode<string> => ({
 	type: 'json:string',
+	variant,
 	value,
 })
-export const number = (value: number): JsonValueNode<number> => ({
+export const number = (value: number, variant: 'key' | 'value'): JsonValueNode<number> => ({
 	type: 'json:number',
+	variant,
 	value,
 })
 export const boolean = (value: boolean): JsonValueNode<boolean> => ({
 	type: 'json:boolean',
+	variant: 'value',
 	value,
 })
 export interface JsonMaskedNode extends JsonNode {
@@ -130,3 +134,4 @@ export type JsonAstNode
 	| JsonObjectNode
 	| JsonWhitespaceNode
 	| JsonCommentNode
+	| JsonPunctuationNode

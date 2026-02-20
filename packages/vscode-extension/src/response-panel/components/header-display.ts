@@ -20,10 +20,8 @@ export class HttpHeaders extends SimpleElement {
 			const tr = this.appendElementTo(table, 'tr')
 			this.appendElementTo(tr, 'td', {
 				className: 'header-key',
-				textContent: name,
+				textContent: name + ':',
 			})
-			// TODO Forgot the colon, this should be as right as possible, but content wise at the end of the header key
-			// Make it .5 opacity
 			const valueElement = this.appendElementTo(tr, 'td', {
 				className: 'header-value',
 			})

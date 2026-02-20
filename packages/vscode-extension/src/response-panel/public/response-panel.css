@@ -79,6 +79,13 @@
 .headers table td.header-key {
 	font-weight: bold;
 	padding-right: 1em;
+	width: 1%;
+	min-width: min-content;
+	white-space: nowrap;
+}
+.headers table td.header-value {
+	width: auto;
+	white-space: nowrap;
 }
 
 pre.start-line {
