@@ -148,49 +148,6 @@ export interface ParsedHttpRequest {
 	readonly body: string | undefined
 }
 
-// ── Display types ────────────────────────────────────────────
-
-/**
- * A reference to a masked value, used in display headers and body ASTs.
- * The `index` points into {@link SlingInternals.maskedValues}.
- */
-export interface MaskedReference {
-	readonly index: number
-	readonly mask: string
-}
-
-/** JSON AST node for structured body display. */
-export type JsonAstNode
-	= | { type: 'object', entries: [JsonAstNode, JsonAstNode][] }
-	| { type: 'array', items: JsonAstNode[] }
-	| { type: 'string', value: string }
-	| { type: 'number', value: string }
-	| { type: 'boolean', value: boolean }
-	| { type: 'null' }
-	| { type: 'masked', index: number, mask: string }
-
-/** Plain text AST node for unstructured body display. */
-export type PlainTextAstNode
-	= | { type: 'text', value: string }
-	| { type: 'masked', index: number, mask: string }
-
-export type BodyAstNode
-	= | JsonAstNode
-	| PlainTextAstNode
-
-/**
- * Display version of a parsed HTTP request.
- * Headers may contain masked references; body is a content-type-specific AST.
- */
-export interface DisplayHttpRequest {
-	readonly method: string
-	readonly url: string
-	readonly httpVersion: string
-	readonly headers: Record<string, string | MaskedReference>
-	readonly body: BodyAstNode[] | undefined
-	readonly contentType: string | undefined
-}
-
 /**
  * Internal data stored on a sling definition.
  * Access via {@link SlingDefinition.getInternals}.

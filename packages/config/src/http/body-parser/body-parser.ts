@@ -1,9 +1,8 @@
-import { isJsonContentType } from '../../display-parser.json'
 import { isMask, Masked } from '../../masking/mask'
 import { PrimitiveValue } from '../../types'
 import { body, BodyNode, masked, Metadata, text, values } from '../http.nodes'
 
-import { convertToJsonAst } from './body-parser.json'
+import { convertToJsonAst, isJsonContentType } from './body-parser.json'
 
 export function parseHttpBody(metadata: Metadata, textBody: (PrimitiveValue | Masked<PrimitiveValue>)[]): BodyNode | undefined {
 	if (isJsonContentType(metadata.contentType)) return createJsonBody(metadata, textBody)

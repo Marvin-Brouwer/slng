@@ -1,5 +1,13 @@
+import { HttpError } from '@slng/config'
+
 import type { LoadedDefinition } from './loader.js'
 import type { SlingResponse, ExecuteOptions } from '@slng/config'
+
+type AnyValueNode
+	= | { type: 'text', value: string }
+	| { type: 'masked', mask: string }
+	| { type: 'values', values: AnyValueNode[] }
+	| { type: string }
 
 interface RunOptions {
 	name?: string
@@ -46,9 +54,6 @@ export async function runDefinitions(
 	const results: RunResult[] = []
 
 	for (const { name, definition, sourcePath } of toRun) {
-		const internals = definition.getInternals()
-		printHeader(name, internals.parsed.method, internals.parsed.url, sourcePath)
-
 		const executeOptions: ExecuteOptions = {
 			verbose: options.verbose,
 			maskOutput: options.mask,
@@ -56,12 +61,19 @@ export async function runDefinitions(
 		}
 
 		try {
-			const response = await definition.execute(executeOptions)
+			const result = await definition.execute(executeOptions)
+			if (result instanceof HttpError) throw result
+			const response = result
+			const startLine = response.request.templateAst.startLine
+			const method = startLine.type === 'request' && startLine.method.type === 'text' ? startLine.method.value : '?'
+			const url = startLine.type === 'request' ? resolveValueNode(startLine.url) : '?'
+			printHeader(name, method, url, sourcePath)
 			printResponse(name, response, options.verbose)
 			results.push({ name, sourcePath, response })
 		}
 		catch (error_) {
 			const error = error_ instanceof Error ? error_ : new Error(String(error_))
+			printHeader(name, '?', '?', sourcePath)
 			printError(name, error)
 			results.push({ name, sourcePath, error })
 		}
@@ -69,6 +81,23 @@ export async function runDefinitions(
 
 	printSummary(results)
 	return results
+}
+
+function resolveValueNode(node: AnyValueNode): string {
+	switch (node.type) {
+		case 'text': {
+			return (node as { type: 'text', value: string }).value
+		}
+		case 'masked': {
+			return (node as { type: 'masked', mask: string }).mask
+		}
+		case 'values': {
+			return (node as { type: 'values', values: AnyValueNode[] }).values.map(v => resolveValueNode(v)).join('')
+		}
+		default: {
+			return '?'
+		}
+	}
 }
 
 function printHeader(
@@ -100,20 +129,25 @@ function printResponse(
 	if (verbose) {
 		console.warn('')
 		console.warn('  Response Headers:')
-		for (const [key, value] of Object.entries(response.headers)) {
-			console.warn(`    ${key}: ${value}`)
+		for (const headerNode of response.responseAst.headers ?? []) {
+			if (headerNode.type !== 'header') continue
+			const name = headerNode.name.type === 'text' ? headerNode.name.value : '?'
+			const value = resolveValueNode(headerNode.value)
+			console.warn(`    ${name}: ${value}`)
 		}
 	}
 
 	// Body always goes to stdout so it can be piped
-	if (response.body) {
+	const bodyNode = response.responseAst.body
+	if (bodyNode) {
+		const bodyText = resolveValueNode(bodyNode.value as AnyValueNode)
 		try {
 			// Pretty-print JSON
-			const parsed: unknown = JSON.parse(response.body)
+			const parsed: unknown = JSON.parse(bodyText)
 			console.log(JSON.stringify(parsed, undefined, 2))
 		}
 		catch {
-			console.log(response.body)
+			console.log(bodyText)
 		}
 	}
 }
