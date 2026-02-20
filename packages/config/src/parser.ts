@@ -1,8 +1,3 @@
-import { BaseNode } from 'estree'
-
-import { resolveString } from './display/node-helpers.js'
-import { JsonAstNode } from './http/body-parser/json/json.nodes.js'
-import { BodyNode, ErrorNode, HeaderNode, Metadata, HttpDocument, NodeError, ValueNode, ValuesNode } from './http/http.nodes'
 import { isMask, isMaskedDataAccessor, isPrimitiveMask } from './masking/mask.js'
 import {
 	isDataAccessor,
@@ -33,11 +28,7 @@ function stringifyForInterpolation(value: unknown): string {
 export async function resolveInterpolation(
 	value: SlingInterpolation,
 ): Promise<string> {
-	// TODO fix eslint warning
-
 	if (isDataAccessor(value)) {
-		// TODO fix eslint warnings
-
 		const result = await value.value()
 		if (result instanceof Error) throw result
 		return stringifyForInterpolation(result)
@@ -64,8 +55,6 @@ export function resolveInterpolationDisplay(
 ): string {
 	if (value === undefined) return '<undefined>'
 	if (value === null) return '<null>'
-
-	// TODO fix eslint warning
 
 	if (isDataAccessor(value)) {
 		return '<deferred>'
@@ -217,71 +206,9 @@ export function parseTemplatePreview(
 	return parseHttpText(raw)
 }
 
-// TODO move to request-builder.ts
-export function buildRequest(document: HttpDocument): ParsedHttpRequest | Error {
-	if (document.startLine.type === 'error') return new NodeError(document.startLine)
-	if (document.startLine.type !== 'request') return new Error('Unreachable code detected, not a request')
-
-	const methodNode = document.startLine.method
-	if (methodNode.type === 'error') return new NodeError(methodNode)
-	const method = methodNode.value
-	const urlNode = document.startLine.url
-	if (urlNode.type === 'error') return new NodeError(urlNode)
-	const url = resolveString(urlNode, document.metadata)
-	const protocolNode = document.startLine.protocol
-	if (protocolNode.type === 'error') return new NodeError(protocolNode)
-	const httpVersion = protocolNode.version
-
-	const headers = buildHeaders(document.metadata, document.headers)
-	if (headers instanceof Error) return headers
-
-	const body = buildBody(document.metadata, document.body)
-	if (body instanceof Error) return body
-
-	return { method, url, httpVersion, headers, body }
-}
-
 export class SlingParseError extends Error {
 	constructor(message: string) {
 		super(message)
 		this.name = 'SlingParseError'
 	}
-}
-function buildHeaders(metadata: Metadata, headerNodes: (ErrorNode | HeaderNode)[] | undefined) {
-	const headers: Record<string, string> = {}
-	if (headerNodes === undefined) return headers
-
-	for (const headerNode of headerNodes) {
-		if (headerNode.type === 'error') return new NodeError(headerNode)
-
-		const nameNode = headerNode.name
-		if (nameNode.type === 'error') return new NodeError(nameNode)
-		const valueNode = headerNode.value
-		if (valueNode.type === 'error') return new NodeError(valueNode)
-
-		headers[nameNode.value] = resolveString(valueNode, metadata)
-	}
-
-	return headers
-}
-
-function buildBody(metadata: Metadata, bodyNode: BodyNode<BaseNode> | undefined) {
-	if (bodyNode === undefined) return
-
-	if (bodyNode.contentType === 'application/json') return buildJsonBody(metadata, bodyNode.value as JsonAstNode)
-	if (bodyNode.contentType === 'text/plain') return buildTextBody(metadata, bodyNode.value as ValueNode | ValuesNode)
-
-	return new Error(`contentType ${bodyNode.contentType} not supported!`)
-}
-
-function buildTextBody(metadata: Metadata, valueNode: ValueNode | ValuesNode): string {
-	if (valueNode.type === 'text') return valueNode.value
-	if (valueNode.type === 'masked') return String(metadata.maskedValues[valueNode.reference].unmask())
-	if (valueNode.type === 'values') return valueNode.values.map(value => buildTextBody(metadata, value)).join('')
-	return ''
-}
-
-function buildJsonBody(_metadata: Metadata, valueNode: JsonAstNode): string {
-	// TODO
-	return JSON.stringify(valueNode)
 }

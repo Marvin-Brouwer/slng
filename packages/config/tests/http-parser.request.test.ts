@@ -8,7 +8,6 @@ import { Masked } from '../src/masking/mask'
 import { readHttpTemplate, resolveTemplateDependencies } from '../src/template-reader'
 import { PrimitiveValue } from '../src/types'
 
-// TODO call the http parser from sling, then call the resolver
 async function http(strings: TemplateStringsArray, ...values: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
 	const template = readHttpTemplate(strings, values)
 	return await resolveTemplateDependencies(template)
@@ -22,7 +21,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = await parseHttpRequest(request)
+		const result = parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -45,7 +44,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = await parseHttpRequest(request)
+		const result = parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -73,7 +72,7 @@ describe('parseHttpRequest', () => {
 		const request = await http``
 
 		// ACT
-		const result = await parseHttpRequest(request)
+		const result = parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(nodes.error({
@@ -86,7 +85,7 @@ describe('parseHttpRequest', () => {
 		const request = await http`GET https://someurl.com HTTP/1.1`
 
 		// ACT
-		const result = await parseHttpRequest(request)
+		const result = parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -122,7 +121,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = await parseHttpRequest(request)
+		const result = parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -159,7 +158,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = await parseHttpRequest(request)
+		const result = parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -187,7 +186,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = await parseHttpRequest(request)
+		const result = parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -225,7 +224,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = await parseHttpRequest(request)
+		const result = parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(
@@ -257,7 +256,7 @@ describe('parseHttpRequest', () => {
 		`
 
 		// ACT
-		const result = await parseHttpRequest(request)
+		const result = parseHttpRequest(request)
 
 		// ASSERT
 		expect(result).toEqual(

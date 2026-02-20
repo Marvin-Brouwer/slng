@@ -160,7 +160,7 @@ export const masked = (reference: number, value: PrimitiveValue | Masked<Primiti
 	mask: isMask(value) ? value.value : String(value),
 })
 
-export type HTTPNode
+export type HttpNode
 	= HttpDocument
 	| ErrorNode
 	| RequestNode
@@ -172,10 +172,3 @@ export type HTTPNode
 	| ValuesNode
 	| TextNode
 	| MaskedNode
-
-export class HTTPNodes {
-	// TODO build out node helpers
-	public static isHttpDocument(node: HTTPNode): node is HttpDocument {
-		return node.type === 'http'
-	}
-}

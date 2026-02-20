@@ -19,14 +19,8 @@ export function registerSendCommand(context: ExtensionContext, responsePanel: Re
 					return
 				}
 
-				// TODO fix ignores
-
 				const reference = result.request.reference
-				// TODO fix ignores
-
 				await context.state.put(reference, result)
-				// TODO fix ignores
-
 				await responsePanel.show(reference)
 
 				await updateFile()

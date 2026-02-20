@@ -4,7 +4,6 @@ import { Button } from '@vscode/webview-ui-toolkit'
 
 import { SimpleElement } from '../element-helper'
 
-// TODO client scripts will go here
 /*
 
 //https://github.com/microsoft/vscode-webview-ui-toolkit
@@ -22,27 +21,8 @@ import { SimpleElement } from '../element-helper'
  for dropdown https://github.com/microsoft/vscode-webview-ui-toolkit/blob/main/src/dropdown/README.md
  */
 
-/**
- * Copy the text content of an element to the clipboard (VS Code webview friendly)
- * @param el - HTMLElement to copy from
- */
-function copyElementText(element: HTMLElement) {
-	if (!element) return
-	element.focus()
-	// eslint-disable-next-line unicorn/prefer-dom-node-text-content -- innerText preserves visual line breaks
-	const plainText = (element.innerText || '').replaceAll('\u00A0\t', ' ')
-	const html = element.innerHTML
-	const item = new ClipboardItem({
-		'text/plain': new Blob([plainText], { type: 'text/plain' }),
-		'text/html': new Blob([html], { type: 'text/html' }),
-	})
-	navigator.clipboard.write([item])
-		.then(() => console.log('Copied!'))
-		.catch(error => console.error('Copy failed:', error))
-	// TODO  use postmessage for a toast when const vscode = acquireVsCodeApi(); becomes available
-}
-
-// TODO conver to programmatic arguments over attributes
+// TODO convert to programmatic arguments over attributes
+// TODO copy headers (CSV) / copy body (JSON) instead of copy unmasked
 export class CopyButton extends SimpleElement {
 	static tagName = 'copy-button'
 
@@ -69,8 +49,9 @@ export class CopyButton extends SimpleElement {
 			slot: 'start',
 			innerHTML: copyIconSvg,
 		})
-		mainButton.addEventListener('click', (_event) => {
-			this.copyDefault(this.resolveValueElement(valueSelector))
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		mainButton.addEventListener('click', async (_event) => {
+			await this.copyDefault(this.resolveValueElement(valueSelector))
 			this.closeDropdown(dropdownMenu, dropdownToggle)
 		})
 
@@ -109,9 +90,10 @@ export class CopyButton extends SimpleElement {
 			role: 'menuitem',
 			ariaLabel: `Copy ${type} to clipboard with masked values revealed`,
 		})
-		copyUnmaskedButton.addEventListener('click', (event) => {
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		copyUnmaskedButton.addEventListener('click', async (event) => {
 			event.stopPropagation()
-			this.copyUnmasked(this.resolveValueElement(valueSelector))
+			await this.copyUnmasked(this.resolveValueElement(valueSelector))
 			this.closeDropdown(dropdownMenu, dropdownToggle)
 		})
 
@@ -140,24 +122,40 @@ export class CopyButton extends SimpleElement {
 		dropdownToggle.setAttribute('aria-expanded', 'false')
 	}
 
-	private copyDefault(element: HTMLElement) {
+	private async copyDefault(element: HTMLElement) {
 		if (!element) return
-		// TODO, I guess postmessage, use vscode clipboard api
 		console.log('Copy button clicked!')
-		copyElementText(element)
-		// TODO show toast in postmessage
+		await this.copyElementText(element)
 	}
 
-	private copyUnmasked(element: HTMLElement) {
+	private async copyUnmasked(element: HTMLElement) {
 		if (!element) return
-		// TODO, I guess postmessage, use vscode clipboard api
 		console.log('Copy unmasked button clicked!')
-		copyElementText(element)
-		// TODO show toast in postmessage instead
+		await this.copyElementText(element)
 	}
 
 	private resolveValueElement(valueSelector: string): HTMLElement | undefined {
 		return document.querySelector(valueSelector) ?? undefined
+	}
+
+	/**
+	 * Copy the text content of an element to the clipboard (VS Code webview friendly)
+	 * @param el - HTMLElement to copy from
+	 */
+	private async copyElementText(element: HTMLElement) {
+		if (!element) return
+		element.focus()
+		// eslint-disable-next-line unicorn/prefer-dom-node-text-content -- innerText preserves visual line breaks
+		const plainText = (element.innerText || '').replaceAll('\u00A0\t', ' ')
+		const html = element.innerHTML
+		const item = new ClipboardItem({
+			'text/plain': new Blob([plainText], { type: 'text/plain' }),
+			'text/html': new Blob([html], { type: 'text/html' }),
+		})
+		// TODO  use postmessage for a toast when const vscode = acquireVsCodeApi(); becomes available
+		await navigator.clipboard.write([item])
+			.then(() => console.log('Copied!'))
+			.catch(error => console.error('Copy failed:', error))
 	}
 }
 

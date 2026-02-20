@@ -8,11 +8,7 @@ export class MaskedValue extends SimpleElement {
 	public reference: number
 
 	protected onMount(): void {
-		if (!this.mask || this.reference === undefined) {
-			debugger
-			console.log(console.trace())
-			throw new Error('Expected this element to be created programatically')
-		}
+		if (!this.mask || this.reference === undefined) throw new Error('Expected this element to be created programatically')
 
 		this.append(createElement('span', {
 			textContent: escapeHtml(this.mask),

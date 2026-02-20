@@ -3,9 +3,7 @@ import { createHash } from 'node:crypto'
 import { buildHttpResponse } from './http/http-builder/http-builder.js'
 import { parseHttpRequest } from './http/http-parser/http-parser.request.js'
 import { Metadata, body, document, error, NodeError, response, text } from './http/http.nodes'
-import {
-	buildRequest as buildRequest,
-} from './parser.js'
+import { buildRequest } from './request/request-builder.js'
 import { resolveTemplateDependencies } from './template-reader.js'
 import {
 	HttpError,
@@ -243,7 +241,7 @@ async function executeRequest(
 	if (!templateAst) return new Error('Unreachable code detected, empty http request')
 	if (templateAst.type === 'error') return new NodeError(templateAst)
 
-	const fetchRequest = buildRequest(templateAst)
+	const fetchRequest = buildRequest(templateAst, internals.resolvedTemplate)
 	if (fetchRequest instanceof Error) throw fetchRequest
 
 	const request: RequestReference = {
@@ -350,21 +348,3 @@ export function isSlingDefinition(value: unknown): value is SlingDefinition {
 		return false
 	}
 }
-
-// // We return the real value, but we "decorate" it with a custom inspection method.
-// // This is to prevent console bloat
-// function debuggerDecorate<T extends object | string>(tag: string, value: T | undefined) {
-// 	let returnValue: T | symbol = value as T
-// 	if (returnValue === undefined) returnValue = Symbol.for('undefined')
-// 	if (returnValue === null) returnValue = Symbol.for('null')
-// 	return Object.assign(returnValue, {
-// 		toJSON() {
-// 			return `[${tag}]`
-// 		},
-// 	}) as T
-// }
-
-// function debuggerDecorateBody<T extends object | string>(fetchResponse: Response, body: T | undefined) {
-// 	if (!fetchResponse.bodyUsed) return debuggerDecorate(`no-content`, body)
-// 	return debuggerDecorate(fetchResponse.headers.get('content-type') ?? 'text/plain', body)
-// }

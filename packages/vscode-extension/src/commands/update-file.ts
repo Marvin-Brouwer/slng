@@ -63,13 +63,16 @@ function updateFileCommand(context: ExtensionContext): vscode.Disposable {
 					},
 				}
 
+				const originalRequest = response.request.fetchRequest()
+				if (originalRequest instanceof Error) throw originalRequest
+
 				const mdRequestLine = mdCode([
-					response.request.parsed.method.toUpperCase(),
-					response.request.parsed.url,
-					response.request.parsed.httpVersion,
+					originalRequest.method.toUpperCase(),
+					originalRequest.url,
+					originalRequest.httpVersion,
 				].join(' '))
 				const mdResponseLine = mdCode(`${response.status} ${response.statusText}`)
-					+ (response.headers['content-type'] ? ': ' + mdCode(response.headers['content-type']) : '')
+					+ (response.responseAst.metadata.contentType ? ': ' + mdCode(response.responseAst.metadata.contentType) : '')
 				const detailUrl = createHoverUrl(activeEditor.document, ast.exportLocation.start.line)
 				const mdDetailLinkLine = `<a href="${detailUrl}" title="show details">show details</a>`
 				const md = createMarkdown(

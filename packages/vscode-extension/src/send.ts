@@ -53,7 +53,8 @@ export async function sendRequest(
 			}
 			// Negative status is fetch error
 			if (result.status <= 0) {
-				vscode.window.showWarningMessage(result.body)
+				// TODO get body text or use result.statusText
+				vscode.window.showWarningMessage(JSON.stringify(result.responseAst.body.value))
 				channel.error(result.statusText, result)
 			}
 			// Negative status is fetch error
@@ -68,11 +69,8 @@ export async function sendRequest(
 }
 
 async function sendHttpRequest(filePath: string, callName: string, signal: AbortSignal) {
-	// TODO fix ignores
-
 	const definition = await loadDefinitionFile(filePath)
 	if (definition instanceof Error) throw definition
-	// TODO fix ignores
 
 	const callDefinition = definition[callName]
 	if (!isSlingDefinition(callDefinition))

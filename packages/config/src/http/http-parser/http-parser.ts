@@ -39,7 +39,8 @@ export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderN
 			continue
 		}
 
-		// Extract Name // TODO implement meta header support
+		// Extract Name
+		// TODO implement meta header support
 		const rawName = rawLineFragment.slice(0, colonIndex).trim()
 		if (rawName.length === 0) {
 			headers.push(error({
