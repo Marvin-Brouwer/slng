@@ -7,8 +7,8 @@
 		"build:vscode": "pnpm -r run build:vscode",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"lint:nofix": "eslint .",
-		"lint": "eslint . --fix",
+		"lint:nofix": "eslint --stats  -c \"./eslint.config.ts\" .",
+		"lint": "DEBUG=eslint:cli-engine eslint --fix --stats --debug -c \"./eslint.config.ts\" .",
 		"clean": "pnpm -r run clean"
 	},
 	"devDependencies": {

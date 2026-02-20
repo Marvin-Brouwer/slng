@@ -1,4 +1,12 @@
 {
+	"eslint.workingDirectory": [
+		{
+			"mode": "auto"
+		}
+	],
+	"eslint.options": {
+		"overrideConfigFile": "${workspaceFolder}/eslint.config.ts"
+	},
 	"eslint.codeActionsOnSave.mode": "all",
 	"eslint.format.enable": true,
 	"eslint.validate": [
@@ -46,4 +54,5 @@
 	"typescript.format.insertSpaceAfterOpeningAndBeforeClosingEmptyBraces": false,
 	"typescript.tsc.autoDetect": "off",
 	"npm.autoDetect": "off",
+	"editor.defaultFormatter": "dbaeumer.vscode-eslint",
 }
