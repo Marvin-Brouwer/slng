@@ -4,7 +4,7 @@ import { Metadata } from '../../http.nodes'
 
 import { LexerToken, MaskedToken, PunctuationToken, ValueToken } from './json.lexer'
 import {
-	_null, array, boolean, commentBlock, commentLine, composite, jsonMask, number, object, punctuation, string, unknown,
+	_null, array, boolean, commentBlock, commentLine, composite, jsonMask, number, object, punctuation, string, unknown, whitespace,
 } from './json.nodes'
 
 import type { JsonAstNode, JsonMaskedNode, JsonObjectNode, JsonValueNode } from './json.nodes'
@@ -41,7 +41,7 @@ function parseNode(state: ParserState, variant: 'key' | 'value' = 'value'): Json
 	switch (token.type) {
 		case 'json-token:whitespace': {
 			advance(state)
-			return { type: 'json:whitespace', value: token.value }
+			return whitespace(token.value)
 		}
 
 		case 'json-token:comment-body':
@@ -148,8 +148,8 @@ function parseString(state: ParserState, variant: 'key' | 'value' = 'value') {
 			advance(state)
 			continue
 		}
-		if (isValueToken(token, 'json-token:masked')) {
-			parts.push(jsonMask(state.metadata, token.value))
+		if (token.type === 'json-token:masked') {
+			parts.push(jsonMask(state.metadata, (token as MaskedToken).value))
 			advance(state)
 			continue
 		}
@@ -160,11 +160,8 @@ function parseString(state: ParserState, variant: 'key' | 'value' = 'value') {
 
 	advance(state) // Skip closing '"'
 
-	// If it's a simple string with no masks, return a standard string node
-	if (parts.length === 1 && parts[0].type === 'json:string') {
-		return parts[0]
-	}
-
+	if (parts.length === 0) return string('', variant)
+	if (parts.length === 1 && parts[0].type === 'json:string') return parts[0]
 	return composite('string', parts, variant)
 }
 
@@ -216,8 +213,7 @@ function isPunctuationToken(token: LexerToken, type?: PunctuationToken['type']):
 	if (!type) return !Object.hasOwn(token, 'value')
 	return type === token.type
 }
-function isValueToken(token: LexerToken, type?: ValueToken['type']): token is ValueToken {
-	if (!type) return Object.hasOwn(token, 'value') && type !== 'json-token:masked'
+function isValueToken(token: LexerToken, type: ValueToken['type']): token is ValueToken {
 	return Object.hasOwn(token, 'value') && type === token.type
 }
 

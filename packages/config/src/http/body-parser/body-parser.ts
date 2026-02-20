@@ -23,7 +23,6 @@ function createTextBody(metadata: Metadata, textBody: (PrimitiveValue | Masked<P
 		return text(part)
 	})
 
-	if (bodyNodes.length === 0) return
 	if (bodyNodes.length === 1) return body(contentType, bodyNodes[0])
 
 	return body(contentType, values(...bodyNodes))

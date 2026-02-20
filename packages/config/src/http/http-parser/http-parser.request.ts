@@ -1,19 +1,17 @@
-import { Position } from 'estree'
-
 import { ResolvedStringTemplate } from '../../types'
 import { parseHttpBody } from '../body-parser/body-parser'
 import {
+	allowedProtocols,
 	document,
 	HttpDocument,
 	Metadata,
-	ProtocolNodes,
 	RequestNode,
 	ErrorNode,
 	error,
 	request,
 } from '../http.nodes'
 
-import { advanceLine, parseHeaders, resolveCompoundNode, resolveSingleNode, TemplateLine, TemplateLines } from './http-parser'
+import { parseHeaders, resolveCompoundNode, resolveSingleNode, TemplateLine, TemplateLines } from './http-parser'
 
 export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpDocument | ErrorNode | undefined {
 	const { strings, values } = requestTemplate
@@ -30,9 +28,8 @@ export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpD
 	const lastString = strings.at(-1)!
 	const endsWithNewline = /\n\s*$/.test(lastString)
 
-	// 2. Interleave with exact location tracking
+	// 2. Interleave strings and values into lines
 	const lines: TemplateLines = [[]]
-	let currentPos: Position = { line: 1, column: 0 }
 	let indent = -1
 
 	for (const [index, string_] of strings.entries()) {
@@ -47,14 +44,12 @@ export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpD
 					indent = rawText.length - rawText.trimStart().length
 				}
 
-				// FIX: Only strip indent if this is a NEW line (sIndex > 0)
+				// Only strip indent if this is a NEW line (sIndex > 0)
 				// or the very first line of the template (index === 0)
 				const isContinuation = index > 0 && sIndex === 0
 				const text = isContinuation
 					? rawText
 					: rawText.slice(Math.max(0, indent))
-
-				currentPos = advanceLine(currentPos, text)
 
 				// Skip leading empty lines (but keep continuations like ".com")
 				if (indent < 0 && !text && !isContinuation) continue
@@ -65,7 +60,6 @@ export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpD
 
 				if (sIndex < split.length - 1) {
 					lines.push([])
-					currentPos = { line: currentPos.line + 1, column: 0 }
 				}
 			}
 		}
@@ -73,23 +67,16 @@ export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpD
 		if (index < values.length) {
 			const value = values[index]
 
-			currentPos = { ...currentPos, column: currentPos.column + 1 }
-
 			if (value) lines.at(-1)!.push({
 				part: value,
 			})
 		}
 	}
 
-	// ... (Rest of the function remains the same)
-
 	// 3. Segment the Lines
 	const startLineParts = lines.shift() || []
 	const startLine = parseRequestStart(startLineParts, metadata)
 
-	// ... (headers, body, errors, etc.)
-
-	// For brevity, I'm just returning the rest of the object construction
 	const emptyLineIndex = lines.findIndex(l => l.length === 0 || (l.length === 1 && l[0].part === ''))
 	const headerLines = emptyLineIndex === -1 ? lines : lines.slice(0, emptyLineIndex)
 	const bodyLines = emptyLineIndex === -1 ? [] : lines.slice(emptyLineIndex + 1)
@@ -186,7 +173,7 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 	}
 
 	const [protoName, protoVersion] = protoPart.part.trim().split('/')
-	if (!protoName || !ProtocolNodes.allowed.some(a => a.protocol === protoName.toUpperCase() && a.version == protoVersion)) {
+	if (!protoName || !allowedProtocols.some(a => a.protocol === protoName.toUpperCase() && a.version == protoVersion)) {
 		return error({
 			reason: `Unsupported protocol: "${protoName}". Expected HTTP/1.1.`,
 			suggestions: ['sling.use_http_1_1'],

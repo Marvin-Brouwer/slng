@@ -5,9 +5,8 @@ export function createComponent<TComponent extends SimpleElement>(component: (ne
 	return createElement<TComponent>(component.tagName, properties)
 }
 export function createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement> | AttributeConstructor) {
-	const assignablePropserties = { ...properties, attributes: undefined }
-	delete assignablePropserties.attributes
-	const newElement = Object.assign(document.createElement(element) as TElement, assignablePropserties)
+	const { attributes, ...assignableProperties } = { ...properties }
+	const newElement = Object.assign(document.createElement(element) as TElement, assignableProperties)
 
 	for (const [key, value] of Object.entries((properties as AttributeConstructor)?.attributes ?? {})) {
 		newElement.setAttribute(key, value)

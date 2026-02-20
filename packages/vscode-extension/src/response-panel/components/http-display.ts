@@ -32,16 +32,16 @@ export class HttpResponseDisplay extends SimpleElement {
 		assertResponse(response.startLine)
 
 		assertNotError(response.startLine.protocol)
-		assertNotError(response.startLine.statusCode)
 		assertNotError(response.startLine.status)
+		assertNotError(response.startLine.statusText)
 		const startLine = this.appendElementTo(responseDataDiv, 'pre', {
 			className: 'start-line',
 		})
 		startLine.append(`${response.startLine.protocol.value}/${response.startLine.protocol.version}`)
 		startLine.append(nbsp)
-		startLine.append(response.startLine.statusCode.value)
-		startLine.append(nbsp)
 		startLine.append(response.startLine.status.value)
+		startLine.append(nbsp)
+		startLine.append(response.startLine.statusText.value)
 
 		assertNoErrors(response.headers)
 		this.appendComponentTo(responseDataDiv, HttpHeaders, {

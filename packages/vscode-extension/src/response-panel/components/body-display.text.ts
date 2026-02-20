@@ -20,8 +20,8 @@ function renderTextAst(container: HTMLElement, node: ValueNode | ValuesNode): HT
 		case 'values': {
 			for (const childNode of node.values) {
 				renderTextAst(container, childNode)
-				return container
 			}
+			return container
 		}
 	}
 }

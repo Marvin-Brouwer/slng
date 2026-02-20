@@ -257,9 +257,7 @@ async function executeRequest(
 		if (fetchError.code === 'ENOTFOUND') fetchErrorMessage = `Hostname '${fetchError.hostname}' could not be found!`
 
 		const metadata = new Metadata()
-		metadata.errors?.push(error({
-			reason: fetchErrorMessage,
-		}))
+		metadata.errors = [error({ reason: fetchErrorMessage })]
 		return {
 			status: fetchError.errno,
 			statusText: fetchError.code,

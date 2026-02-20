@@ -104,7 +104,7 @@ export function isDataAccessor(value: unknown): value is DataAccessor {
  * Specific {@link DataAccessor} for `json(jsonPath)` queries. \
  * Returned by {@link SlingDefinition.json}.
  */
-export type ResponseJsonAccessor = DataAccessor & {}
+export type ResponseJsonAccessor = DataAccessor
 
 // ── Interpolation types ──────────────────────────────────────
 

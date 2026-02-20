@@ -44,12 +44,12 @@ export async function resolveTemplateDependencies(template: StringTemplate): Pro
 
 async function resolveDependency(value: DataAccessor | MaskedDataAccessor): Promise<PrimitiveValue | Masked<PrimitiveValue> | undefined> {
 	if (isMaskedDataAccessor(value)) {
-		const maskedValueResult = await resolveAsyncMask(value).then(value => value).catch(error => error as Error)
+		const maskedValueResult = await resolveAsyncMask(value).catch(error => error as Error)
 		if (maskedValueResult instanceof Error) throw maskedValueResult
 		return maskedValueResult as Masked<PrimitiveValue>
 	}
 
-	const accessorResult = await value.tryValue().then(value => value).catch(error => error as Error)
+	const accessorResult = await value.tryValue().catch(error => error as Error)
 	if (accessorResult instanceof Error) throw accessorResult
 	return accessorResult
 }

@@ -1,5 +1,3 @@
-import { Position } from 'estree'
-
 import { isMask, Masked } from '../../masking/mask'
 import { PrimitiveValue } from '../../types'
 import { error, ErrorNode, header, HeaderNode, masked, Metadata, text, ValueNode, values, ValuesNode } from '../http.nodes'
@@ -74,16 +72,14 @@ export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderN
 			valueParts.push(lineParts[index])
 		}
 
-		headers.push(header(nameNode, resolveCompoundNode(valueParts, metadata)))
+		const valueNode = resolveCompoundNode(valueParts, metadata)
+		headers.push(header(nameNode, valueNode))
 
 		if (isContentTypeHeader(nameNode.value)) {
-			// We still peek at the value for metadata purposes, but the AST remains blind
-			const possibleContentType = resolveCompoundNode(valueParts, metadata)
-			if (possibleContentType.type === 'text')
-				metadata.contentType = possibleContentType.value
-			// Don't know why but this may technically happen
-			else if (possibleContentType.type === 'masked')
-				metadata.contentType = String(metadata.maskedValues[possibleContentType.reference].unmask())
+			if (valueNode.type === 'text')
+				metadata.contentType = valueNode.value
+			else if (valueNode.type === 'masked')
+				metadata.contentType = String(metadata.maskedValues[valueNode.reference].unmask())
 		}
 	}
 	return headers.length > 0 ? headers : undefined
@@ -109,9 +105,7 @@ export function resolveCompoundNode<T extends ValuesNode | ValueNode = ValuesNod
 
 	// Otherwise, wrap in ValueNode
 	const nodes = parts.map(p => resolveSingleNode(p, metadata))
-	const validNodes = nodes.filter((n): n is ValueNode => n.type === 'text' || n.type === 'masked')
-
-	return values(...validNodes) as T
+	return values(...nodes) as T
 }
 
 /**
@@ -126,21 +120,6 @@ export function resolveSingleNode<T extends ValueNode = ValueNode>(part: Templat
 	return text(part.part) as T
 }
 
-// Helper to advance positions based on text content
-export function advanceLine(pos: Position, text: string): Position {
-	const lines = text.split('\n')
-	if (lines.length > 1) {
-		return {
-			line: pos.line + lines.length - 1,
-			column: lines.at(-1)!.length,
-		}
-	}
-	return {
-		line: pos.line,
-		column: pos.column + text.length,
-	}
-}
-
 function isContentTypeHeader(name: string) {
-	return name.split(';')[0].toLowerCase() === 'content-type'
+	return name === 'content-type'
 }

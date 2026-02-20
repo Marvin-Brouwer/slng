@@ -19,9 +19,9 @@ export interface HttpDocument extends BaseNode {
 	body?: BodyNode
 	metadata: Metadata
 }
-export const document = (constructor: Omit<HttpDocument, 'type'>): HttpDocument => ({
+export const document = (props: Omit<HttpDocument, 'type'>): HttpDocument => ({
 	type: 'http',
-	...constructor,
+	...props,
 })
 
 type CommandString = `sling.${string}`
@@ -57,23 +57,21 @@ export interface ResponseNode extends BaseNode {
 	type: 'response'
 	protocol: ProtocolNode
 	status: TextNode | ErrorNode
-	statusCode: TextNode | ErrorNode
+	statusText: TextNode | ErrorNode
 }
-export class ProtocolNodes {
-	public static allowed = [
-		{ protocol: 'HTTP', version: '1.1' },
-	]
-}
+export const allowedProtocols = [
+	{ protocol: 'HTTP', version: '1.1' },
+]
 export interface ProtocolNode extends BaseNode {
 	type: 'protocol'
-	value: typeof ProtocolNodes.allowed[number]['protocol']
-	version: typeof ProtocolNodes.allowed[number]['version']
+	value: typeof allowedProtocols[number]['protocol']
+	version: typeof allowedProtocols[number]['version']
 }
 export const request = (
 	method: TextNode | ErrorNode,
 	url: ValueNode | ValuesNode | ErrorNode,
-	protocol: typeof ProtocolNodes.allowed[number]['protocol'],
-	version: typeof ProtocolNodes.allowed[number]['version'],
+	protocol: typeof allowedProtocols[number]['protocol'],
+	version: typeof allowedProtocols[number]['version'],
 ): RequestNode => ({
 	type: 'request',
 	method,
@@ -85,14 +83,14 @@ export const request = (
 	},
 })
 export const response = (
-	protocol: typeof ProtocolNodes.allowed[number]['protocol'],
-	version: typeof ProtocolNodes.allowed[number]['version'],
+	protocol: typeof allowedProtocols[number]['protocol'],
+	version: typeof allowedProtocols[number]['version'],
 	status: TextNode,
-	statusCode: TextNode,
+	statusText: TextNode,
 ): ResponseNode => ({
 	type: 'response',
 	status,
-	statusCode,
+	statusText,
 	protocol: {
 		type: 'protocol',
 		value: protocol.toUpperCase(),
