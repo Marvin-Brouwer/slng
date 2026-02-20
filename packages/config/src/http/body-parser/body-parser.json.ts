@@ -1,4 +1,5 @@
-import { TemplateLines } from '../http-parser/http-parser'
+import { Masked } from '../../masking/mask'
+import { PrimitiveValue } from '../../types'
 import { Metadata } from '../http.nodes'
 
 import { lexJson } from './json/json.lexer'
@@ -10,8 +11,8 @@ export function isJsonContentType(contentType: string | undefined): boolean {
 	return contentType === 'application/json' || contentType.endsWith('+json')
 }
 
-export function convertToJsonAst(metadata: Metadata, lines: TemplateLines): JsonDocument {
-	const tokens = lexJson(lines)
+export function convertToJsonAst(metadata: Metadata, parts: (PrimitiveValue | Masked<PrimitiveValue>)[]): JsonDocument {
+	const tokens = lexJson(parts)
 	const ast = parseJsonTokens(tokens, metadata)
 	return document(ast)
 }

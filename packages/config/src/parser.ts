@@ -1,5 +1,6 @@
 import { BaseNode } from 'estree'
 
+import { resolveString } from './display/node-helpers.js'
 import { JsonAstNode } from './http/body-parser/json/json.nodes.js'
 import { BodyNode, ErrorNode, HeaderNode, Metadata, HttpDocument, NodeError, ValueNode, ValuesNode } from './http/http.nodes'
 import { isMask, isMaskedDataAccessor, isPrimitiveMask } from './masking/mask.js'
@@ -238,13 +239,6 @@ export function buildRequest(document: HttpDocument): ParsedHttpRequest | Error 
 	if (body instanceof Error) return body
 
 	return { method, url, httpVersion, headers, body }
-}
-
-function resolveString(node: ValueNode | ValuesNode, metadata: Metadata): string {
-	if (node.type === 'text') return node.value
-	if (node.type === 'masked') return String(metadata.maskedValues[node.reference].unmask())
-
-	return node.values.map(value => resolveString(value, metadata)).join('')
 }
 
 export class SlingParseError extends Error {

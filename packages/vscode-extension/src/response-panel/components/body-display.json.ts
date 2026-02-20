@@ -1,105 +1,143 @@
-import type { BodyAstNode, JsonAstNode } from '@slng/config'
+import { JsonArrayNode, JsonAstNode, JsonCommentNode, JsonCompositeValueNode, JsonDocument, JsonMaskedNode, JsonObjectNode, JsonPunctuationNode, JsonWhitespaceNode } from '../../../../config/src/http/body-parser/json/json.nodes'
+import { BodyNode } from '../../../../config/src/http/http.nodes'
+import { addComponent, addElement, createElement } from '../element-helper'
+import { escapeHtml } from '../node-helper'
+
+import { MaskedValue } from './masked-value'
+
 import type { BodyRenderer } from './body-display'
 
 function isJsonContentType(contentType: string): boolean {
 	return contentType === 'application/json' || contentType.endsWith('+json')
 }
 
-export const jsonBodyRenderer: BodyRenderer = {
-	canProcess: mimeType => isJsonContentType(mimeType),
-	renderAst(nodes: BodyAstNode[]): string {
-		return nodes.map(node => renderJsonAst(node as JsonAstNode, 0)).join('')
-	},
-}
-
 const MAX_BRACKET_PAIR_COLORS = 6
-const INDENT = '  '
-
-function escapeHtml(text: string): string {
-	return text
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-}
-
 function bracketClass(depth: number): string {
 	return `json-bracket json-bracket-${(Math.max(0, depth) % MAX_BRACKET_PAIR_COLORS) + 1}`
 }
 
-/**
- * Render a JSON AST node to syntax-highlighted HTML with pretty-printing.
- */
-export function renderJsonAst(node: JsonAstNode, depth: number): string {
-	switch (node.type) {
-		case 'object': {
-			return renderObject(node.entries, depth)
+export const jsonBodyRenderer: BodyRenderer<JsonDocument> = {
+	canProcess: mimeType => isJsonContentType(mimeType),
+	renderAst(bodyNode: BodyNode<JsonDocument>) {
+		const wrapper = createElement('pre')
+
+		for (const node of bodyNode.value.value) {
+			renderJson(wrapper, node)
 		}
-		case 'array': {
-			return renderArray(node.items, depth)
-		}
-		case 'string': {
-			return `<span class="json-string">${escapeHtml(JSON.stringify(node.value))}</span>`
-		}
-		case 'number': {
-			return `<span class="json-number">${escapeHtml(node.value)}</span>`
-		}
-		case 'boolean': {
-			return `<span class="json-keyword">${node.value}</span>`
-		}
-		case 'null': {
-			return `<span class="json-keyword">null</span>`
-		}
-		case 'masked': {
-			return `<masked-value data-index="${node.index}">${escapeHtml(node.mask)}</masked-value>`
-		}
-	}
+
+		return wrapper
+	},
 }
 
-function renderObject(entries: [JsonAstNode, JsonAstNode][], depth: number): string {
-	if (entries.length === 0) {
-		return `<span class="${bracketClass(depth)}">{</span><span class="${bracketClass(depth)}">}</span>`
+function renderJson(container: HTMLElement, node: JsonAstNode, appendContainerGrammar = true, depth = 0) {
+	if (node.type === 'json:unknown') return void 0
+
+	if (node.type === 'json:punctuation') return addElement(container, 'span', {
+		className: 'json-punctuation',
+		textContent: escapeHtml((node as JsonPunctuationNode).value),
+	})
+	if (node.type === 'json:whitespace') return addElement(container, 'span', {
+		className: 'json-whitespace',
+		innerHTML: escapeHtml((node as JsonWhitespaceNode).value.replaceAll(String.raw`\n`, '\n')),
+	})
+	if (node.type === 'json:comment') return addElement(container, 'span', {
+		className: 'json-comment',
+		innerHTML: (node as JsonCommentNode).variant === 'line'
+			? `//${escapeHtml(JSON.stringify(node.value))}`
+			: `/*${escapeHtml(JSON.stringify(node.value))}*/`,
+	})
+	if (node.type === 'json:string') {
+		const stringElement = addElement(container, 'span', {
+			className: 'json-string',
+			textContent: escapeHtml(JSON.stringify(node.value)),
+		})
+
+		if (appendContainerGrammar) stringElement.prepend('"')
+		if (appendContainerGrammar) stringElement.append('"')
 	}
-
-	const innerIndent = INDENT.repeat(depth + 1)
-	const outerIndent = INDENT.repeat(depth)
-
-	const items = entries.map(([key, value], index) => {
-		const keyHtml = key.type === 'string'
-			? `<span class="json-key">${escapeHtml(JSON.stringify(key.value))}</span>`
-			: renderJsonAst(key, depth + 1)
-		const valueHtml = renderJsonAst(value, depth + 1)
-		const comma = index < entries.length - 1
-			? '<span class="json-punctuation">,</span>'
-			: ''
-		return `${innerIndent}${keyHtml}<span class="json-punctuation">: </span>${valueHtml}${comma}`
+	if (node.type === 'json:number') return addElement(container, 'span', {
+		className: 'json-number',
+		textContent: escapeHtml(JSON.stringify(node.value)),
+	})
+	if (node.type === 'json:boolean') return addElement(container, 'span', {
+		className: 'json-boolean',
+		textContent: escapeHtml(JSON.stringify(node.value)),
+	})
+	if (node.type === 'json:null') return addElement(container, 'span', {
+		className: 'json-null',
+		textContent: 'null',
 	})
 
-	return [
-		`<span class="${bracketClass(depth)}">{</span>`,
-		...items,
-		`${outerIndent}<span class="${bracketClass(depth)}">}</span>`,
-	].join('\n')
-}
-
-function renderArray(items: JsonAstNode[], depth: number): string {
-	if (items.length === 0) {
-		return `<span class="${bracketClass(depth)}">[</span><span class="${bracketClass(depth)}">]</span>`
+	if (node.type === 'json:masked:string') {
+		const maskedNode = node as JsonMaskedNode
+		const jsonElement = addElement(container, 'span', {
+			className: 'json-string',
+		})
+		if (appendContainerGrammar) jsonElement.append('"')
+		addComponent(jsonElement, MaskedValue, {
+			mask: maskedNode.mask,
+			reference: maskedNode.reference,
+		})
+		if (appendContainerGrammar) jsonElement.append('"')
+		return
+	}
+	if (node.type === 'json:masked:number') {
+		const maskedNode = node as JsonMaskedNode
+		const jsonElement = addElement(container, 'span', {
+			className: 'json-number',
+		})
+		return addComponent(jsonElement, MaskedValue, {
+			mask: maskedNode.mask,
+			reference: maskedNode.reference,
+		})
+	}
+	if (node.type === 'json:masked:boolean') {
+		const maskedNode = node as JsonMaskedNode
+		const jsonElement = addElement(container, 'span', {
+			className: 'json-boolean',
+		})
+		return addComponent(jsonElement, MaskedValue, {
+			mask: maskedNode.mask,
+			reference: maskedNode.reference,
+		})
+	}
+	if (node.type === 'json:composite:string') {
+		const compositeNode = node as JsonCompositeValueNode<string>
+		for (const valueNode of compositeNode.parts) {
+			renderJson(container, valueNode, false, depth)
+		}
+		return
 	}
 
-	const innerIndent = INDENT.repeat(depth + 1)
-	const outerIndent = INDENT.repeat(depth)
+	if (node.type === 'json:array') {
+		const arrayNode = node as JsonArrayNode
+		if (appendContainerGrammar) addElement(container, 'span', {
+			className: bracketClass(depth),
+			textContent: '[',
+		})
+		for (const valueNode of arrayNode.items) {
+			renderJson(container, valueNode, false, depth)
+		}
+		if (appendContainerGrammar) addElement(container, 'span', {
+			className: bracketClass(depth),
+			textContent: ']',
+		})
+		return
+	}
 
-	const rendered = items.map((item, index) => {
-		const valueHtml = renderJsonAst(item, depth + 1)
-		const comma = index < items.length - 1
-			? '<span class="json-punctuation">,</span>'
-			: ''
-		return `${innerIndent}${valueHtml}${comma}`
-	})
-
-	return [
-		`<span class="${bracketClass(depth)}">[</span>`,
-		...rendered,
-		`${outerIndent}<span class="${bracketClass(depth)}">]</span>`,
-	].join('\n')
+	if (node.type === 'json:object') {
+		const objectNode = node as JsonObjectNode
+		if (appendContainerGrammar) addElement(container, 'span', {
+			className: bracketClass(depth),
+			textContent: '{',
+		})
+		for (const valueNode of objectNode.children) {
+			renderJson(container, valueNode, false, depth)
+		}
+		if (appendContainerGrammar) addElement(container, 'span', {
+			className: bracketClass(depth),
+			textContent: '}',
+		})
+		return
+	}
 }

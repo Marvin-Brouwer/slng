@@ -2,7 +2,6 @@ import { BaseNode } from 'estree'
 
 import { isMask, Masked } from '../../../masking/mask'
 import { PrimitiveValue } from '../../../types'
-import { TemplateLines } from '../../http-parser/http-parser'
 
 export type LexerToken = ValueToken | PunctuationToken | MaskedToken
 export type PunctuationToken = BaseNode & { type: typeof punctuationCharacters[number] | 'EOF' }
@@ -35,14 +34,12 @@ const isWhitespace = (character: string) => /\s/.test(character)
 const isPunctuation = (character: string): character is typeof punctuationCharacters[number] =>
 	punctuationCharacters.includes(character as typeof punctuationCharacters[number])
 
-export function lexJson(lines: TemplateLines) {
+export function lexJson(parts: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
 	const tokens = new Array<LexerToken>()
 	let stringMode = false
 	let lineCommentMode = false
 	let blockCommentMode = false
 	let escapeCount = 0
-
-	const parts = lines.flatMap(line => line.map(chunk => chunk.part))
 
 	for (const part of parts) {
 		if (isMask(part)) {

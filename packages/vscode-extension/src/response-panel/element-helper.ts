@@ -1,16 +1,27 @@
 export type AttributeConstructor = {
 	attributes?: Record<string, string>
 }
+export function createComponent<TComponent extends SimpleElement>(component: (new () => TComponent) & SimpleElementConstructor, properties?: Partial<TComponent> | AttributeConstructor) {
+	return createElement<TComponent>(component.tagName, properties)
+}
 export function createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement> | AttributeConstructor) {
 	const assignablePropserties = { ...properties, attributes: undefined }
 	delete assignablePropserties.attributes
-	return Object.assign(document.createElement(element) as TElement, assignablePropserties)
-}
-export function addElement<TElement extends HTMLElement>(parent: Element | ShadowRoot, element: string, properties?: Partial<TElement> | AttributeConstructor) {
-	const newElement = createElement<TElement>(element, properties)
+	const newElement = Object.assign(document.createElement(element) as TElement, assignablePropserties)
+
 	for (const [key, value] of Object.entries((properties as AttributeConstructor)?.attributes ?? {})) {
 		newElement.setAttribute(key, value)
 	}
+
+	return newElement
+}
+export function addElement<TElement extends HTMLElement>(parent: Element | ShadowRoot, element: string, properties?: Partial<TElement> | AttributeConstructor) {
+	const newElement = createElement<TElement>(element, properties)
+	parent.append(newElement)
+	return newElement
+}
+export function addComponent<TComponent extends SimpleElement>(parent: Element | ShadowRoot, component: (new () => TComponent) & SimpleElementConstructor, properties?: Partial<TComponent> | AttributeConstructor) {
+	const newElement = createComponent<TComponent>(component, properties)
 	parent.append(newElement)
 	return newElement
 }
@@ -45,8 +56,16 @@ export abstract class SimpleElement extends HTMLElement {
 		return addElement<TElement>(parent, element, properties)
 	}
 
+	appendComponentTo<TComponent extends SimpleElement>(parent: Element | ShadowRoot, component: (new () => TComponent) & SimpleElementConstructor, properties?: Partial<TComponent> | AttributeConstructor) {
+		return addComponent<TComponent>(parent, component, properties)
+	}
+
 	createElement<TElement extends HTMLElement>(element: string, properties?: Partial<TElement> | AttributeConstructor) {
 		return createElement<TElement>(element, properties)
+	}
+
+	createComponent<TComponent extends SimpleElement>(component: (new () => TComponent) & SimpleElementConstructor, properties?: Partial<TComponent> | AttributeConstructor) {
+		return createComponent<TComponent>(component, properties)
 	}
 
 	createHtml<TElement extends HTMLElement>(element: string, properties?: Partial<TElement> | AttributeConstructor) {

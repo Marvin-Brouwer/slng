@@ -1,5 +1,6 @@
 import '../webview'
 import './components/copy-button'
+import './components/masked-value'
 import './components/body-display'
 import './components/header-display'
 import './components/http-display'

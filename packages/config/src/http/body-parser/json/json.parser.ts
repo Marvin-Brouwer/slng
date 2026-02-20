@@ -4,7 +4,7 @@ import { Metadata } from '../../http.nodes'
 
 import { LexerToken, MaskedToken, PunctuationToken, ValueToken } from './json.lexer'
 import {
-	_null, array, boolean, commentBlock, commentLine, composite, jsonMask, number, object, string, unknown,
+	_null, array, boolean, commentBlock, commentLine, composite, jsonMask, number, object, punctuation, string, unknown,
 } from './json.nodes'
 
 import type { JsonAstNode, JsonMaskedNode, JsonObjectNode, JsonValueNode } from './json.nodes'
@@ -76,8 +76,8 @@ function parseNode(state: ParserState): JsonAstNode | undefined {
 
 		case ':':
 		case ',': {
-			advance(state) // Skip structural glue
-			return undefined
+			advance(state)
+			return punctuation(token.type)
 		}
 
 		default: {
@@ -91,6 +91,7 @@ function parseObject(state: ParserState): JsonObjectNode {
 	advance(state) // Skip '{'
 	const children: JsonAstNode[] = []
 
+	// TODO differentiate between property and value
 	while (state.cursor < state.tokens.length) {
 		const token = peek(state)
 		if (isPunctuationToken(token, '}') || isEnd(token)) break

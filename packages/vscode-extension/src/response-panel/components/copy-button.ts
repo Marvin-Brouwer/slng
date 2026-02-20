@@ -42,7 +42,10 @@ function copyElementText(element: HTMLElement) {
 	// TODO  use postmessage for a toast when const vscode = acquireVsCodeApi(); becomes available
 }
 
+// TODO conver to programmatic arguments over attributes
 export class CopyButton extends SimpleElement {
+	static tagName = 'copy-button'
+
 	protected onMount(): void {
 		const type = this.getAttribute('type') ?? 'value'
 		const valueSelector = this.getAttribute('for') ?? undefined
@@ -158,4 +161,4 @@ export class CopyButton extends SimpleElement {
 	}
 }
 
-customElements.define('copy-button', CopyButton)
+SimpleElement.register(CopyButton)

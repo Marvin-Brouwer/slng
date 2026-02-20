@@ -239,7 +239,7 @@ async function executeRequest(
 	const startTime = performance.now()
 
 	const internals = definition.getInternals()
-	const templateAst = await parseHttpRequest(internals.resolvedTemplate!)
+	const templateAst = parseHttpRequest(internals.resolvedTemplate!)
 	if (!templateAst) return new Error('Unreachable code detected, empty http request')
 	if (templateAst.type === 'error') return new NodeError(templateAst)
 

@@ -83,6 +83,7 @@
 		"@vscode/webview-ui-toolkit": "^1.4.0"
 	},
 	"devDependencies": {
+		"@types/estree": "^1.0.8",
 		"@types/node": "^25.2.1",
 		"@types/vscode": "^1.85.0",
 		"@vscode/vsce": "^3.0.0",

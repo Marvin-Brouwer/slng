@@ -3,6 +3,8 @@ import path from 'node:path'
 
 import * as vscode from 'vscode'
 
+import { escapeHtml } from '../node-helper'
+
 // ── Types ────────────────────────────────────────────────────
 
 export interface JsonTokenColors {
@@ -48,13 +50,6 @@ const defaultBracketColors: Record<'dark' | 'light', string[]> = {
 }
 
 // ── JSON → syntax-highlighted HTML ──────────────────────────
-
-export function escapeHtml(text: string): string {
-	return text
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-}
 
 export function isJsonContentType(contentType: string): boolean {
 	const mime = contentType.split(';')[0].trim().toLowerCase()

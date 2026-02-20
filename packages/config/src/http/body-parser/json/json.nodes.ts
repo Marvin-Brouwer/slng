@@ -83,6 +83,15 @@ export const whitespace = (value: string): JsonWhitespaceNode => ({
 	value,
 })
 
+export interface JsonPunctuationNode extends JsonNode {
+	type: 'json:punctuation'
+	value: ',' | ':'
+}
+export const punctuation = (value: ',' | ':'): JsonPunctuationNode => ({
+	type: 'json:punctuation',
+	value,
+})
+
 export interface JsonCommentNode extends JsonNode {
 	type: 'json:comment'
 	variant: 'line' | 'block'

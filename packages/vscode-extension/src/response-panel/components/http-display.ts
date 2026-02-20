@@ -1,9 +1,13 @@
-import { HttpDocument, HTTPNode, ErrorNode, RequestNode, ResponseNode } from '../../../../config/src/http/http.nodes'
+import { HttpDocument } from '../../../../config/src/http/http.nodes'
 import { SimpleElement } from '../element-helper'
+import { assertNoErrors, assertNotError, assertRequest, assertResponse } from '../node-helper'
+import { resolveElements } from '../node-helper.component'
 
-function assertResponse(node: HTTPNode): asserts node is ResponseNode {}
-function assertRequest(node: HTTPNode): asserts node is RequestNode {}
-function assertNotError(node: HTTPNode): asserts node is Exclude<HTTPNode, ErrorNode> {}
+import { HttpBody } from './body-display'
+import { CopyButton } from './copy-button'
+import { HttpHeaders } from './header-display'
+
+const nbsp = '\u00A0'
 
 /** https://en.wikipedia.org/wiki/HTTP#Example */
 export class HttpResponseDisplay extends SimpleElement {
@@ -17,7 +21,7 @@ export class HttpResponseDisplay extends SimpleElement {
 		const copyPanel = this.appendElementTo(responseDataDiv, 'div', {
 			className: 'copy-panel',
 		})
-		this.appendElementTo(copyPanel, 'copy-button', {
+		this.appendComponentTo(copyPanel, CopyButton, {
 			attributes: {
 				for: '#response-data',
 				type: 'response',
@@ -26,36 +30,31 @@ export class HttpResponseDisplay extends SimpleElement {
 
 		const response = JSON.parse(this.textContent) as HttpDocument
 		assertResponse(response.startLine)
-		assertNotError(response.startLine.status)
+
+		assertNotError(response.startLine.protocol)
 		assertNotError(response.startLine.statusCode)
-		const startLine = [
-			`${response.startLine.protocol.value}/${response.startLine.protocol.version}`,
-			response.startLine.status.value,
-			response.startLine.statusCode.value,
-		].join(' ')
-		console.log(startLine)
+		assertNotError(response.startLine.status)
+		const startLine = this.appendElementTo(responseDataDiv, 'pre', {
+			className: 'start-line',
+		})
+		startLine.append(`${response.startLine.protocol.value}/${response.startLine.protocol.version}`)
+		startLine.append(nbsp)
+		startLine.append(response.startLine.statusCode.value)
+		startLine.append(nbsp)
+		startLine.append(response.startLine.status.value)
 
-		// const headers = Object.entries(response.headers)
-		// 	.map(([key, value]) => {
-		// 		return `<header-row key=${key}>${value}</header-row>`
-		// 	})
-		// 	.join('\n').replaceAll('\t', '')
+		assertNoErrors(response.headers)
+		this.appendComponentTo(responseDataDiv, HttpHeaders, {
+			headerNodes: response.headers,
+		})
 
-		// this.appendElementTo(responseDataDiv, 'pre', {
-		// 	className: 'start-line',
-		// 	textContent: startLine,
-		// })
-		// this.appendElementTo(responseDataDiv, 'header-display', {
-		// 	className: 'start-line',
-		// 	innerHTML: headers,
-		// })
-		// this.appendElementTo(responseDataDiv, 'body-display', {
-		// 	textContent: response.bodyAst ? JSON.stringify(response.bodyAst) : '',
-		// 	attributes: {
-		// 		'content-type': response.request.display.contentType ?? '',
-		// 	},
-		// })
-		this.innerHTML = responseDataDiv.outerHTML
+		assertNotError(response.body)
+		this.appendComponentTo(responseDataDiv, HttpBody, {
+			bodyNode: response.body,
+		})
+
+		this.innerHTML = ''
+		this.append(responseDataDiv)
 	}
 }
 
@@ -70,7 +69,7 @@ export class HttpRequestDisplay extends SimpleElement {
 		const copyPanel = this.appendElementTo(requestDataDiv, 'div', {
 			className: 'copy-panel',
 		})
-		this.appendElementTo(copyPanel, 'copy-button', {
+		this.appendComponentTo(copyPanel, CopyButton, {
 			attributes: {
 				for: '#request-data',
 				type: 'request',
@@ -79,48 +78,33 @@ export class HttpRequestDisplay extends SimpleElement {
 
 		const request = JSON.parse(this.textContent) as HttpDocument
 		assertRequest(request.startLine)
+
 		assertNotError(request.startLine.method)
 		assertNotError(request.startLine.url)
 		assertNotError(request.startLine.protocol)
-		const startLine = [
-			request.startLine.method.value,
-			// TODO expose resolve values
-			// eslint-disable-next-line @typescript-eslint/no-base-to-string
-			request.startLine.url.toString(),
-			`${request.startLine.protocol.value}/${request.startLine.protocol.version}`,
-		].join(' ')
-		console.log(startLine)
+		const startLine = this.appendElementTo(requestDataDiv, 'pre', {
+			className: 'start-line',
+		})
+		startLine.append(request.startLine.method.value)
+		startLine.append(nbsp)
+		resolveElements(startLine, request.startLine.url)
+		startLine.append(nbsp)
+		startLine.append(`${request.startLine.protocol.value}/${request.startLine.protocol.version}`)
 
-		// const headers = Object.entries(display.headers)
-		// 	.map(([key, value]) => {
-		// 		const displayValue = isMaskedReference(value)
-		// 			? value.mask
-		// 			: value
-		// 		return `<header-row key=${key}>${displayValue}</header-row>`
-		// 	})
-		// 	.join('\n').replaceAll('\t', '')
+		assertNoErrors(request.headers)
+		this.appendComponentTo(requestDataDiv, HttpHeaders, {
+			headerNodes: request.headers,
+		})
 
-		// this.appendElementTo(requestDataDiv, 'pre', {
-		// 	className: 'start-line',
-		// 	textContent: startLine,
-		// })
-		// this.appendElementTo(requestDataDiv, 'header-display', {
-		// 	className: 'start-line',
-		// 	innerHTML: headers,
-		// })
-		// this.appendElementTo(requestDataDiv, 'body-display', {
-		// 	textContent: display.body ? JSON.stringify(display.body) : '',
-		// 	attributes: {
-		// 		'content-type': display.contentType ?? '',
-		// 	},
-		// })
-		this.innerHTML = requestDataDiv.outerHTML
+		assertNotError(request.body)
+		this.appendComponentTo(requestDataDiv, HttpBody, {
+			bodyNode: request.body,
+		})
+
+		this.innerHTML = ''
+		this.append(requestDataDiv)
 	}
 }
 
 SimpleElement.register(HttpResponseDisplay)
 SimpleElement.register(HttpRequestDisplay)
-
-// function isMaskedReference(value: string | MaskedReference): value is MaskedReference {
-// 	return typeof value === 'object' && 'index' in value && 'mask' in value
-// }

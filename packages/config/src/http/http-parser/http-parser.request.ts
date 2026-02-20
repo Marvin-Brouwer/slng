@@ -15,7 +15,7 @@ import {
 
 import { advanceLine, parseHeaders, resolveCompoundNode, resolveSingleNode, TemplateLine, TemplateLines } from './http-parser'
 
-export async function parseHttpRequest(requestTemplate: ResolvedStringTemplate): Promise<HttpDocument | ErrorNode | undefined> {
+export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpDocument | ErrorNode | undefined {
 	const { strings, values } = requestTemplate
 	const metadata = new Metadata()
 
@@ -111,13 +111,22 @@ export async function parseHttpRequest(requestTemplate: ResolvedStringTemplate):
 	}
 
 	const headers = parseHeaders(headerLines, metadata)
-	const body = await parseHttpBody(metadata, bodyLines.slice(0, endsWithNewline ? bodyLines.length - 1 : bodyLines.length - 2))
+	const textBody = collapseTemplate(bodyLines.slice(0, endsWithNewline ? bodyLines.length - 1 : bodyLines.length - 2))
+	const body = parseHttpBody(metadata, textBody)
 
 	return document({
 		startLine,
 		headers,
 		body,
 		metadata,
+	})
+}
+
+function collapseTemplate(template: TemplateLines) {
+	return template.flatMap((line, index) => {
+		const lineParts = line.map(part => part.part)
+		if (index === 0) return lineParts
+		return ['\n', ...lineParts]
 	})
 }
 
