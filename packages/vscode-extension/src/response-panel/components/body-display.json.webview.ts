@@ -3,10 +3,6 @@ import path from 'node:path'
 
 import * as vscode from 'vscode'
 
-import { escapeHtml } from '../node-helper'
-
-// ── Types ────────────────────────────────────────────────────
-
 export interface JsonTokenColors {
 	key?: string
 	string?: string
@@ -32,6 +28,16 @@ interface CollectedThemeData {
 	colors: Record<string, string>
 }
 
+/** The actual TextMate scopes VS Code's JSON grammar assigns to each token type. */
+type TokenColorKey = Exclude<keyof JsonTokenColors, 'bracketColors'>
+const jsonTargetScopes: Record<TokenColorKey, string> = {
+	key: 'support.type.property-name.json',
+	string: 'string.quoted.double.json',
+	number: 'constant.numeric.json',
+	keyword: 'constant.language.json',
+	punctuation: 'punctuation.definition.dictionary.begin.json',
+}
+
 const MAX_BRACKET_PAIR_COLORS = 6
 
 const bracketColorKeys = Array.from(
@@ -47,81 +53,6 @@ const bracketColorKeys = Array.from(
 const defaultBracketColors: Record<'dark' | 'light', string[]> = {
 	dark: ['#FFD700', '#DA70D6', '#179FFF'],
 	light: ['#0431FA', '#319331', '#7B3814'],
-}
-
-// ── JSON → syntax-highlighted HTML ──────────────────────────
-
-export function isJsonContentType(contentType: string): boolean {
-	const mime = contentType.split(';')[0].trim().toLowerCase()
-	return mime === 'application/json' || mime.endsWith('+json')
-}
-
-/** Bracket class for the given nesting depth, cycling through 1–6. */
-function bracketClass(depth: number): string {
-	return `json-bracket json-bracket-${(depth % MAX_BRACKET_PAIR_COLORS) + 1}`
-}
-
-/**
- * Recursively converts a parsed JSON value into syntax-highlighted HTML.
- * Uses CSS classes that map to VS Code's theme-aware token color variables.
- * Brackets/braces get depth-based classes for bracket pair colorization.
- */
-function jsonValueToHtml(value: unknown, indent: number): string {
-	const nextIndent = indent + 1
-	const pad = '  '.repeat(indent)
-	const padInner = '  '.repeat(nextIndent)
-	const bc = bracketClass(indent)
-
-	if (value === null) {
-		return '<span class="json-keyword">null</span>'
-	}
-	if (typeof value === 'boolean') {
-		return `<span class="json-keyword">${value}</span>`
-	}
-	if (typeof value === 'number') {
-		return `<span class="json-number">${value}</span>`
-	}
-	if (typeof value === 'string') {
-		return `<span class="json-string">${escapeHtml(JSON.stringify(value))}</span>`
-	}
-	if (Array.isArray(value)) {
-		if (value.length === 0) return `<span class="${bc}">[]</span>`
-		const items = value.map(item =>
-			`${padInner}${jsonValueToHtml(item, nextIndent)}`,
-		).join('<span class="json-punctuation">,</span>\n')
-		return `<span class="${bc}">[</span>\n${items}\n${pad}<span class="${bc}">]</span>`
-	}
-	if (typeof value === 'object') {
-		const entries = Object.entries(value as Record<string, unknown>)
-		if (entries.length === 0) return `<span class="${bc}">{}</span>`
-		const items = entries.map(([key, property]) =>
-			`${padInner}<span class="json-key">${escapeHtml(JSON.stringify(key))}</span><span class="json-punctuation">:</span> ${jsonValueToHtml(property, nextIndent)}`,
-		).join('<span class="json-punctuation">,</span>\n')
-		return `<span class="${bc}">{</span>\n${items}\n${pad}<span class="${bc}">}</span>`
-	}
-	return escapeHtml(JSON.stringify(value))
-}
-
-export function colorizeJson(body: string): string {
-	try {
-		const parsed: unknown = JSON.parse(body)
-		return jsonValueToHtml(parsed, 0)
-	}
-	catch {
-		return escapeHtml(body)
-	}
-}
-
-// ── Theme-based JSON token color resolution ─────────────────
-
-/** The actual TextMate scopes VS Code's JSON grammar assigns to each token type. */
-type TokenColorKey = Exclude<keyof JsonTokenColors, 'bracketColors'>
-const jsonTargetScopes: Record<TokenColorKey, string> = {
-	key: 'support.type.property-name.json',
-	string: 'string.quoted.double.json',
-	number: 'constant.numeric.json',
-	keyword: 'constant.language.json',
-	punctuation: 'punctuation.definition.dictionary.begin.json',
 }
 
 /** Strip single-line and multi-line comments from JSONC, preserving strings. */
