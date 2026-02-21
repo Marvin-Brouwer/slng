@@ -60,6 +60,19 @@
 				}
 			]
 		},
+		"semanticTokenTypes": [
+			{
+				"id": "httpMethod",
+				"description": "HTTP request method (GET, POST, PUT, …)"
+			}
+		],
+		"semanticTokenScopes": [
+			{
+				"scopes": {
+					"httpMethod": ["storage.type"]
+				}
+			}
+		],
 		"views": {
 			"resultsContainer": [
 				{

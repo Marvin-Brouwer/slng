@@ -7,11 +7,11 @@ import type { ExtensionContext } from '../context'
 /**
  * Semantic token legend for HTTP method highlighting.
  *
- * We declare a single token type — `keyword` — so that VS Code themes
- * style the HTTP method (GET, POST, …) identically to the `const` keyword
- * in TypeScript.
+ * We declare a custom token type — `httpMethod` — mapped to the `storage.type`
+ * TextMate scope (the same scope `const` uses in TypeScript). Themes therefore
+ * apply the same color without VS Code treating the token as a keyword.
  */
-export const methodTokenLegend = new vscode.SemanticTokensLegend(['keyword'])
+export const methodTokenLegend = new vscode.SemanticTokensLegend(['httpMethod'])
 
 /** Matches the start of a `sling\`` template literal. */
 const SLING_TEMPLATE_RE = /\bsling\s*`/g
@@ -42,7 +42,7 @@ class HttpMethodTokenProvider implements vscode.DocumentSemanticTokensProvider {
 
 			const absOffset = contentStart + result.offset
 			const tokenPos = document.positionAt(absOffset)
-			// 0 = index of 'keyword' in the legend
+			// 0 = index of 'httpMethod' in the legend
 			builder.push(tokenPos.line, tokenPos.character, result.length, 0, 0)
 		}
 
