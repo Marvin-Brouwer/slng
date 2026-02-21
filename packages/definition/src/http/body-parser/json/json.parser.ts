@@ -1,5 +1,4 @@
-import { BaseNode } from 'estree'
-
+import { SlingNode } from '../../../sling-node'
 import { Metadata } from '../../http.nodes'
 
 import { LexerToken, MaskedToken, PunctuationToken, ValueToken } from './json.lexer'
@@ -217,6 +216,6 @@ function isValueToken(token: LexerToken, type: ValueToken['type']): token is Val
 	return Object.hasOwn(token, 'value') && type === token.type
 }
 
-function isEnd(token: LexerToken): token is (BaseNode & { type: 'EOF' }) {
+function isEnd(token: LexerToken): token is (SlingNode & { type: 'EOF' }) {
 	return token.type == 'EOF'
 }

@@ -1,9 +1,9 @@
-import { ValueNode, ValuesNode } from '../../../definition/src/http/http.nodes'
-
 import { MaskedValue } from './components/masked-value'
 import { addComponent } from './element-helper'
 
-export function resolveElements(container: HTMLElement, node: ValueNode | ValuesNode) {
+import type { httpNodes } from '@slng/definition'
+
+export function resolveElements(container: HTMLElement, node: httpNodes.ValueNode | httpNodes.ValuesNode) {
 	if (node.type === 'text') {
 		container.append(node.value)
 		return container

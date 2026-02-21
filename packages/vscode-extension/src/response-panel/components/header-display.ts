@@ -1,12 +1,13 @@
-import { HeaderNode } from '../../../../definition/src/http/http.nodes'
 import { SimpleElement } from '../element-helper'
 import { assertNotError } from '../node-helper'
 import { resolveElements } from '../node-helper.component'
 
+import type { httpNodes } from '@slng/definition'
+
 export class HttpHeaders extends SimpleElement {
 	static tagName = 'header-display'
 
-	public headerNodes: HeaderNode[]
+	public headerNodes: httpNodes.HeaderNode[]
 
 	protected onMount(): void {
 		if (!this.headerNodes) throw new Error('Expected this element to be created programatically')

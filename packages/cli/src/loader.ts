@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { isSlingDefinition } from '@slng/definition'
+import { isSlingDefinition } from '@slng/definition/extension'
 import { glob } from 'glob'
 
 import type { SlingDefinition } from '@slng/definition'
@@ -25,13 +25,13 @@ export async function loadFile(filePath: string): Promise<LoadedDefinition[]> {
 	for (const [key, value] of Object.entries(module_)) {
 		if (key === 'default') continue // Skip the config export
 		if (isSlingDefinition(value)) {
-			value.getInternals().name = key
-			value.getInternals().sourcePath = absolutePath
-			definitions.push({
-				name: key,
-				definition: value,
-				sourcePath: absolutePath,
-			})
+			// value.getInternals().tsAst.exportName = key
+			// value.getInternals().sourcePath = absolutePath
+			// definitions.push({
+			// 	name: key,
+			// 	definition: value,
+			// 	sourcePath: absolutePath,
+			// })
 		}
 	}
 

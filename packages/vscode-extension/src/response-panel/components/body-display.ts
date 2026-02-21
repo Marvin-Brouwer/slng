@@ -1,29 +1,28 @@
-import { BodyNode } from '../../../../definition/src/http/http.nodes'
 import { SimpleElement } from '../element-helper'
 
 import { jsonBodyRenderer } from './body-display.json'
 import { textBodyRenderer } from './body-display.text'
 
-import type { BaseNode } from 'estree'
+import type { httpNodes, SlingNode } from '@slng/definition'
 
-export interface BodyRenderer<T extends BaseNode> {
+export interface BodyRenderer<T extends SlingNode> {
 	canProcess(mimeType: string): boolean
-	renderAst(nodes: BodyNode<T>): HTMLElement
+	renderAst(nodes: httpNodes.BodyNode<T>): HTMLElement
 }
 
-const bodyRenderers: BodyRenderer<BaseNode>[] = [
+const bodyRenderers: BodyRenderer<SlingNode>[] = [
 	jsonBodyRenderer,
 ]
 
 export class HttpBody extends SimpleElement {
 	static tagName = 'body-display'
 
-	public bodyNode: BodyNode
+	public bodyNode: httpNodes.BodyNode
 
 	protected onMount(): void {
 		if (!this.bodyNode) throw new Error('Expected this element to be created programatically')
 
-		const renderer: BodyRenderer<BaseNode> = bodyRenderers
+		const renderer: BodyRenderer<SlingNode> = bodyRenderers
 			.find(r => r.canProcess(this.bodyNode.contentType))
 			?? textBodyRenderer
 

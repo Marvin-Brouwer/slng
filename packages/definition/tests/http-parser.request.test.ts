@@ -1,10 +1,10 @@
 import { describe, test, expect } from 'vitest'
 
-import { secret } from '../dist'
-import { nodes } from '../src'
 import { parseHttpRequest } from '../src/http/http-parser/http-parser.request'
+import * as httpNodes from '../src/http/http.nodes'
 import { Metadata } from '../src/http/http.nodes'
 import { Masked } from '../src/masking/mask'
+import { secret } from '../src/masking/secret'
 import { readHttpTemplate, resolveTemplateDependencies } from '../src/template-reader'
 import { PrimitiveValue } from '../src/types'
 
@@ -25,10 +25,10 @@ describe('parseHttpRequest', () => {
 
 		// ASSERT
 		expect(result).toEqual(
-			nodes.document({
-				startLine: nodes.request(
-					nodes.text('GET'),
-					nodes.text('https://someurl.com'),
+			httpNodes.document({
+				startLine: httpNodes.request(
+					httpNodes.text('GET'),
+					httpNodes.text('https://someurl.com'),
 					'HTTP', '1.1',
 				),
 				metadata: meta(),
@@ -48,14 +48,14 @@ describe('parseHttpRequest', () => {
 
 		// ASSERT
 		expect(result).toEqual(
-			nodes.document({
-				startLine: nodes.request(
-					nodes.text('GET'),
-					nodes.values(
-						nodes.text('https://'),
-						nodes.text('someurl'),
-						nodes.text('.com/'),
-						nodes.masked(0, '●●●●●'),
+			httpNodes.document({
+				startLine: httpNodes.request(
+					httpNodes.text('GET'),
+					httpNodes.values(
+						httpNodes.text('https://'),
+						httpNodes.text('someurl'),
+						httpNodes.text('.com/'),
+						httpNodes.masked(0, '●●●●●'),
 					),
 					'HTTP', '1.1',
 				),
@@ -75,7 +75,7 @@ describe('parseHttpRequest', () => {
 		const result = parseHttpRequest(request)
 
 		// ASSERT
-		expect(result).toEqual(nodes.error({
+		expect(result).toEqual(httpNodes.error({
 			reason: 'HTTP requests cannot be empty string',
 			autoFix: 'sling.initial-format',
 		}))
@@ -89,19 +89,19 @@ describe('parseHttpRequest', () => {
 
 		// ASSERT
 		expect(result).toEqual(
-			nodes.document({
-				startLine: nodes.request(
-					nodes.text('GET'),
-					nodes.text('https://someurl.com'),
+			httpNodes.document({
+				startLine: httpNodes.request(
+					httpNodes.text('GET'),
+					httpNodes.text('https://someurl.com'),
 					'HTTP', '1.1',
 				),
 				metadata: meta({
 					errors: [
-						nodes.error({
+						httpNodes.error({
 							reason: 'HTTP request template should start with a newline.',
 							autoFix: 'sling.insert_leading_newline',
 						}),
-						nodes.error({
+						httpNodes.error({
 							reason: 'HTTP request template should end with a newline.',
 							autoFix: 'sling.insert_trailing_newline',
 						}),
@@ -125,20 +125,20 @@ describe('parseHttpRequest', () => {
 
 		// ASSERT
 		expect(result).toEqual(
-			nodes.document({
-				startLine: nodes.request(
-					nodes.text('GET'),
-					nodes.text('https://someurl.com'),
+			httpNodes.document({
+				startLine: httpNodes.request(
+					httpNodes.text('GET'),
+					httpNodes.text('https://someurl.com'),
 					'HTTP', '1.1',
 				),
 				headers: [
-					nodes.header(
-						nodes.text('authorization'),
-						nodes.values(nodes.text('Bearer '), nodes.masked(0, '●●●●●'), nodes.text('')),
+					httpNodes.header(
+						httpNodes.text('authorization'),
+						httpNodes.values(httpNodes.text('Bearer '), httpNodes.masked(0, '●●●●●'), httpNodes.text('')),
 					),
-					nodes.header(
-						nodes.text('content-type'),
-						nodes.text('text/plain'),
+					httpNodes.header(
+						httpNodes.text('content-type'),
+						httpNodes.text('text/plain'),
 					),
 				],
 				metadata: meta({
@@ -162,13 +162,13 @@ describe('parseHttpRequest', () => {
 
 		// ASSERT
 		expect(result).toEqual(
-			nodes.document({
-				startLine: nodes.request(
-					nodes.text('GET'),
-					nodes.text('https://someurl.com'),
+			httpNodes.document({
+				startLine: httpNodes.request(
+					httpNodes.text('GET'),
+					httpNodes.text('https://someurl.com'),
 					'HTTP', '1.1',
 				),
-				body: nodes.body('text/undefined', nodes.text('This is body content')),
+				body: httpNodes.body('text/undefined', httpNodes.text('This is body content')),
 				metadata: meta(),
 			}),
 		)
@@ -190,23 +190,23 @@ describe('parseHttpRequest', () => {
 
 		// ASSERT
 		expect(result).toEqual(
-			nodes.document({
-				startLine: nodes.request(
-					nodes.text('GET'),
-					nodes.text('https://someurl.com'),
+			httpNodes.document({
+				startLine: httpNodes.request(
+					httpNodes.text('GET'),
+					httpNodes.text('https://someurl.com'),
 					'HTTP', '1.1',
 				),
 				headers: [
-					nodes.header(
-						nodes.text('authorization'),
-						nodes.values(nodes.text('Bearer '), nodes.masked(0, '●●●●●'), nodes.text('')),
+					httpNodes.header(
+						httpNodes.text('authorization'),
+						httpNodes.values(httpNodes.text('Bearer '), httpNodes.masked(0, '●●●●●'), httpNodes.text('')),
 					),
-					nodes.header(
-						nodes.text('content-type'),
-						nodes.text('text/plain'),
+					httpNodes.header(
+						httpNodes.text('content-type'),
+						httpNodes.text('text/plain'),
 					),
 				],
-				body: nodes.body('text/plain', nodes.text('This is body content')),
+				body: httpNodes.body('text/plain', httpNodes.text('This is body content')),
 				metadata: meta({
 					maskedValues: [token],
 					contentType: 'text/plain',
@@ -228,19 +228,19 @@ describe('parseHttpRequest', () => {
 
 		// ASSERT
 		expect(result).toEqual(
-			nodes.document({
-				startLine: nodes.request(
-					nodes.text('GET'),
-					nodes.text('https://someurl.com'),
+			httpNodes.document({
+				startLine: httpNodes.request(
+					httpNodes.text('GET'),
+					httpNodes.text('https://someurl.com'),
 					'HTTP', '1.1',
 				),
 				headers: [
-					nodes.error({
+					httpNodes.error({
 						reason: 'Illegal header name, invalid characters',
 					}),
-					nodes.header(
-						nodes.text('age'),
-						nodes.text('today'),
+					httpNodes.header(
+						httpNodes.text('age'),
+						httpNodes.text('today'),
 					),
 				],
 				metadata: meta(),
@@ -260,14 +260,14 @@ describe('parseHttpRequest', () => {
 
 		// ASSERT
 		expect(result).toEqual(
-			nodes.document({
-				startLine: nodes.request(
-					nodes.text('GET'),
-					nodes.text('https://someurl.com'),
+			httpNodes.document({
+				startLine: httpNodes.request(
+					httpNodes.text('GET'),
+					httpNodes.text('https://someurl.com'),
 					'HTTP', '1.1',
 				),
 				headers: [
-					nodes.error({
+					httpNodes.error({
 						reason: 'Empty header name',
 					}),
 				],

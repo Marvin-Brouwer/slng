@@ -11,6 +11,24 @@
 			"main": "./dist/index.js",
 			"node": "./dist/index.js",
 			"types": "./dist/index.d.ts"
+		},
+		"./config": {
+			"import": "./dist/config.js",
+			"main": "./dist/config.js",
+			"node": "./dist/config.js",
+			"types": "./dist/config.d.ts"
+		},
+		"./plugin": {
+			"import": "./dist/plugin.js",
+			"main": "./dist/plugin.js",
+			"node": "./dist/plugin.js",
+			"types": "./dist/plugin.d.ts"
+		},
+		"./extension": {
+			"import": "./dist/extension.js",
+			"main": "./dist/extension.js",
+			"node": "./dist/extension.js",
+			"types": "./dist/extension.d.ts"
 		}
 	},
 	"files": [

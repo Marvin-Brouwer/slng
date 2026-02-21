@@ -1,15 +1,14 @@
-import { BaseNode } from 'estree'
-
 import { isMask, Masked } from '../../../masking/mask'
+import { SlingNode } from '../../../sling-node'
 import { PrimitiveValue } from '../../../types'
 
 export type LexerToken = ValueToken | PunctuationToken | MaskedToken
-export type PunctuationToken = BaseNode & { type: typeof punctuationCharacters[number] | 'EOF' }
-export type ValueToken = BaseNode & {
+export type PunctuationToken = SlingNode & { type: typeof punctuationCharacters[number] | 'EOF' }
+export type ValueToken = SlingNode & {
 	type: `json-token:${string}`
 	value: string
 }
-export type MaskedToken = BaseNode & {
+export type MaskedToken = SlingNode & {
 	type: `json-token:masked`
 	value: Masked<PrimitiveValue>
 }

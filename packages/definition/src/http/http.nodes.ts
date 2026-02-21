@@ -1,6 +1,5 @@
-import { BaseNode } from 'estree'
-
 import { isMask, Masked } from '../masking/mask'
+import { SlingNode } from '../sling-node'
 import { PrimitiveValue } from '../types'
 
 export class Metadata {
@@ -12,7 +11,7 @@ export class Metadata {
 		return this.maskedValues.push(value) - 1
 	}
 }
-export interface HttpDocument extends BaseNode {
+export interface HttpDocument extends SlingNode {
 	type: 'http'
 	startLine: RequestNode | ResponseNode | ErrorNode
 	headers?: (HeaderNode | ErrorNode)[]
@@ -25,7 +24,7 @@ export const document = (properties: Omit<HttpDocument, 'type'>): HttpDocument =
 })
 
 type CommandString = `sling.${string}`
-export interface ErrorNode extends BaseNode {
+export interface ErrorNode extends SlingNode {
 	type: 'error'
 	reason: string
 	suggestions?: CommandString[]
@@ -46,14 +45,14 @@ export class NodeError extends Error {
 		super(errorNode.reason)
 	}
 }
-export interface RequestNode extends BaseNode {
+export interface RequestNode extends SlingNode {
 	type: 'request'
 	method: TextNode | ErrorNode
 	url: ValueNode | ValuesNode | ErrorNode
 	// TODO check allowed protocols and versions
 	protocol: ProtocolNode | ErrorNode
 }
-export interface ResponseNode extends BaseNode {
+export interface ResponseNode extends SlingNode {
 	type: 'response'
 	protocol: ProtocolNode
 	status: TextNode | ErrorNode
@@ -62,7 +61,7 @@ export interface ResponseNode extends BaseNode {
 export const allowedProtocols = [
 	{ protocol: 'HTTP', version: '1.1' },
 ]
-export interface ProtocolNode extends BaseNode {
+export interface ProtocolNode extends SlingNode {
 	type: 'protocol'
 	value: typeof allowedProtocols[number]['protocol']
 	version: typeof allowedProtocols[number]['version']
@@ -107,7 +106,7 @@ export const response = (
  *       / DIGIT / ALPHA
  * ```
  */
-export interface HeaderNode extends BaseNode {
+export interface HeaderNode extends SlingNode {
 	type: 'header'
 	name: TextNode | ErrorNode
 	value: ValueNode | ValuesNode | ErrorNode
@@ -118,18 +117,18 @@ export const header = (name: TextNode | ErrorNode, value: ValueNode | ValuesNode
 	value,
 })
 
-export interface BodyNode<T extends BaseNode = BaseNode> extends BaseNode {
+export interface BodyNode<T extends SlingNode = SlingNode> extends SlingNode {
 	type: 'body'
 	contentType: string
 	value: T
 }
-export const body = <T extends BaseNode = BaseNode>(contentType: string, value: T): BodyNode => ({
+export const body = <T extends SlingNode = SlingNode>(contentType: string, value: T): BodyNode => ({
 	type: 'body',
 	contentType,
 	value,
 })
 
-export interface ValuesNode extends BaseNode {
+export interface ValuesNode extends SlingNode {
 	type: 'values'
 	values: ValueNode[]
 }
@@ -139,11 +138,11 @@ export const values = (...nodes: ValueNode[]): ValuesNode => ({
 })
 
 export type ValueNode = TextNode | MaskedNode
-export interface TextNode extends BaseNode {
+export interface TextNode extends SlingNode {
 	type: 'text'
 	value: string
 }
-export interface MaskedNode extends BaseNode {
+export interface MaskedNode extends SlingNode {
 	type: 'masked'
 	mask: string
 	reference: number

@@ -1,10 +1,11 @@
-import { ValueNode, ValuesNode, BodyNode } from '../../../../definition/src/http/http.nodes'
 import { addComponent, createElement } from '../element-helper'
 
 import { BodyRenderer } from './body-display'
 import { MaskedValue } from './masked-value'
 
-function renderTextAst(container: HTMLElement, node: ValueNode | ValuesNode): HTMLElement {
+import type { httpNodes } from '@slng/definition'
+
+function renderTextAst(container: HTMLElement, node: httpNodes.ValueNode | httpNodes.ValuesNode): HTMLElement {
 	switch (node.type) {
 		case 'text': {
 			container.textContent += escapeHtml(node.value)
@@ -33,9 +34,9 @@ function escapeHtml(text: string): string {
 		.replaceAll('>', '&gt;')
 }
 
-export const textBodyRenderer: BodyRenderer<ValueNode | ValuesNode> = {
+export const textBodyRenderer: BodyRenderer<httpNodes.ValueNode | httpNodes.ValuesNode> = {
 	canProcess: _mimeType => true,
-	renderAst(body: BodyNode<ValueNode | ValuesNode>) {
+	renderAst(body: httpNodes.BodyNode<httpNodes.ValueNode | httpNodes.ValuesNode>) {
 		const container = createElement('pre')
 		if (body.value.type === 'values') for (const node of body.value.values) renderTextAst(container, node)
 		else renderTextAst(container, body.value)

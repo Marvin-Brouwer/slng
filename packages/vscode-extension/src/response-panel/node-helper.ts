@@ -1,9 +1,9 @@
-import { ErrorNode, HttpNode, RequestNode, ResponseNode } from '../../../definition/src/http/http.nodes'
+import type { httpNodes } from '@slng/definition'
 
-export function assertResponse(node: HttpNode): asserts node is ResponseNode {}
-export function assertRequest(node: HttpNode): asserts node is RequestNode {}
-export function assertNotError(node: HttpNode): asserts node is Exclude<HttpNode, ErrorNode> {}
-export function assertNoErrors<T extends HttpNode>(node: T[]): asserts node is Exclude<T, ErrorNode>[] {}
+export function assertResponse(node: httpNodes.HttpNode): asserts node is httpNodes.ResponseNode {}
+export function assertRequest(node: httpNodes.HttpNode): asserts node is httpNodes.RequestNode {}
+export function assertNotError(node: httpNodes.HttpNode): asserts node is Exclude<httpNodes.HttpNode, httpNodes.ErrorNode> {}
+export function assertNoErrors<T extends httpNodes.HttpNode>(node: T[]): asserts node is Exclude<T, httpNodes.ErrorNode>[] {}
 
 export function escapeHtml(text: string): string {
 	return text

@@ -1,10 +1,9 @@
-import { BaseNode } from 'estree'
-
 import { Masked } from '../../../masking/mask'
+import { SlingNode } from '../../../sling-node'
 import { PrimitiveValue } from '../../../types'
 import { Metadata } from '../../http.nodes'
 
-export interface JsonNode extends BaseNode {
+export interface JsonNode extends SlingNode {
 	type: `json:${string}`
 }
 export interface JsonNullNode extends JsonNode {

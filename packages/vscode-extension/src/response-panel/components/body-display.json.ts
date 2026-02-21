@@ -1,11 +1,21 @@
-import { JsonArrayNode, JsonAstNode, JsonCommentNode, JsonCompositeValueNode, JsonDocument, JsonMaskedNode, JsonObjectNode, JsonPunctuationNode, JsonWhitespaceNode } from '../../../../definition/src/http/body-parser/json/json.nodes'
-import { BodyNode } from '../../../../definition/src/http/http.nodes'
 import { addComponent, addElement, createElement } from '../element-helper'
 import { escapeHtml } from '../node-helper'
 
 import { MaskedValue } from './masked-value'
 
 import type { BodyRenderer } from './body-display'
+import type { httpNodes, jsonNodes, SlingNode } from '@slng/definition'
+
+type BodyNode<T extends SlingNode = SlingNode> = httpNodes.BodyNode<T>
+type JsonArrayNode = jsonNodes.JsonArrayNode
+type JsonAstNode = jsonNodes.JsonAstNode
+type JsonCommentNode = jsonNodes.JsonCommentNode
+type JsonCompositeValueNode<T extends string | number> = jsonNodes.JsonCompositeValueNode<T>
+type JsonDocument = jsonNodes.JsonDocument
+type JsonMaskedNode = jsonNodes.JsonMaskedNode
+type JsonObjectNode = jsonNodes.JsonObjectNode
+type JsonPunctuationNode = jsonNodes.JsonPunctuationNode
+type JsonWhitespaceNode = jsonNodes.JsonWhitespaceNode
 
 function isJsonContentType(contentType: string): boolean {
 	return contentType === 'application/json' || contentType.endsWith('+json')
