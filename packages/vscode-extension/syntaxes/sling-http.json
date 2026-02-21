@@ -1,0 +1,45 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"scopeName": "source.sling-http",
+	"injectionSelector": "L:source.ts -comment -string",
+	"patterns": [
+		{ "include": "#sling-http-template" }
+	],
+	"repository": {
+		"sling-http-template": {
+			"name": "meta.embedded.sling-http",
+			"begin": "\\b(sling)(\\s*)(`)",
+			"beginCaptures": {
+				"1": { "name": "entity.name.function.ts" },
+				"3": { "name": "punctuation.definition.string.template.begin.ts" }
+			},
+			"end": "`",
+			"endCaptures": {
+				"0": { "name": "punctuation.definition.string.template.end.ts" }
+			},
+			"patterns": [
+				{ "include": "#http-method" },
+				{ "include": "#template-expression" }
+			]
+		},
+		"http-method": {
+			"comment": "First word on the first content line — the HTTP method.",
+			"match": "^[ \\t]*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|CONNECT|TRACE)(?=[\\s]|$)",
+			"captures": {
+				"1": { "name": "storage.type" }
+			}
+		},
+		"template-expression": {
+			"comment": "Pass-through for ${...} so interpolations aren't eaten by the outer pattern.",
+			"name": "meta.template.expression.ts",
+			"begin": "\\$\\{",
+			"beginCaptures": {
+				"0": { "name": "punctuation.definition.template-expression.begin.ts" }
+			},
+			"end": "\\}",
+			"endCaptures": {
+				"0": { "name": "punctuation.definition.template-expression.end.ts" }
+			}
+		}
+	}
+}

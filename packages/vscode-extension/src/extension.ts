@@ -35,7 +35,14 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 	}
 
 	registerCodeLens(context)
-	registerMethodHighlight(context)
+
+	// Toggle between the two colorization approaches:
+	//   true  → TextMate grammar injection (syntaxes/sling-http.json, always loaded via package.json)
+	//   false → Semantic token provider (registerMethodHighlight)
+	// The grammar is always active; this flag only controls whether semantic tokens
+	// are also registered on top of it (semantic tokens win when both are active).
+	const USE_GRAMMAR_APPROACH = true
+	if (!USE_GRAMMAR_APPROACH) registerMethodHighlight(context)
 
 	registerSendCommand(context, responsePanel)
 	registerUpdateFileCommand(context)

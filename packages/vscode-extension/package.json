@@ -60,6 +60,13 @@
 				}
 			]
 		},
+		"grammars": [
+			{
+				"scopeName": "source.sling-http",
+				"path": "./syntaxes/sling-http.json",
+				"injectTo": ["source.ts"]
+			}
+		],
 		"semanticTokenTypes": [
 			{
 				"id": "httpMethod",
