@@ -9,6 +9,7 @@ import createContext from './context.js'
 import { launchDebugSession } from './debug/launcher.js'
 import { registerResponsePanel } from './response-panel/response-panel.webview.js'
 import { registerCodeLens } from './visual/codelens.js'
+import { registerMethodHighlight } from './visual/method-highlight.js'
 
 export async function activate(vscodeContext: vscode.ExtensionContext) {
 	const context = createContext(vscodeContext)
@@ -34,6 +35,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 	}
 
 	registerCodeLens(context)
+	registerMethodHighlight(context)
 
 	registerSendCommand(context, responsePanel)
 	registerUpdateFileCommand(context)
