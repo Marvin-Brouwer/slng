@@ -8,7 +8,7 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"lint:nofix": "eslint --cache --stats -c \"./eslint.config.ts\" .",
-		"lint": "eslint --cache --fix --stats -c \"./eslint.config.ts\" .",
+		"lint": "DEBUG=eslint:cli-engine eslint --cache --fix --stats --debug -c \"./eslint.config.ts\" .",
 		"clean": "pnpm -r run clean"
 	},
 	"devDependencies": {
