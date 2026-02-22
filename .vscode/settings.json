@@ -55,4 +55,9 @@
 	"typescript.tsc.autoDetect": "off",
 	"npm.autoDetect": "off",
 	"editor.defaultFormatter": "dbaeumer.vscode-eslint",
+	"workbench.colorCustomizations": {
+		"titleBar.activeBackground": "#493200",
+		"titleBar.inactiveBackground": "#4932007e",
+		"titleBar.activeForeground": "#F8FBFD"
+	}
 }
