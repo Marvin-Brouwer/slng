@@ -1,5 +1,5 @@
 /*
- * This file is not part of the example demo, it is purely here to disable 
+ * This file is not part of the example demo, it is purely here to disable
  * all the annoying poups vscode gives you when you disable extensions and/or
  * run inside a descended folder of git repository
  */
@@ -10,5 +10,7 @@
 	"extensions": {
 		"recommendations": [],
 		"unwantedRecommendations": []
+	},
+	"workbench.colorCustomizations": {
 	}
 }
