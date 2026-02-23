@@ -36,13 +36,15 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 
 	registerCodeLens(context)
 
-	// Toggle between the two colorization approaches:
-	//   true  → TextMate grammar injection (syntaxes/sling-http.json, always loaded via package.json)
-	//   false → Semantic token provider (registerMethodHighlight)
-	// The grammar is always active; this flag only controls whether semantic tokens
-	// are also registered on top of it (semantic tokens win when both are active).
-	const USE_GRAMMAR_APPROACH = true
-	if (!USE_GRAMMAR_APPROACH) registerMethodHighlight(context)
+	// The TextMate grammar (syntaxes/sling-http.json) handles static HTTP structure
+	// coloring: method, protocol/version, header names. It is always active via
+	// package.json and requires no registration here.
+	//
+	// The semantic token provider handles body content coloring (JSON keys, strings,
+	// numbers, etc.) and the HTTP method token. Both layers are complementary:
+	// semantic tokens win when scopes overlap, but in practice they target different
+	// parts of the template.
+	registerMethodHighlight(context)
 
 	registerSendCommand(context, responsePanel)
 	registerUpdateFileCommand(context)
