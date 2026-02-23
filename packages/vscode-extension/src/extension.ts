@@ -9,6 +9,7 @@ import createContext from './context.js'
 import { launchDebugSession } from './debug/launcher.js'
 import { registerResponsePanel } from './response-panel/response-panel.webview.js'
 import { registerCodeLens } from './visual/codelens.js'
+import { registerDiagnostics } from './visual/diagnostics.js'
 import { registerMethodHighlight } from './visual/method-highlight.js'
 
 export async function activate(vscodeContext: vscode.ExtensionContext) {
@@ -45,6 +46,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 	// semantic tokens win when scopes overlap, but in practice they target different
 	// parts of the template.
 	registerMethodHighlight(context)
+	registerDiagnostics(context)
 
 	registerSendCommand(context, responsePanel)
 	registerUpdateFileCommand(context)
