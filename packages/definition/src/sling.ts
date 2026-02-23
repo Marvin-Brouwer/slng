@@ -2,6 +2,7 @@ import { createDefinition } from './definition.js'
 import { namedMask } from './masking/mask.js'
 import { secret } from './masking/secret.js'
 import { sensitive } from './masking/sensitive.js'
+import { createParameterReference } from './parameter-accessor.js'
 import { createSlingParameters } from './parameters.js'
 import { readHttpTemplate } from './template-reader.js'
 import {
@@ -96,6 +97,13 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
 		value: setupPromise,
 		writable: false,
 		enumerable: false,
+	})
+
+	// param() creates a lazy ParameterReference resolved at execute time
+	Object.defineProperty(templateFunction, 'param', {
+		value: (name: string) => createParameterReference(name, context),
+		writable: false,
+		enumerable: true,
 	})
 
 	// Attach helpers

@@ -2,6 +2,7 @@ import { ResolvedStringTemplate } from '../../types'
 import { parseHttpBody } from '../body-parser/body-parser'
 import {
 	allowedProtocols,
+	allowedMethods,
 	document,
 	HttpDocument,
 	Metadata,
@@ -177,6 +178,14 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 		return error({
 			reason: `Unsupported protocol: "${protoName}". Expected HTTP/1.1.`,
 			suggestions: ['sling.use_http_1_1'],
+		})
+	}
+
+	const protocolKey = `${protoName.toUpperCase()}/${protoVersion}` as keyof typeof allowedMethods
+	const validMethods = allowedMethods[protocolKey]
+	if (validMethods && !validMethods.includes(method.value.toUpperCase() as never)) {
+		return error({
+			reason: `Method "${method.value}" is not valid for ${protocolKey}. Allowed: ${validMethods.join(', ')}`,
 		})
 	}
 

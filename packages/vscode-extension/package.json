@@ -80,6 +80,18 @@
 				}
 			}
 		],
+		"configurationDefaults": {
+			"editor.tokenColorCustomizations": {
+				"textMateRules": [
+					{
+						"scope": "entity.other.attribute-name.http-header.sling",
+						"settings": {
+							"fontStyle": "bold"
+						}
+					}
+				]
+			}
+		},
 		"views": {
 			"resultsContainer": [
 				{

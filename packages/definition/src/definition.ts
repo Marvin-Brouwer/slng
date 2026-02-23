@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { buildHttpResponse } from './http/http-builder/http-builder.js'
 import { parseHttpRequest } from './http/http-parser/http-parser.request.js'
 import { Metadata, body, document, error, NodeError, response, text } from './http/http.nodes'
+import { isParameterReference } from './parameter-accessor.js'
 import { buildRequest } from './request/request-builder.js'
 import { resolveTemplateDependencies } from './template-reader.js'
 import {
@@ -19,6 +20,7 @@ import {
 	type ExecuteOptions,
 	type JsonOptions,
 	type ParsedHttpRequest,
+	type PrimitiveValue,
 	StringTemplate,
 } from './types.js'
 
@@ -42,6 +44,7 @@ export function createDefinition(
 		tsAst: undefined!, // added by the runtime
 		template,
 		resolvedTemplate: undefined!, // added on request
+		parameterSnapshot: undefined,
 	}
 
 	const definition: SlingDefinition = {
@@ -71,6 +74,19 @@ export function createDefinition(
 					return cached.response
 				}
 			}
+
+			// Build a snapshot of all named parameters before resolving the template.
+			// This captures the name→value mapping for introspection/logging.
+			const paramSnapshot: Record<string, PrimitiveValue> = {}
+			for (const value of template.values) {
+				if (value && isParameterReference(value)) {
+					const resolved = await value.tryValue()
+					if (resolved !== undefined && !(resolved instanceof Error)) {
+						paramSnapshot[value.parameterName] = resolved as PrimitiveValue
+					}
+				}
+			}
+			internals.parameterSnapshot = paramSnapshot
 
 			internals.resolvedTemplate = await resolveTemplateDependencies(template)
 			const response = await executeRequest(this, options)

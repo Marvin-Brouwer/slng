@@ -49,7 +49,6 @@ export interface RequestNode extends SlingNode {
 	type: 'request'
 	method: TextNode | ErrorNode
 	url: ValueNode | ValuesNode | ErrorNode
-	// TODO check allowed protocols and versions
 	protocol: ProtocolNode | ErrorNode
 }
 export interface ResponseNode extends SlingNode {
@@ -61,6 +60,12 @@ export interface ResponseNode extends SlingNode {
 export const allowedProtocols = [
 	{ protocol: 'HTTP', version: '1.1' },
 ]
+
+/** HTTP methods allowed per protocol, keyed by "PROTOCOL/version". */
+export const allowedMethods = {
+	'HTTP/1.1': ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'CONNECT', 'TRACE'],
+} as const
+
 export interface ProtocolNode extends SlingNode {
 	type: 'protocol'
 	value: typeof allowedProtocols[number]['protocol']

@@ -4,6 +4,7 @@ import { namedMask, Masked, MaskedDataAccessor } from './masking/mask'
 import { secret } from './masking/secret'
 import { sensitive } from './masking/sensitive'
 
+import type { ParameterReference } from './parameter-accessor.js'
 import type { ParameterType, SlingParameters } from './parameters.js'
 
 // TODO, these types should be closer to their implementation.
@@ -162,6 +163,11 @@ export type SlingInternals = {
 	readonly template: StringTemplate
 	/** The resolved template parts, for re-rendering with masking. */
 	resolvedTemplate: ResolvedStringTemplate | undefined
+	/**
+	 * Snapshot of named parameters at the time of the last `execute()` call.
+	 * Keyed by parameter name; only includes parameters referenced via `sling.param()`.
+	 */
+	parameterSnapshot: Record<string, PrimitiveValue> | undefined
 }
 
 // ── Options ──────────────────────────────────────────────────
@@ -331,6 +337,20 @@ export type ConfiguredSling = SlingTemplateBuilder & {
 	/** The resolved configuration context. */
 	readonly context: SlingContext
 	readonly parameters: SlingParameters
+
+	/**
+	 * Create a lazy parameter reference that is resolved from the active
+	 * environment's parameters at execute time.
+	 *
+	 * @example
+	 * ```ts
+	 * export const getUser = sling`
+	 *   GET https://api.example.com HTTP/1.1
+	 *   Authorization: Bearer ${sling.param('TOKEN')}
+	 * `
+	 * ```
+	 */
+	param(name: string): ParameterReference
 
 	namedMask: typeof namedMask
 	secret: typeof secret
