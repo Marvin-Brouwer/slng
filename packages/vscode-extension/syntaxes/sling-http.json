@@ -58,10 +58,7 @@
 			"end": "\\}",
 			"endCaptures": {
 				"0": { "name": "punctuation.definition.template-expression.end.ts" }
-			},
-			"patterns": [
-				{ "include": "source.ts" }
-			]
+			}
 		}
 	}
 }
