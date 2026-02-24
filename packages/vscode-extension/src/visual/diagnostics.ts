@@ -1,13 +1,21 @@
 import * as vscode from 'vscode'
 
+import { allowedMethods, parseHttpMethod } from '@slng/definition/extension'
+
 import type { ExtensionContext } from '../context.js'
 
 const DIAGNOSTIC_SOURCE = 'sling'
 export const MISSING_CONTENT_TYPE_CODE = 'missing-content-type'
+export const INVALID_METHOD_CODE = 'invalid-http-method'
 
 const SLING_TEMPLATE_RE = /\bsling\s*`/g
 const CONTENT_TYPE_RE = /^[ \t]*[Cc]ontent-[Tt]ype:/m
 const BLANK_LINE_RE = /\n[ \t]*\n/
+
+// Flat set of all valid HTTP methods across every supported protocol.
+const VALID_METHODS = new Set<string>(
+	(Object.values(allowedMethods) as ReadonlyArray<readonly string[]>).flat(),
+)
 
 interface TemplateSpan {
 	contentStart: number
@@ -39,6 +47,24 @@ function diagnoseDocument(document: vscode.TextDocument): vscode.Diagnostic[] {
 	const diagnostics: vscode.Diagnostic[] = []
 
 	for (const { contentStart, content } of findSlingTemplates(text)) {
+
+		// ── Invalid HTTP method ───────────────────────────────────────────
+		const methodResult = parseHttpMethod(content)
+		if (methodResult.type === 'method' && !VALID_METHODS.has(methodResult.value.toUpperCase())) {
+			const methodOffset = contentStart + methodResult.offset
+			const methodStart = document.positionAt(methodOffset)
+			const methodEnd = document.positionAt(methodOffset + methodResult.length)
+			const diag = new vscode.Diagnostic(
+				new vscode.Range(methodStart, methodEnd),
+				`"${methodResult.value}" is not a valid HTTP method. Allowed: ${[...VALID_METHODS].join(', ')}.`,
+				vscode.DiagnosticSeverity.Error,
+			)
+			diag.source = DIAGNOSTIC_SOURCE
+			diag.code = INVALID_METHOD_CODE
+			diagnostics.push(diag)
+		}
+
+		// ── Missing Content-Type for JSON body ────────────────────────────
 		const blankMatch = BLANK_LINE_RE.exec(content)
 		if (!blankMatch) continue
 
