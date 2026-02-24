@@ -1,9 +1,11 @@
-import { inspect, types } from 'node:util'
 
 import { isTaggedSerialized, SERIALIZABLE_TAG, serializableSymbol } from '../serializable'
 import { DataAccessor, HttpError, InvalidJsonPathError, PrimitiveValue } from '../types'
 
 const maskSymbol = Symbol.for('mask')
+
+/** The import from 'node:util' caused issues with extensions */
+const nodeInspectCustom = Symbol.for('nodejs.util.inspect.custom')
 
 export type Masked<T> = {
 	value: string
@@ -20,7 +22,6 @@ export type MaskedDataAccessor = Masked<Promise<string | HttpError | InvalidJson
  * @example
  * ```ts
  * import { namedMask } from '@slng/definition'
-import { isAsyncFunction } from 'node:util/types';
  *
  * const auth_token = namedMask('TOKEN', process.env.TOKEN);
  *
@@ -74,7 +75,7 @@ function createValueMask<T extends PrimitiveValue>(original: T, mask: string, in
 		 * Debugger Annotation: Node.js Custom Inspection
 		 * This hides the internal 'obfuscated' reference if the object is logged.
 		 */
-		[inspect.custom]() {
+		[nodeInspectCustom]() {
 			return inspectMask
 		},
 		/** Needs to be serializable for the vscode extension state */
@@ -100,7 +101,7 @@ function createAccessorMask(original: DataAccessor, mask: string): MaskedDataAcc
 		 * Debugger Annotation: Node.js Custom Inspection
 		 * This hides the internal 'obfuscated' reference if the object is logged.
 		 */
-		[inspect.custom]() {
+		[nodeInspectCustom]() {
 			return `[Masked DataAccessor] ${mask}`
 		},
 	} as MaskedDataAccessor
@@ -109,7 +110,7 @@ function createAccessorMask(original: DataAccessor, mask: string): MaskedDataAcc
 function isAsyncMask(mask: Masked<unknown>) {
 	// We don't care about binding, it's just a type check
 	// eslint-disable-next-line @typescript-eslint/unbound-method
-	return types.isAsyncFunction(mask.unmask)
+	return mask.unmask.constructor.name === 'AsyncFunction'
 }
 
 export function isMask(value: unknown): value is Masked<unknown> {
@@ -127,7 +128,7 @@ export function isMaskedDataAccessor(value: unknown): value is MaskedDataAccesso
 export async function resolveAsyncMask(maskedDataAccessor: MaskedDataAccessor) {
 	const maskedValueResult = await maskedDataAccessor.unmask()
 	if (maskedValueResult instanceof Error) throw maskedValueResult
-	return createMask(maskedValueResult, maskedDataAccessor.value, (maskedDataAccessor as unknown as { [inspect.custom]: () => string })[inspect.custom]())
+	return createMask(maskedValueResult, maskedDataAccessor.value, (maskedDataAccessor as unknown as Record<symbol, () => string>)[nodeInspectCustom]())
 }
 
 export const maskTransformer = {

@@ -25,6 +25,6 @@ export const createUser = sling`
 
   {
     "name": "Marvin Brouwer",
-    "email": "marvin@example.com"
+    "email": "${sling.sensitive('marvin.brouwer@gmail.com')}"
   }
 `

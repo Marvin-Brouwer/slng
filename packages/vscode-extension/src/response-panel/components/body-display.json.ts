@@ -4,7 +4,7 @@ import { escapeHtml } from '../node-helper'
 import { MaskedValue } from './masked-value'
 
 import type { BodyRenderer } from './body-display'
-import type { httpNodes, jsonNodes, SlingNode } from '@slng/definition'
+import { httpNodes, jsonNodes, SlingNode } from '@slng/definition'
 
 type BodyNode<T extends SlingNode = SlingNode> = httpNodes.BodyNode<T>
 type JsonArrayNode = jsonNodes.JsonArrayNode
@@ -114,6 +114,15 @@ function renderJson(container: HTMLElement, node: JsonAstNode, depth: number, ap
 	}
 	if (node.type === 'json:composite:string') {
 		const compositeNode = node as JsonCompositeValueNode<string>
+		if (appendStringQuotes) renderJson(container, jsonNodes.string('"', node.variant), depth, false)
+		for (const valueNode of compositeNode.parts) {
+			renderJson(container, valueNode, depth, false)
+		}
+		if (appendStringQuotes) renderJson(container, jsonNodes.string('"', node.variant), depth, false)
+		return
+	}
+	if (node.type === 'json:composite:number') {
+		const compositeNode = node as JsonCompositeValueNode<number>
 		for (const valueNode of compositeNode.parts) {
 			renderJson(container, valueNode, depth, false)
 		}

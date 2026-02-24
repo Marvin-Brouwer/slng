@@ -3,10 +3,27 @@ import { PrimitiveValue } from '../types.js'
 import { mask, Masked } from './mask.js'
 
 const DEFAULT_VISIBLE_CHARS = 6
+const segmenter = new Intl.Segmenter()
+
+function displayWidth(segment: string): 1 | 2 {
+	const cp = segment.codePointAt(0) ?? 0
+	return (
+		(cp >= 0x1100 && cp <= 0x115F) || // Hangul
+		(cp >= 0x2E80 && cp <= 0x303E) || // CJK Radicals
+		(cp >= 0x3040 && cp <= 0x33FF) || // Japanese
+		(cp >= 0xAC00 && cp <= 0xD7A3) || // Hangul Syllables
+		(cp >= 0xFF01 && cp <= 0xFF60) || // Full-width Forms
+		(cp >= 0x4E00 && cp <= 0x9FFF)    // CJK Unified
+	) ? 2 : 1
+}
+
+function maskForSegment(segment: string): string {
+	return '\u25A1'.repeat(displayWidth(segment)) // □ white square
+}
 
 /**
- * Mark a value as sensitive. The first `n` characters are shown,
- * the rest replaced with `*`.
+ * Mark a value as sensitive. The first `n` grapheme clusters are shown,
+ * the rest replaced with width-preserving `□` placeholders.
  *
  * @param value  The full string value
  * @param n      Number of leading characters to keep visible (default: 6)
@@ -15,20 +32,22 @@ const DEFAULT_VISIBLE_CHARS = 6
  * ```ts
  * import { sensitive } from '@slng/definition'
  *
- * sensitive("marvin.brouwer@gmail.com")
- * // Displays: "marvin.*****************"
+ *    sensitive("marvin.brouwer@gmail.com")
+ * // Displays: "marvin□□□□□□□□□□□□□□□□□□"
  *
- * sensitive("marvin.brouwer@gmail.com", 3)
- * // Displays: "mar********************"
+ *    sensitive("marvin.brouwer@gmail.com", 3)
+ * // Displays: "mar□□□□□□□□□□□□□□□□□□□□□"
  * ```
  */
-
 export function sensitive<T extends PrimitiveValue>(value: T, n?: number): Masked<T> {
 	const visible = n ?? DEFAULT_VISIBLE_CHARS
-	const stringValue = value.toString()
-	const prefix = stringValue.slice(0, visible)
-	const maskedLength = Math.max(0, stringValue.length - visible)
-	const displayValue = prefix + '*'.repeat(maskedLength)
+	const segments = [...segmenter.segment(value.toString())]
+
+	const prefix = segments.slice(0, visible).map(s => s.segment).join('')
+	const displayValue = prefix + segments
+		.slice(visible)
+		.map(({ segment }) => maskForSegment(segment))
+		.join('')
 
 	return mask(value, displayValue) as Masked<T>
 }
