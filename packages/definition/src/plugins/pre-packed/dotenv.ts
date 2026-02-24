@@ -3,8 +3,8 @@ import path from 'node:path'
 
 import { parse } from 'dotenv'
 
-import type { ParameterType } from '../parameters.js'
-import type { SlingPlugin } from '../types.js'
+import type { ParameterType } from '../../parameters.js'
+import { plugin, SlingPlugin } from '../plugin.js'
 
 export interface DotEnvOptions {
 	/** Directory to resolve `.env` files from. Defaults to `process.cwd()`. */
@@ -59,9 +59,14 @@ export function useDotEnv(...arguments_: [DotEnvOptions] | string[]): SlingPlugi
 		environments = arguments_ as string[]
 	}
 
-	return {
-		name: 'dotenv',
-		setup(context) {
+	return plugin('sling:dotenv', {
+
+		config: {
+			directory,
+			environments
+		},
+
+		setupEnvironment(context) {
 			// Always load base .env (with type conversion)
 			const rawBaseEnvironment = loadEnvironmentFile(path.resolve(directory, '.env'))
 			const baseEnvironment = Object.fromEntries(
@@ -83,13 +88,8 @@ export function useDotEnv(...arguments_: [DotEnvOptions] | string[]): SlingPlugi
 				context.envSets.set(environment, merged)
 				context.environments.push(environment)
 			}
-
-			// First environment is the default active one
-			if (environments.length > 0 && context.activeEnvironment === undefined) {
-				context.activeEnvironment = environments[0]
-			}
-		},
-	}
+		}
+	})
 }
 
 function loadEnvironmentFile(filePath: string): Record<string, string> {

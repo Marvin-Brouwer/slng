@@ -3,4 +3,4 @@
  */
 
 export type { ParameterType } from '../parameters.js'
-export type { SlingPlugin, SlingContext } from '../types.js'
+export * from '../plugins/plugin.js'

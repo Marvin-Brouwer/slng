@@ -1,5 +1,5 @@
-import type { ParameterType } from '../parameters.js'
-import type { SlingPlugin } from '../types.js'
+import type { ParameterType } from '../../parameters.js'
+import { plugin, SlingPlugin } from '../plugin.js'
 
 /**
  * Provide static configuration values for one or more environments.
@@ -27,10 +27,11 @@ import type { SlingPlugin } from '../types.js'
  * ```
  */
 export function useConfig(environmentConfigs: Record<string, Record<string, ParameterType>>): SlingPlugin {
-	return {
-		name: 'static-config',
-		setup(context) {
-			const environments = Object.keys(environmentConfigs)
+	return plugin('sling:static-config', {
+
+		config: environmentConfigs,
+
+		setupEnvironment(context) {
 
 			for (const environment in environmentConfigs) {
 				const currentEnvironment = context.envSets.get(environment)
@@ -42,11 +43,6 @@ export function useConfig(environmentConfigs: Record<string, Record<string, Para
 				context.envSets.set(environment, merged)
 				context.environments.push(environment)
 			}
-
-			// First environment is the default active one
-			if (environments.length > 0 && context.activeEnvironment === undefined) {
-				context.activeEnvironment = environments[0]
-			}
 		},
-	}
+	})
 }

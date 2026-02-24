@@ -3,11 +3,12 @@ import { namedMask } from './masking/mask.js'
 import { secret } from './masking/secret.js'
 import { sensitive } from './masking/sensitive.js'
 import { createSlingParameters } from './parameters.js'
+import { loadPlugins } from './plugins/plugin-loader.js'
+import { SlingPlugin } from './plugins/plugin.js'
 import { readHttpTemplate } from './template-reader.js'
 import {
 	type ConfiguredSling,
 	type SlingContext,
-	type SlingPlugin,
 	type SlingInterpolation,
 	SlingTemplateBuilder,
 } from './types.js'
@@ -42,11 +43,7 @@ import {
  * `
  * ```
  */
-export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
-	// Run all plugin setup functions synchronously where possible.
-	// If any are async, we store the promise and it must be awaited
-	// before execution (the CLI/extension handles this).
-	let setupPromise: Promise<void> | undefined
+export async function sling(...plugins: SlingPlugin[]): Promise<ConfiguredSling> {
 
 	const context: SlingContext = {
 		envSets: new Map(),
@@ -54,15 +51,7 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
 		activeEnvironment: undefined,
 	}
 
-	const results = plugins.map(p => p.setup(context))
-	const hasAsync = results.some(
-		r => r !== undefined && typeof (r).then === 'function',
-	)
-	if (hasAsync) {
-		setupPromise = Promise.all(
-			results.filter(Boolean) as Promise<void>[],
-		).then(() => {})
-	}
+	await loadPlugins(context, plugins)
 
 	const templateFunction = function slingTemplate(
 		strings: TemplateStringsArray,
@@ -89,13 +78,6 @@ export function sling(...plugins: SlingPlugin[]): ConfiguredSling {
 			return createSlingParameters(context.envSets.get(context.activeEnvironment))
 		},
 		enumerable: true,
-	})
-
-	// Attach setup promise for CLI/extension to await if needed
-	Object.defineProperty(templateFunction, '__setupPromise', {
-		value: setupPromise,
-		writable: false,
-		enumerable: false,
 	})
 
 	// Attach helpers

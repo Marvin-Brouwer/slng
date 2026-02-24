@@ -305,14 +305,6 @@ export interface SlingContext {
 }
 
 /**
- * A plugin that hooks into the sling configuration.
- */
-export interface SlingPlugin {
-	readonly name: string
-	setup: (context: SlingContext) => void | Promise<void>
-}
-
-/**
  * A configured sling tagged template function.
  *
  * Use as: `http\`GET https://...\``
