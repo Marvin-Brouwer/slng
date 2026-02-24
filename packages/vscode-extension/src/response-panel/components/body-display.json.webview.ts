@@ -179,24 +179,24 @@ function resolveJsonTokenColors(): JsonTokenColors {
 
 	try {
 		const themePath = findActiveThemePath()
-		if (!themePath) return result
+		const themeData = themePath ? collectThemeData(themePath) : undefined
 
-		const themeData = collectThemeData(themePath)
+		if (themeData) {
+			// ── Token colors (TextMate scopes) ──
+			const { tokenColors } = themeData
+			// Layer user-level tokenColor overrides on top
+			const customizations = vscode.workspace
+				.getConfiguration('editor')
+				.get<{ textMateRules?: ThemeTokenRule[] }>('tokenColorCustomizations')
+			if (customizations?.textMateRules) {
+				tokenColors.push(...customizations.textMateRules)
+			}
 
-		// ── Token colors (TextMate scopes) ──
-		const { tokenColors } = themeData
-		// Layer user-level tokenColor overrides on top
-		const customizations = vscode.workspace
-			.getConfiguration('editor')
-			.get<{ textMateRules?: ThemeTokenRule[] }>('tokenColorCustomizations')
-		if (customizations?.textMateRules) {
-			tokenColors.push(...customizations.textMateRules)
-		}
-
-		for (const [key, targetScope] of Object.entries(jsonTargetScopes)) {
-			const color = resolveTokenColor(tokenColors, targetScope)
-			if (color) {
-				result[key as TokenColorKey] = color
+			for (const [key, targetScope] of Object.entries(jsonTargetScopes)) {
+				const color = resolveTokenColor(tokenColors, targetScope)
+				if (color) {
+					result[key as TokenColorKey] = color
+				}
 			}
 		}
 
@@ -212,7 +212,7 @@ function resolveJsonTokenColors(): JsonTokenColors {
 
 			const bracketColors: string[] = []
 			for (const key of bracketColorKeys) {
-				const color = userColorOverrides[key] ?? themeData.colors[key]
+				const color = userColorOverrides[key] ?? themeData?.colors[key]
 				if (color) bracketColors.push(color)
 			}
 
