@@ -7,7 +7,7 @@ import type { httpNodes } from '@slng/definition'
 export class HttpHeaders extends SimpleElement {
 	static tagName = 'header-display'
 
-	public headerNodes: httpNodes.HeaderNode[]
+	public headerNodes!: httpNodes.HeaderNode[]
 
 	protected onMount(): void {
 		if (!this.headerNodes) throw new Error('Expected this element to be created programatically')

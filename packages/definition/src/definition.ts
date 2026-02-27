@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 
 import { buildHttpResponse } from './http/http-builder/http-builder.js'
 import { parseHttpRequest } from './http/http-parser/http-parser.request.js'
-import { Metadata, body, document, error, NodeError, response, text } from './http/http.nodes'
+import { body, document, response } from './http/http.nodes'
 import { buildRequest } from './request/request-builder.js'
 import { resolveTemplateDependencies } from './template-reader.js'
 import {
@@ -21,6 +21,7 @@ import {
 	type ParsedHttpRequest,
 	StringTemplate,
 } from './types.js'
+import { error, Metadata, NodeError, text } from './nodes/nodes.js'
 
 interface CachedResponse {
 	response: SlingResponse
@@ -32,7 +33,7 @@ interface CachedResponse {
  */
 export function createDefinition(
 	template: StringTemplate,
-	_context: SlingContext,
+	context: SlingContext,
 ): SlingDefinition {
 	// Response cache (shared across execute/json calls)
 	let cached: CachedResponse | undefined
@@ -73,7 +74,7 @@ export function createDefinition(
 			}
 
 			internals.resolvedTemplate = await resolveTemplateDependencies(template)
-			const response = await executeRequest(this, options)
+			const response = await executeRequest(context, this, options)
 			if (response instanceof Error && !(response instanceof HttpError)) throw response
 			// Store in cache (unless caching is explicitly disabled)
 			if (!cachingDisabled && !(response instanceof HttpError)) {
@@ -231,13 +232,14 @@ type FetchError = Error & {
  * Execute the HTTP request defined by a sling template.
  */
 async function executeRequest(
+	context: SlingContext,
 	definition: SlingDefinition,
 	options?: ExecuteOptions,
 ): Promise<SlingResponse | Error> {
 	const startTime = performance.now()
 
 	const internals = definition.getInternals()
-	const templateAst = parseHttpRequest(internals.resolvedTemplate!)
+	const templateAst = parseHttpRequest(context, internals.resolvedTemplate!)
 	if (!templateAst) return new Error('Unreachable code detected, empty http request')
 	if (templateAst.type === 'error') return new NodeError(templateAst)
 
@@ -274,7 +276,7 @@ async function executeRequest(
 
 	const duration = performance.now() - startTime
 
-	const responseAst = await buildHttpResponse(fetchResponse)
+	const responseAst = await buildHttpResponse(context, fetchResponse)
 
 	// TODO, we don't want the console to expand the headers or body, however,
 	// using toJSON will also fail in the vscode extensionState object, since it's apparently serialized.

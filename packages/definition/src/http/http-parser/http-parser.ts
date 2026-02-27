@@ -1,6 +1,7 @@
 import { isMask, Masked } from '../../masking/mask'
+import { error, ErrorNode, masked, Metadata, text, ValueNode, values, ValuesNode } from '../../nodes/nodes'
 import { PrimitiveValue } from '../../types'
-import { error, ErrorNode, header, HeaderNode, masked, Metadata, text, ValueNode, values, ValuesNode } from '../http.nodes'
+import { header, HeaderNode } from '../http.nodes'
 
 export type TemplateLines = TemplateLine[]
 export type TemplateLine = TemplatePart[]

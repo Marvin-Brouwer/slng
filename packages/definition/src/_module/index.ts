@@ -3,9 +3,10 @@ export * from '../masking/mask.js'
 export { secret } from '../masking/secret.js'
 export { sensitive } from '../masking/sensitive.js'
 
-export type { SlingNode } from '../sling-node.js'
+export type { SlingNode } from '../nodes/nodes.js'
+export * as nodes from '../nodes/nodes.js'
 export * as httpNodes from '../http/http.nodes.js'
-export * as jsonNodes from '../http/body-parser/json/json.nodes.js'
+export * as jsonNodes from '../payload/json/json.nodes.js'
 
 // Error types
 export { HttpError, InvalidJsonPathError } from '../types.js'

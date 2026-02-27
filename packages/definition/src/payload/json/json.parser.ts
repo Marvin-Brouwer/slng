@@ -1,5 +1,5 @@
-import { SlingNode } from '../../../sling-node'
-import { Metadata } from '../../http.nodes'
+import { SlingNode } from '../../sling-node'
+import { Metadata } from '../../http/http.nodes'
 
 import { LexerToken, MaskedToken, PunctuationToken, ValueToken } from './json.lexer'
 import {

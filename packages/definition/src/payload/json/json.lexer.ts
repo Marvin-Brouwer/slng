@@ -1,6 +1,6 @@
-import { isMask, Masked } from '../../../masking/mask'
-import { SlingNode } from '../../../sling-node'
-import { PrimitiveValue } from '../../../types'
+import { isMask, Masked } from '../../masking/mask'
+import { SlingNode } from '../../sling-node'
+import { PrimitiveValue } from '../../types'
 
 export type LexerToken = ValueToken | PunctuationToken | MaskedToken
 export type PunctuationToken = SlingNode & { type: typeof punctuationCharacters[number] | 'EOF' }

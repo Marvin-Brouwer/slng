@@ -1,7 +1,9 @@
-import { parseHttpBody } from '../body-parser/body-parser'
-import { document, header, HttpDocument, Metadata, response, text } from '../http.nodes'
+import { Metadata, text } from '../../nodes/nodes'
+import { SlingContext } from '../../types'
+import { parseHttpBody } from '../http-parser/http-parser.request'
+import { document, header, HttpDocument, response } from '../http.nodes'
 
-export async function buildHttpResponse(fetchResponse: Response): Promise<HttpDocument> {
+export async function buildHttpResponse(context: SlingContext, fetchResponse: Response): Promise<HttpDocument> {
 	const metadata = new Metadata()
 
 	const startLine = response('HTTP', '1.1', text(fetchResponse.status), text(fetchResponse.statusText))
@@ -10,7 +12,7 @@ export async function buildHttpResponse(fetchResponse: Response): Promise<HttpDo
 	metadata.contentType = fetchResponse.headers.get('content-type')?.split(';')[0] ?? undefined
 	const bodyString = await fetchResponse.text()
 
-	const bodyNode = parseHttpBody(metadata, [bodyString])
+	const bodyNode = parseHttpBody(context, metadata, [bodyString])
 
 	return document({
 		startLine,

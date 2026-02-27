@@ -3,8 +3,10 @@ import { AstData } from './loader/file-loader.js'
 import { namedMask, Masked, MaskedDataAccessor } from './masking/mask'
 import { secret } from './masking/secret'
 import { sensitive } from './masking/sensitive'
+import { SlingNode } from './nodes/nodes.js'
 
 import type { ParameterType, SlingParameters } from './parameters.js'
+import { PayloadProcessor } from './payload/payload-processor.js'
 
 // TODO, these types should be closer to their implementation.
 // Errors and base types may have their own files in ./types/, at least a file per type.
@@ -292,12 +294,14 @@ export interface SlingDefinition {
 
 // ── Config & plugins ─────────────────────────────────────────
 
+export type MimeType = `${string}/${string}`
 /**
  * The sling context, modified by plugins during setup.
  */
 export interface SlingContext {
 	/** All loaded environment variables, keyed by environment name. */
 	readonly envSets: Map<string, Record<string, ParameterType | undefined>>
+	readonly payloadProcessors: Map<string, PayloadProcessor<SlingNode>>
 	/** Names of available environments. */
 	readonly environments: string[]
 	/** The currently active environment. */

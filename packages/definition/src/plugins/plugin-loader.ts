@@ -1,4 +1,6 @@
 import { SlingContext } from '../types'
+import { useJson } from './built-in/payload/json'
+import { useText } from './built-in/payload/text'
 import { SlingPlugin } from './plugin'
 
 export async function loadPlugins(context: SlingContext, plugins: SlingPlugin[]) {
@@ -11,4 +13,11 @@ export async function loadPlugins(context: SlingContext, plugins: SlingPlugin[])
 	if (context.environments.length > 0 && context.activeEnvironment === undefined) {
 		context.activeEnvironment = context.environments[0]
 	}
+
+	// Append built-in processors
+	useText().setupProcessors(context)
+	useJson({ }).setupProcessors(context)
+
+	const setupProcessors = plugins.map(p => p.setupProcessors(context))
+	await Promise.all(setupProcessors.filter(Boolean) as Promise<void>[])
 }

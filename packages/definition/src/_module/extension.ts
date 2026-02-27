@@ -5,7 +5,7 @@
 // Runtime utilities (for CLI / extensions)
 export { loadDefinitionFile, type AstData } from '../loader/file-loader.js'
 export { isSlingDefinition } from '../definition.js'
-export { isJsonContentType } from '../http/body-parser/body-parser.json.js'
+export { isJsonContentType } from '../payload/payload-processor.json.js'
 
 export type {
 	SlingInternals,

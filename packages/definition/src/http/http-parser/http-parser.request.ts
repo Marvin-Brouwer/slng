@@ -1,19 +1,20 @@
-import { ResolvedStringTemplate } from '../../types'
-import { parseHttpBody } from '../body-parser/body-parser'
+import { Masked } from '../../_module'
+import { error, ErrorNode, Metadata, text, ValueNode, ValuesNode } from '../../nodes/nodes'
+import { getProcessor } from '../../payload/payload-processor'
+import { MimeType, PrimitiveValue, ResolvedStringTemplate, SlingContext } from '../../types'
 import {
 	allowedProtocols,
+	body,
+	BodyNode,
 	document,
 	HttpDocument,
-	Metadata,
 	RequestNode,
-	ErrorNode,
-	error,
 	request,
 } from '../http.nodes'
 
 import { parseHeaders, resolveCompoundNode, resolveSingleNode, TemplateLine, TemplateLines } from './http-parser'
 
-export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpDocument | ErrorNode | undefined {
+export function parseHttpRequest(context: SlingContext, requestTemplate: ResolvedStringTemplate): HttpDocument | ErrorNode | undefined {
 	const { strings, values } = requestTemplate
 	const metadata = new Metadata()
 
@@ -99,7 +100,7 @@ export function parseHttpRequest(requestTemplate: ResolvedStringTemplate): HttpD
 
 	const headers = parseHeaders(headerLines, metadata)
 	const textBody = collapseTemplate(bodyLines.slice(0, endsWithNewline ? bodyLines.length - 1 : bodyLines.length - 2))
-	const body = parseHttpBody(metadata, textBody)
+	const body = parseHttpBody(context, metadata, textBody)
 
 	return document({
 		startLine,
@@ -185,4 +186,16 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 		protoName,
 		protoVersion,
 	)
+}
+
+
+
+export function parseHttpBody(context: SlingContext, metadata: Metadata, textBody: (PrimitiveValue | Masked<PrimitiveValue>)[]): BodyNode | undefined {
+
+	const processor = getProcessor<ValueNode | ValuesNode>(context, metadata.contentType as MimeType)
+	const contentType = metadata.contentType ?? 'text/undefined'
+
+	const valueNodes = processor.processPayload(metadata, textBody)
+
+	return body(contentType, valueNodes ?? text(''))
 }

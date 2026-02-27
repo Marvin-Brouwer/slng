@@ -1,13 +1,15 @@
 import { SlingContext } from '../types'
 
-export type PluginContext = Omit<SlingContext, 'activeEnvironment'>
+export type EnvironmentContext = Pick<SlingContext, 'envSets' |  'environments'>
+export type ProcessorContext = Pick<SlingContext, 'payloadProcessors'>
 
 /**
  * A plugin that hooks into the sling configuration.
  */
 export interface SlingPlugin {
 	readonly name: string
-	setupEnvironment(context: PluginContext): void | Promise<void>
+	setupEnvironment(context: EnvironmentContext): void | Promise<void>
+	setupProcessors(context: ProcessorContext): void | Promise<void>
 }
 
 export type PluginOptionsNoConfig = Partial<Omit<SlingPlugin, 'name'>>
@@ -24,6 +26,7 @@ export function plugin<TConfig extends object | never>(name: `${string}:${string
 	return {
 		name,
 		...options,
-		setupEnvironment: options.setupEnvironment ?? noop
+		setupEnvironment: options.setupEnvironment ?? noop,
+		setupProcessors: options.setupProcessors ?? noop,
 	}
 }

@@ -1,7 +1,6 @@
-import { Masked } from '../../../masking/mask'
-import { SlingNode } from '../../../sling-node'
-import { PrimitiveValue } from '../../../types'
-import { Metadata } from '../../http.nodes'
+import { Masked } from '../../masking/mask'
+import { Metadata, SlingNode } from '../../nodes/nodes'
+import { PrimitiveValue } from '../../types'
 
 export interface JsonNode extends SlingNode {
 	type: `json:${string}`

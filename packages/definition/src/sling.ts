@@ -47,6 +47,7 @@ export async function sling(...plugins: SlingPlugin[]): Promise<ConfiguredSling>
 
 	const context: SlingContext = {
 		envSets: new Map(),
+		payloadProcessors: new Map(),
 		environments: [],
 		activeEnvironment: undefined,
 	}
