@@ -56,8 +56,16 @@
 	"npm.autoDetect": "off",
 	"editor.defaultFormatter": "dbaeumer.vscode-eslint",
 	"workbench.colorCustomizations": {
-		"titleBar.activeBackground": "#493200",
+		"activityBar.background": "#4932007e",
+		"titleBar.activeBackground": "#4932007e",
+		"titleBar.activeForeground": "#FCFCFE",
 		"titleBar.inactiveBackground": "#4932007e",
-		"titleBar.activeForeground": "#F8FBFD"
+		"titleBar.inactiveForeground": "#FCFCFE",
+		"statusBar.background": "#4932007e",
+		"statusBar.foreground": "#FCFCFE",
+		"statusBar.debuggingBackground": "#4932007e",
+		"statusBar.debuggingForeground": "#493200",
+		"statusBar.noFolderBackground": "#4932007e",
+		"statusBar.noFolderForeground": "#FCFCFE"
 	}
 }
