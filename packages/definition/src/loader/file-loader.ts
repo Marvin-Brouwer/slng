@@ -23,11 +23,13 @@ export type AstData = {
 export async function loadDefinitionFile(filePath: string) {
 	try {
 		const definitions = await loadModuleFile<Record<string, SlingDefinition>>(filePath)
-		// TODO parse the HTTP syntax inside of the template too
 		const fileAst = parseDefinitionFile(filePath, Object.keys(definitions))
 
 		for (const definitionName in definitions) {
-			(definitions[definitionName].getInternals() as { tsAst: AstData }).tsAst = Object.freeze(fileAst[definitionName])
+			const def = definitions[definitionName]
+			const astData = Object.freeze(fileAst[definitionName])
+			;(def.getInternals() as { tsAst: AstData }).tsAst = astData
+			def.buildProtocolAst(astData)
 		}
 
 		return definitions

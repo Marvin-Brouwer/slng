@@ -1,7 +1,8 @@
 import { Masked } from '../../_module'
+import { isPrimitiveMask } from '../../masking/mask'
 import { error, ErrorNode, Metadata, text, ValueNode, ValuesNode } from '../../nodes/nodes'
 import { getProcessor } from '../../payload/payload-processor'
-import { MimeType, PrimitiveValue, ResolvedStringTemplate, SlingContext } from '../../types'
+import { MimeType, PrimitiveValue, ResolvedStringTemplate, SlingContext, StringTemplate } from '../../types'
 import {
 	allowedProtocols,
 	body,
@@ -190,12 +191,163 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 
 
 
-export function parseHttpBody(context: SlingContext, metadata: Metadata, textBody: (PrimitiveValue | Masked<PrimitiveValue>)[]): BodyNode | undefined {
+export function parseHttpBody(context: SlingContext, metadata: Metadata, textBody: (PrimitiveValue | Masked<PrimitiveValue> | undefined)[]): BodyNode | undefined {
 
 	const processor = getProcessor<ValueNode | ValuesNode>(context, metadata.contentType as MimeType)
 	const contentType = metadata.contentType ?? 'text/undefined'
 
-	const valueNodes = processor.processPayload(metadata, textBody)
+	// Filter undefined slots — DataAccessor values are unknown at parse time
+	const filteredBody = textBody.filter((p): p is PrimitiveValue | Masked<PrimitiveValue> => p !== undefined)
+	const valueNodes = processor.processPayload(metadata, filteredBody)
 
 	return body(contentType, valueNodes ?? text(''))
+}
+
+/**
+ * Parse an HTTP request from a {@link StringTemplate} at definition load time.
+ *
+ * Unlike {@link parseHttpRequest} (which requires a fully-resolved template),
+ * this function accepts the raw template before async DataAccessors are resolved.
+ * It pre-populates {@link Metadata.parameters} with all template values so that
+ * DataAccessor slots (stored as `undefined`) can be filled at execute time.
+ *
+ * Source line numbers are computed from `literalLocation` and attached to
+ * structural nodes (RequestNode, HeaderNode, BodyNode, HttpDocument).
+ */
+export function parseHttpTemplate(
+	context: SlingContext,
+	template: StringTemplate,
+	literalLocation: { start: { line: number; column: number }; end: { line: number; column: number } },
+): HttpDocument | ErrorNode | undefined {
+	const { strings, values } = template
+	const metadata = new Metadata()
+
+	if (values.length === 0 && strings.join('').trim().length === 0)
+		return error({
+			reason: 'HTTP requests cannot be empty string',
+			autoFix: 'sling.initial-format',
+		})
+
+	// Pre-populate metadata.parameters in template value order.
+	// DataAccessor / MaskedDataAccessor → undefined slot (filled at execute time).
+	// The index in metadata.parameters matches the index in template.values.
+	for (const value of values) {
+		if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+			metadata.parameters.push(value)
+		} else if (isPrimitiveMask(value)) {
+			metadata.parameters.push(value)
+		} else {
+			metadata.parameters.push(undefined)
+		}
+	}
+
+	// 1. Boundary Checks
+	const startsWithNewline = /^\s*\n/.test(strings[0])
+	const lastString = strings.at(-1)!
+	const endsWithNewline = /\n\s*$/.test(lastString)
+
+	// 2. Interleave strings and values into lines, tracking source line numbers.
+	// sourceLine counts absolute line numbers starting from literalLocation.start.line.
+	// lineSourceLines[i] = source line where lines[i] begins.
+	const lines: TemplateLines = [[]]
+	let sourceLine = literalLocation.start.line
+	const lineSourceLines: number[] = [sourceLine]
+	let indent = -1
+
+	for (const [index, string_] of strings.entries()) {
+		if (string_ !== undefined) {
+			const split = string_.split('\n')
+			for (let sIndex = 0; sIndex < split.length; sIndex++) {
+				const rawText = split[sIndex]
+
+				if (sIndex > 0) {
+					sourceLine++
+					// Update the source line for the last (current) lines[] entry
+					lineSourceLines[lines.length - 1] = sourceLine
+				}
+
+				if (indent < 0 && rawText.trim() && (index === 0 || sIndex > 0)) {
+					indent = rawText.length - rawText.trimStart().length
+				}
+
+				const isContinuation = index > 0 && sIndex === 0
+				const stripped = isContinuation
+					? rawText
+					: rawText.slice(Math.max(0, indent))
+
+				if (indent < 0 && !stripped && !isContinuation) continue
+
+				lines.at(-1)!.push({ part: stripped })
+
+				if (sIndex < split.length - 1) {
+					lines.push([])
+					lineSourceLines.push(sourceLine) // placeholder; updated at next sIndex > 0
+				}
+			}
+		}
+
+		if (index < values.length) {
+			const value = values[index]
+			const isPrim = typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+			const partValue: PrimitiveValue | Masked<PrimitiveValue> | undefined =
+				isPrim ? value as PrimitiveValue
+				: isPrimitiveMask(value) ? value
+				: undefined
+			lines.at(-1)!.push({ part: partValue, valueIndex: index })
+		}
+	}
+
+	// 3. Segment the Lines
+	const startLineParts = lines.shift() || []
+	const startLineNum = lineSourceLines.shift() ?? sourceLine
+	const startLine = parseRequestStart(startLineParts, metadata)
+	if (startLine.type !== 'error') {
+		startLine.loc = pointLoc(startLineNum, Math.max(0, indent))
+	}
+
+	const emptyLineIndex = lines.findIndex(l => l.length === 0 || (l.length === 1 && l[0].part === ''))
+	const headerLines = emptyLineIndex === -1 ? lines : lines.slice(0, emptyLineIndex)
+	const headerLineNums = emptyLineIndex === -1 ? lineSourceLines : lineSourceLines.slice(0, emptyLineIndex)
+	const bodyLines = emptyLineIndex === -1 ? [] : lines.slice(emptyLineIndex + 1)
+	const bodyLineNum = emptyLineIndex === -1 ? undefined : lineSourceLines[emptyLineIndex + 1]
+
+	if (!startsWithNewline) {
+		metadata.errors = metadata.errors || []
+		metadata.errors.push(error({
+			reason: 'HTTP request template should start with a newline.',
+			autoFix: 'sling.insert_leading_newline',
+		}))
+	}
+
+	if (!endsWithNewline) {
+		metadata.errors = metadata.errors || []
+		metadata.errors.push(error({
+			reason: 'HTTP request template should end with a newline.',
+			autoFix: 'sling.insert_trailing_newline',
+		}))
+	}
+
+	const headers = parseHeaders(headerLines, metadata)
+	if (headers) {
+		for (let i = 0; i < headers.length; i++) {
+			const lineNum = headerLineNums[i]
+			if (lineNum !== undefined) headers[i].loc = pointLoc(lineNum, Math.max(0, indent))
+		}
+	}
+
+	const textBody = collapseTemplate(bodyLines.slice(0, endsWithNewline ? bodyLines.length - 1 : bodyLines.length - 2))
+	const bodyNode = parseHttpBody(context, metadata, textBody)
+	if (bodyNode && bodyLineNum !== undefined) {
+		bodyNode.loc = pointLoc(bodyLineNum, Math.max(0, indent))
+	}
+
+	const doc = document({ startLine, headers, body: bodyNode, metadata })
+	doc.loc = { start: literalLocation.start, end: literalLocation.end }
+	return doc
+}
+
+/** Build a zero-width SourceLocation pointing at (line, column). */
+function pointLoc(line: number, column: number) {
+	const pos = { line, column }
+	return { start: pos, end: pos }
 }

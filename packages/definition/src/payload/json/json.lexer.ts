@@ -20,31 +20,39 @@ const punctuationCharacters = [
 	'//', '/*', '*/',
 ] as const
 
-const lexerToken = {
-	end: { type: 'EOF' } as LexerToken,
-	punctuation(character: typeof punctuationCharacters[number]): LexerToken {
-		return { type: character }
-	},
-	value(type: string, character: string): LexerToken {
-		return { type: `json-token:${type}`, value: character }
-	},
-}
 const isWhitespace = (character: string) => /\s/.test(character)
 const isPunctuation = (character: string): character is typeof punctuationCharacters[number] =>
 	punctuationCharacters.includes(character as typeof punctuationCharacters[number])
 
-export function lexJson(parts: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
+type Pos = { line: number; column: number }
+
+function advance(pos: Pos, char: string): Pos {
+	return char === '\n'
+		? { line: pos.line + 1, column: 0 }
+		: { line: pos.line, column: pos.column + 1 }
+}
+
+function loc(start: Pos, end: Pos) {
+	return { start, end }
+}
+
+export function lexJson(
+	parts: (PrimitiveValue | Masked<PrimitiveValue>)[],
+	startLoc?: { line: number; column: number },
+) {
 	const tokens = new Array<LexerToken>()
 	let stringMode = false
 	let lineCommentMode = false
 	let blockCommentMode = false
 	let escapeCount = 0
+	let pos: Pos = startLoc ? { ...startLoc } : { line: 1, column: 0 }
 
 	for (const part of parts) {
 		if (isMask(part)) {
 			// Masked values are always values, even inside comments/strings
 			// because they are native objects injected into the template.
-			tokens.push({ type: 'json-token:masked', value: part })
+			const start = { ...pos }
+			tokens.push({ type: 'json-token:masked', value: part, loc: loc(start, start) })
 			continue
 		}
 
@@ -65,7 +73,10 @@ export function lexJson(parts: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
 
 			// Exit Block Comment (on */)
 			if (blockCommentMode && currentCharacter === '*' && nextCharacter === '/') {
-				tokens.push(lexerToken.punctuation('*/'))
+				const start = { ...pos }
+				pos = advance(pos, currentCharacter)
+				pos = advance(pos, nextCharacter)
+				tokens.push({ type: '*/', loc: loc(start, { ...pos }) })
 				blockCommentMode = false
 				index += 2
 				continue
@@ -74,7 +85,9 @@ export function lexJson(parts: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
 			// Exit String Mode (on unescaped ")
 			if (stringMode && currentCharacter === '"' && escapeCount % 2 === 0) {
 				stringMode = false
-				tokens.push(lexerToken.punctuation('"'))
+				const start = { ...pos }
+				pos = advance(pos, currentCharacter)
+				tokens.push({ type: '"', loc: loc(start, { ...pos }) })
 				escapeCount = 0
 				index++
 				continue
@@ -84,19 +97,27 @@ export function lexJson(parts: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
 			if (!stringMode && !lineCommentMode && !blockCommentMode) {
 				if (currentCharacter === '/' && nextCharacter === '/') {
 					lineCommentMode = true
-					tokens.push(lexerToken.punctuation('//'))
+					const start = { ...pos }
+					pos = advance(pos, currentCharacter)
+					pos = advance(pos, nextCharacter)
+					tokens.push({ type: '//', loc: loc(start, { ...pos }) })
 					index += 2
 					continue
 				}
 				if (currentCharacter === '/' && nextCharacter === '*') {
 					blockCommentMode = true
-					tokens.push(lexerToken.punctuation('/*'))
+					const start = { ...pos }
+					pos = advance(pos, currentCharacter)
+					pos = advance(pos, nextCharacter)
+					tokens.push({ type: '/*', loc: loc(start, { ...pos }) })
 					index += 2
 					continue
 				}
 				if (currentCharacter === '"') {
 					stringMode = true
-					tokens.push(lexerToken.punctuation('"'))
+					const start = { ...pos }
+					pos = advance(pos, currentCharacter)
+					tokens.push({ type: '"', loc: loc(start, { ...pos }) })
 					escapeCount = 0
 					index++
 					continue
@@ -107,6 +128,7 @@ export function lexJson(parts: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
 
 			// If we are in any mode, we swallow characters greedily
 			if (stringMode || lineCommentMode || blockCommentMode) {
+				const start = { ...pos }
 				let accumulator = ''
 				while (index < characters.length) {
 					const accumulatorCurrentCharacter = characters[index]
@@ -130,41 +152,52 @@ export function lexJson(parts: (PrimitiveValue | Masked<PrimitiveValue>)[]) {
 					if (blockCommentMode && accumulatorCurrentCharacter === '*' && accumulatorNextCharacter === '/') break
 
 					accumulator += accumulatorCurrentCharacter
+					pos = advance(pos, accumulatorCurrentCharacter)
 					index++
 				}
 
 				if (accumulator) {
-					tokens.push(lexerToken.value(stringMode ? 'string-content' : 'comment-body', accumulator))
+					tokens.push({
+						type: `json-token:${stringMode ? 'string-content' : 'comment-body'}`,
+						value: accumulator,
+						loc: loc(start, { ...pos }),
+					})
 				}
 				continue
 			}
 
 			// --- 4. STANDARD JSON (WHITESPACE & PUNCTUATION) ---
 			if (isWhitespace(currentCharacter)) {
+				const start = { ...pos }
 				let ws = ''
 				while (index < characters.length && isWhitespace(characters[index])) {
+					pos = advance(pos, characters[index])
 					ws += characters[index]
 					index++
 				}
-				tokens.push(lexerToken.value('whitespace', ws))
+				tokens.push({ type: 'json-token:whitespace', value: ws, loc: loc(start, { ...pos }) })
 				continue
 			}
 
 			if (isPunctuation(currentCharacter)) {
-				tokens.push(lexerToken.punctuation(currentCharacter))
+				const start = { ...pos }
+				pos = advance(pos, currentCharacter)
+				tokens.push({ type: currentCharacter, loc: loc(start, { ...pos }) })
 				index++
 				continue
 			}
 
 			// 5. LITERALS (true, false, null, numbers)
+			const start = { ...pos }
 			let literal = ''
 			while (index < characters.length && !isPunctuation(characters[index]) && !isWhitespace(characters[index])) {
+				pos = advance(pos, characters[index])
 				literal += characters[index]
 				index++
 			}
-			if (literal) tokens.push(lexerToken.value('literal', literal))
+			if (literal) tokens.push({ type: 'json-token:literal', value: literal, loc: loc(start, { ...pos }) })
 		}
 	}
-	tokens.push(lexerToken.end)
+	tokens.push({ type: 'EOF' })
 	return tokens
 }

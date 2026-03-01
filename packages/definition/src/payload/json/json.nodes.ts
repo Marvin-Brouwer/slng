@@ -45,7 +45,7 @@ export interface JsonMaskedNode extends JsonNode {
 }
 export const jsonMask = (metadata: Metadata, value: Masked<PrimitiveValue>): JsonMaskedNode => ({
 	type: `json:masked:${typeof value.unmask()}`,
-	reference: metadata.appendMaskedValue(value),
+	reference: metadata.appendParameter(value),
 	mask: value.value,
 })
 export interface JsonArrayNode extends JsonNode {

@@ -17,7 +17,7 @@ const bodyRenderers: BodyRenderer<SlingNode>[] = [
 export class HttpBody extends SimpleElement {
 	static tagName = 'body-display'
 
-	public bodyNode: httpNodes.BodyNode
+	public bodyNode!: httpNodes.BodyNode
 
 	protected onMount(): void {
 		if (!this.bodyNode) throw new Error('Expected this element to be created programatically')

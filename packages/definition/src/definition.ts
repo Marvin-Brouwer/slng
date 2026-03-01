@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto'
 
 import { buildHttpResponse } from './http/http-builder/http-builder.js'
-import { parseHttpRequest } from './http/http-parser/http-parser.request.js'
-import { body, document, response } from './http/http.nodes'
+import { parseHttpTemplate } from './http/http-parser/http-parser.request.js'
+import { body, document, HttpDocument, response } from './http/http.nodes'
+import { AstData } from './loader/file-loader.js'
+import { isMask } from './masking/mask.js'
+import { Metadata } from './nodes/nodes.js'
 import { buildRequest } from './request/request-builder.js'
 import { resolveTemplateDependencies } from './template-reader.js'
 import {
@@ -21,7 +24,7 @@ import {
 	type ParsedHttpRequest,
 	StringTemplate,
 } from './types.js'
-import { error, Metadata, NodeError, text } from './nodes/nodes.js'
+import { error, NodeError, text, type ValueNode, type ValuesNode } from './nodes/nodes.js'
 
 interface CachedResponse {
 	response: SlingResponse
@@ -43,10 +46,14 @@ export function createDefinition(
 		tsAst: undefined!, // added by the runtime
 		template,
 		resolvedTemplate: undefined!, // added on request
+		protocolAst: undefined,
 	}
 
 	const definition: SlingDefinition = {
 		getInternals: () => internals,
+		buildProtocolAst(tsAst: AstData) {
+			internals.protocolAst = parseHttpTemplate(context, template, tsAst.literalLocation) ?? undefined
+		},
 		id() {
 			// This SHOULD never happen
 			if (!internals.tsAst) return '<unknown>'
@@ -220,6 +227,49 @@ function createDataAccessor(
 	} as DataAccessor
 }
 
+/**
+ * Recursively patch `'value'` variant ReferenceNodes with their resolved
+ * parameter value so the display AST is self-contained (no metadata lookup
+ * needed in renderers).
+ */
+function patchValueNode(node: ValueNode | ValuesNode, params: Metadata['parameters']): ValueNode | ValuesNode {
+	if (node.type === 'reference' && node.variant === 'value') {
+		const param = params[node.reference]
+		if (param !== undefined && param !== null && !isMask(param))
+			return { ...node, value: String(param) }
+	}
+	if (node.type === 'values')
+		return { ...node, values: node.values.map(v => patchValueNode(v, params) as ValueNode) }
+	return node
+}
+
+/**
+ * Return a new {@link HttpDocument} with all `'value'` variant ReferenceNodes
+ * patched to carry their resolved display value, so renderers need not
+ * consult `metadata.parameters`.
+ */
+function fillDocumentValueRefs(doc: HttpDocument): HttpDocument {
+	let { startLine } = doc
+	if (startLine.type === 'request' && startLine.url.type !== 'error') {
+		startLine = { ...startLine, url: patchValueNode(startLine.url, doc.metadata.parameters) }
+	}
+
+	const headers = doc.headers?.map(h => {
+		if (h.type === 'error' || h.value.type === 'error') return h
+		return { ...h, value: patchValueNode(h.value as ValueNode | ValuesNode, doc.metadata.parameters) }
+	})
+
+	let { body } = doc
+	if (body) {
+		const v = body.value
+		if (v.type === 'text' || v.type === 'reference' || v.type === 'values') {
+			body = { ...body, value: patchValueNode(v as ValueNode | ValuesNode, doc.metadata.parameters) }
+		}
+	}
+
+	return { ...doc, startLine, headers, body }
+}
+
 type FetchError = Error & {
 	code: string
 	errno: number
@@ -239,10 +289,27 @@ async function executeRequest(
 	const startTime = performance.now()
 
 	const internals = definition.getInternals()
-	const templateAst = parseHttpRequest(context, internals.resolvedTemplate!)
-	if (!templateAst) return new Error('Unreachable code detected, empty http request')
-	if (templateAst.type === 'error') return new NodeError(templateAst)
 
+	// Ensure protocolAst is available (may be absent when used without a file loader)
+	if (!internals.protocolAst) definition.buildProtocolAst(internals.tsAst)
+	const protocolAst = internals.protocolAst!
+	if (protocolAst.type === 'error') return new NodeError(protocolAst)
+
+	// Fill DataAccessor slots in metadata.parameters with the resolved values.
+	// We work on a shallow-cloned metadata so the cached protocolAst stays pristine.
+	const execMetadata = new Metadata()
+	execMetadata.parameters = [...protocolAst.metadata.parameters]
+	execMetadata.contentType = protocolAst.metadata.contentType
+	execMetadata.errors = protocolAst.metadata.errors
+
+	const resolved = internals.resolvedTemplate!
+	for (let i = 0; i < resolved.values.length; i++) {
+		if (execMetadata.parameters[i] === undefined && resolved.values[i] !== undefined) {
+			execMetadata.parameters[i] = resolved.values[i]
+		}
+	}
+
+	const templateAst = fillDocumentValueRefs({ ...protocolAst, metadata: execMetadata })
 	const fetchRequest = buildRequest(templateAst, internals.resolvedTemplate)
 	if (fetchRequest instanceof Error) throw fetchRequest
 

@@ -1,5 +1,5 @@
 import { isMask } from '../masking/mask'
-import { masked, text, values } from '../nodes/nodes'
+import { reference, text, values } from '../nodes/nodes'
 
 import { PayloadProcessor } from './payload-processor'
 
@@ -9,7 +9,7 @@ export const textPayloadProcessor: PayloadProcessor = {
 		if (parts.length === 0) return
 
 		const bodyNodes = parts.map((part) => {
-			if (isMask(part)) return masked(metadata.appendMaskedValue(part), part.value)
+			if (isMask(part)) return reference(metadata.appendParameter(part), 'mask', part.value)
 			return text(part)
 		})
 

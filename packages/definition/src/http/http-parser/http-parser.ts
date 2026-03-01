@@ -1,12 +1,14 @@
 import { isMask, Masked } from '../../masking/mask'
-import { error, ErrorNode, masked, Metadata, text, ValueNode, values, ValuesNode } from '../../nodes/nodes'
+import { error, ErrorNode, Metadata, reference, text, ValueNode, values, ValuesNode } from '../../nodes/nodes'
 import { PrimitiveValue } from '../../types'
 import { header, HeaderNode } from '../http.nodes'
 
 export type TemplateLines = TemplateLine[]
 export type TemplateLine = TemplatePart[]
 export interface TemplatePart {
-	part: PrimitiveValue | Masked<PrimitiveValue>
+	part: PrimitiveValue | Masked<PrimitiveValue> | undefined
+	/** When set, this part corresponds to template.values[valueIndex], pre-populated in metadata.parameters. */
+	valueIndex?: number
 }
 
 export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderNode | ErrorNode)[] | undefined {
@@ -79,8 +81,11 @@ export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderN
 		if (isContentTypeHeader(nameNode.value)) {
 			if (valueNode.type === 'text')
 				metadata.contentType = valueNode.value
-			else if (valueNode.type === 'masked')
-				metadata.contentType = String(metadata.maskedValues[valueNode.reference].unmask())
+			else if (valueNode.type === 'reference') {
+				const param = metadata.parameters[valueNode.reference]
+				if (isMask(param)) metadata.contentType = String(param.unmask())
+				else if (param !== undefined) metadata.contentType = String(param)
+			}
 		}
 	}
 	return headers.length > 0 ? headers : undefined
@@ -91,7 +96,7 @@ export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderN
 /**
  * Resolves a list of parts into a single Node.
  * If multiple parts exist, returns a ValueNode.
- * If single part, returns specific TextNode or MaskedNode.
+ * If single part, returns specific TextNode or ReferenceNode.
  */
 export function resolveCompoundNode<T extends ValuesNode | ValueNode = ValuesNode | ValueNode>(parts: TemplatePart[], metadata: Metadata): T {
 	if (parts.length === 0) {
@@ -110,15 +115,28 @@ export function resolveCompoundNode<T extends ValuesNode | ValueNode = ValuesNod
 }
 
 /**
- * Resolves a single template part into a specific Node type
+ * Resolves a single template part into a specific Node type.
+ *
+ * When `part.valueIndex` is set the parameter is already pre-populated in
+ * `metadata.parameters` and a {@link ReferenceNode} is returned directly.
+ * Otherwise (old path, used with ResolvedStringTemplate) masked values are
+ * appended to `metadata.parameters` on first encounter.
  */
 export function resolveSingleNode<T extends ValueNode = ValueNode>(part: TemplatePart, metadata: Metadata): T {
-	if (isMask(part.part)) {
-		const referenceIndex = metadata.appendMaskedValue(part.part)
-		return masked(referenceIndex, part.part.value) as T
+	if (part.valueIndex !== undefined) {
+		// New path: pre-populated parameters, reference by template value index
+		if (isMask(part.part)) return reference(part.valueIndex, 'mask', part.part.value) as T
+		if (part.part === undefined) return reference(part.valueIndex, 'value', '') as T
+		return text(part.part) as T
 	}
 
-	return text(part.part) as T
+	// Old path: append masked values to parameters as encountered
+	if (isMask(part.part)) {
+		const referenceIndex = metadata.appendParameter(part.part)
+		return reference(referenceIndex, 'mask', part.part.value) as T
+	}
+
+	return text(part.part!) as T
 }
 
 function isContentTypeHeader(name: string) {

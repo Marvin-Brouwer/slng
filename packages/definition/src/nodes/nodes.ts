@@ -3,12 +3,12 @@ import { PrimitiveValue } from '../types'
 import type { BaseNodeWithoutComments } from 'estree'
 
 export class Metadata {
-	public maskedValues: Masked<PrimitiveValue>[] = []
+	public parameters: (PrimitiveValue | Masked<PrimitiveValue> | undefined)[] = []
 	public contentType: string | undefined
 	public errors: ErrorNode[] | undefined
 
-	public appendMaskedValue(value: Masked<PrimitiveValue>) {
-		return this.maskedValues.push(value) - 1
+	public appendParameter(value: PrimitiveValue | Masked<PrimitiveValue> | undefined): number {
+		return this.parameters.push(value) - 1
 	}
 }
 
@@ -49,24 +49,33 @@ export const values = (...nodes: ValueNode[]): ValuesNode => ({
 	values: nodes,
 })
 
-export type ValueNode = TextNode | MaskedNode
+export type ValueNode = TextNode | ReferenceNode
 export interface TextNode extends SlingNode {
 	type: 'text'
 	value: string
 }
-export interface MaskedNode extends SlingNode {
-	type: 'masked'
-	mask: string
+export interface ReferenceNode extends SlingNode {
+	type: 'reference'
+	variant: 'value' | 'mask'
+	value: PrimitiveValue
 	reference: number
+	name?: string
 }
 export const text = (value: PrimitiveValue): TextNode => ({
 	type: 'text',
 	value: String(value),
 })
-export const masked = (reference: number, value: PrimitiveValue | Masked<PrimitiveValue>): MaskedNode => ({
-	type: 'masked',
-	reference,
-	mask: isMask(value) ? value.value : String(value),
+export const reference = (
+	index: number,
+	variant: 'value' | 'mask',
+	value: PrimitiveValue,
+	name?: string,
+): ReferenceNode => ({
+	type: 'reference',
+	variant,
+	value,
+	reference: index,
+	...(name !== undefined ? { name } : {}),
 })
 
 export type Node
@@ -74,4 +83,4 @@ export type Node
 	| ValueNode
 	| ValuesNode
 	| TextNode
-	| MaskedNode
+	| ReferenceNode
