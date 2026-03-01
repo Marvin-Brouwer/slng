@@ -8,6 +8,7 @@ import { textPayloadProcessor } from './payload-processor.text'
 export type PayloadProcessor<TNode extends SlingNode = ValueNode | ValuesNode> = {
 	canProcess(mimeType: MimeType): boolean
 	processPayload(metadata: Metadata, parts: (PrimitiveValue | Masked<PrimitiveValue>)[]): TNode | undefined
+	// TODO add displayElement: (HtmlElementConstructor & { node: TNode }) so the rendering can be done per payload processor
 }
 
 const defaultProcessor = textPayloadProcessor

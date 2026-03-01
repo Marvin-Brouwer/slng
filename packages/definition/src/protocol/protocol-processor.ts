@@ -17,6 +17,7 @@ export type ProtocolProcessor<TNode extends SlingNode = SlingNode> = {
 	// When success false an error toast is shown, when success true an error toast is shown if error is not undefined and the panel is updated.
 	// Then maybe also add requestViewElement: (HtmlElementConstructor & TRequest) and responseViewElement: (HtmlElementConstructor & TResponse)
 	// So the rendering is part of the protocol, but I'm not sure about that yet.
+	// Eventually, anyone can add a content type, but not a new protocol, so maybe it's too overengineered and having the display in the extension is fine.
 }
 
 export function getProtocolProcessor<TNode extends SlingNode>(context: SlingContext, template: StringTemplate) {
