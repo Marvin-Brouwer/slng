@@ -8,7 +8,7 @@ import { error, type ErrorNode, type SlingNode } from '../nodes/nodes.js'
 import { getProtocolProcessor } from '../protocol/protocol-processor.js'
 import { SlingDefinition } from '../types'
 
-import { loadModuleFile } from './require'
+import { evalModuleFile, loadModuleFile } from './require'
 
 // https://github.com/babel/babel/issues/13855#issuecomment-945123514
 const traverse = (_traverse as unknown as typeof import('@babel/traverse')).default
@@ -22,10 +22,12 @@ export type AstData = {
 	readonly astNode: Node
 }
 
-export async function loadDefinitionFile(filePath: string) {
+export async function loadDefinitionFile(filePath: string, content?: string) {
 	try {
-		const definitions = await loadModuleFile<Record<string, SlingDefinition>>(filePath)
-		const fileAst = parseDefinitionFile(filePath, Object.keys(definitions))
+		const definitions = content
+			? await evalModuleFile<Record<string, SlingDefinition>>(filePath, content)
+			: await loadModuleFile<Record<string, SlingDefinition>>(filePath)
+		const fileAst = parseDefinitionFile(filePath, Object.keys(definitions), content)
 
 		for (const definitionName in definitions) {
 			const definition = definitions[definitionName]
@@ -48,8 +50,8 @@ export async function loadDefinitionFile(filePath: string) {
 	}
 }
 
-function parseDefinitionFile(filePath: string, exportNames: string[]) {
-	const code = fs.readFileSync(filePath, 'utf8')
+function parseDefinitionFile(filePath: string, exportNames: string[], content?: string) {
+	const code = content ?? fs.readFileSync(filePath, 'utf8')
 
 	// 1. Parse the file into an AST
 	const ast = parse(code, {

@@ -302,9 +302,7 @@ export function parseHttpTemplate(
 	const startLineParts = lines.shift() || []
 	const startLineNumber = lineSourceLines.shift() ?? sourceLine
 	const startLine = parseRequestStart(startLineParts, metadata)
-	if (startLine.type !== 'error') {
-		startLine.loc = pointLoc(startLineNumber, Math.max(0, indent))
-	}
+	startLine.loc = pointLoc(startLineNumber, Math.max(0, indent))
 
 	const emptyLineIndex = lines.findIndex(l => l.length === 0 || (l.length === 1 && l[0].part === ''))
 	const headerLines = emptyLineIndex === -1 ? lines : lines.slice(0, emptyLineIndex)

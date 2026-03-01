@@ -9,6 +9,7 @@ import createContext from './context.js'
 import { launchDebugSession } from './debug/launcher.js'
 import { registerResponsePanel } from './response-panel/response-panel.webview.js'
 import { registerCodeLens } from './visual/codelens.js'
+import { registerDiagnostics } from './visual/diagnostics.js'
 
 export async function activate(vscodeContext: vscode.ExtensionContext) {
 	const context = createContext(vscodeContext)
@@ -34,6 +35,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 	}
 
 	registerCodeLens(context)
+	registerDiagnostics(context)
 
 	registerSendCommand(context, responsePanel)
 	registerUpdateFileCommand(context)
@@ -82,7 +84,25 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 		])
 	}
 
+	let debounceTimer: ReturnType<typeof setTimeout> | undefined
 	vscode.window.onDidChangeActiveTextEditor(runExtension, undefined, vscodeContext.subscriptions)
+	vscode.workspace.onDidSaveTextDocument(
+		async (document) => {
+			if (!document.fileName.endsWith('.mts')) return
+			await runExtension(vscode.window.activeTextEditor)
+		},
+		undefined,
+		vscodeContext.subscriptions,
+	)
+	context.addSubscriptions(
+		vscode.workspace.onDidChangeTextDocument((event) => {
+			if (!event.document.fileName.endsWith('.mts')) return
+			clearTimeout(debounceTimer)
+			// eslint-disable-next-line  @typescript-eslint/no-misused-promises
+			debounceTimer = setTimeout(async () => await runExtension(vscode.window.activeTextEditor), 500)
+		}),
+		{ dispose: () => clearTimeout(debounceTimer) },
+	)
 	await runExtension(vscode.window.activeTextEditor)
 
 	context.log.info('Sling extension activated')

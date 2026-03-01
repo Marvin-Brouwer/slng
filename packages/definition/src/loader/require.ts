@@ -19,12 +19,36 @@ function findPackageJson(startPath: string): string | undefined {
 	return void 0
 }
 
-export function loadModuleFile<TModule>(filePath: string) {
+function createJitiModule(filePath: string) {
 	const fileUrl = pathToFileURL(filePath).href
-	const packagedir = findPackageJson(filePath)
+	const packageDirectory = findPackageJson(filePath)
 
 	// TODO debug only true when configured
-	const jitiModule = createJiti(packagedir ?? fileUrl, { debug: true })
+	const debugJiti = true
+	return createJiti(packageDirectory ?? fileUrl, {
+		debug: debugJiti,
+		moduleCache: false,
+		sourceMaps: debugJiti,
+	})
+}
 
-	return jitiModule.import<TModule>(fileUrl)
+export function loadModuleFile<TModule>(filePath: string) {
+	const fileUrl = pathToFileURL(filePath).href
+	return createJitiModule(filePath).import<TModule>(fileUrl)
+}
+
+// TODO, not happy with the temp file, there has to be a way to load jiti evalModule with top level await
+export async function evalModuleFile<TModule>(filePath: string, content: string): Promise<TModule> {
+	const ext = path.extname(filePath)
+	const base = path.basename(filePath, ext)
+	const tempPath = path.join(path.dirname(filePath), `${base}.tmp${ext}`)
+	const tempUrl = pathToFileURL(tempPath).href
+
+	await fs.promises.writeFile(tempPath, content, 'utf8')
+	try {
+		return await createJitiModule(tempPath).import<TModule>(tempUrl)
+	}
+	finally {
+		await fs.promises.unlink(tempPath).catch(() => { /* already deleted */ })
+	}
 }

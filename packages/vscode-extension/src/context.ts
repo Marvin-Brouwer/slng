@@ -43,9 +43,13 @@ export default function createContext(context: vscode.ExtensionContext): Extensi
 
 function sanitize(arguments_: unknown[]): string {
 	return arguments_
-		.map(argument => typeof argument === 'object'
-			? JSON.stringify(argument, (k: string, v: unknown) => maskTransformer.displayReplacer(k, v), 2)
-			: String(argument as string | number | boolean))
+		.map(argument => {
+			if(argument instanceof Error)
+				return argument.toString()
+			if(typeof argument === 'object')
+				return JSON.stringify(argument, (k: string, v: unknown) => maskTransformer.displayReplacer(k, v), 2)
+			return  String(argument as string | number | boolean)
+		})
 		.join(' ')
 }
 

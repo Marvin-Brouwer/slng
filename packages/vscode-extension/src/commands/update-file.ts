@@ -3,6 +3,7 @@ import { isSlingDefinition, loadDefinitionFile } from '@slng/definition/extensio
 import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
+import { clearDiagnostics, updateDiagnostics } from '../visual/diagnostics.js'
 
 const updateFileCid = 'sling.update-file'
 
@@ -25,13 +26,16 @@ function updateFileCommand(context: ExtensionContext): vscode.Disposable {
 		}
 		context.log.debug('updateFile')
 
-		const definitions = await loadDefinitionFile(activeEditor.document.uri.fsPath)
+		const definitions = await loadDefinitionFile(activeEditor.document.uri.fsPath, activeEditor.document.getText())
 
 		if (definitions instanceof Error) {
 			context.log.error('Error while parsing definition', definitions)
+			clearDiagnostics(activeEditor.document.uri)
 			return
 		}
 		if (!definitions) return
+
+		updateDiagnostics(activeEditor.document.uri, activeEditor.document, definitions)
 
 		const decorations = Object
 			.values(definitions)
