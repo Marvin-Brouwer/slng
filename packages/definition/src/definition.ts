@@ -1,11 +1,10 @@
 import { createHash } from 'node:crypto'
 
-import { buildHttpResponse } from './http/http-builder/http-builder.js'
-import { parseHttpTemplate } from './http/http-parser/http-parser.request.js'
-import { body, document, HttpDocument, response } from './http/http.nodes'
-import { AstData } from './loader/file-loader.js'
 import { isMask } from './masking/mask.js'
-import { Metadata } from './nodes/nodes.js'
+import { Metadata } from './nodes/metadata.js'
+import { error, type ErrorNode, NodeError, text, type ValueNode, type ValuesNode } from './nodes/nodes.js'
+import { buildHttpResponse } from './protocol/http/http-builder/http-builder.js'
+import { body, document, HttpDocument, response } from './protocol/http/http.nodes'
 import { buildRequest } from './request/request-builder.js'
 import { resolveTemplateDependencies } from './template-reader.js'
 import {
@@ -24,7 +23,6 @@ import {
 	type ParsedHttpRequest,
 	StringTemplate,
 } from './types.js'
-import { error, NodeError, text, type ValueNode, type ValuesNode } from './nodes/nodes.js'
 
 interface CachedResponse {
 	response: SlingResponse
@@ -43,20 +41,19 @@ export function createDefinition(
 
 	const internals: SlingInternals = {
 		version: 'v1',
+		context,
 		tsAst: undefined!, // added by the runtime
 		template,
 		resolvedTemplate: undefined!, // added on request
-		protocolAst: undefined,
+		protocolAst: undefined!, // added by the runtime
 	}
 
 	const definition: SlingDefinition = {
 		getInternals: () => internals,
-		buildProtocolAst(tsAst: AstData) {
-			internals.protocolAst = parseHttpTemplate(context, template, tsAst.literalLocation) ?? undefined
-		},
 		id() {
 			// This SHOULD never happen
 			if (!internals.tsAst) return '<unknown>'
+			if (!internals.protocolAst) return '<unknown>'
 			if (!internals.resolvedTemplate) return '<unknown>'
 
 			return createHash('sha256')
@@ -232,14 +229,14 @@ function createDataAccessor(
  * parameter value so the display AST is self-contained (no metadata lookup
  * needed in renderers).
  */
-function patchValueNode(node: ValueNode | ValuesNode, params: Metadata['parameters']): ValueNode | ValuesNode {
+function patchValueNode(node: ValueNode | ValuesNode, parameters: Metadata['parameters']): ValueNode | ValuesNode {
 	if (node.type === 'reference' && node.variant === 'value') {
-		const param = params[node.reference]
-		if (param !== undefined && param !== null && !isMask(param))
-			return { ...node, value: String(param) }
+		const parameter = parameters[node.reference]
+		if (parameter !== undefined && parameter !== null && !isMask(parameter))
+			return { ...node, value: String(parameter) }
 	}
 	if (node.type === 'values')
-		return { ...node, values: node.values.map(v => patchValueNode(v, params) as ValueNode) }
+		return { ...node, values: node.values.map(v => patchValueNode(v, parameters) as ValueNode) }
 	return node
 }
 
@@ -248,26 +245,26 @@ function patchValueNode(node: ValueNode | ValuesNode, params: Metadata['paramete
  * patched to carry their resolved display value, so renderers need not
  * consult `metadata.parameters`.
  */
-function fillDocumentValueRefs(doc: HttpDocument): HttpDocument {
-	let { startLine } = doc
+function fillDocumentValueReferences(document_: HttpDocument): HttpDocument {
+	let { startLine } = document_
 	if (startLine.type === 'request' && startLine.url.type !== 'error') {
-		startLine = { ...startLine, url: patchValueNode(startLine.url, doc.metadata.parameters) }
+		startLine = { ...startLine, url: patchValueNode(startLine.url, document_.metadata.parameters) }
 	}
 
-	const headers = doc.headers?.map(h => {
+	const headers = document_.headers?.map((h) => {
 		if (h.type === 'error' || h.value.type === 'error') return h
-		return { ...h, value: patchValueNode(h.value as ValueNode | ValuesNode, doc.metadata.parameters) }
+		return { ...h, value: patchValueNode(h.value, document_.metadata.parameters) }
 	})
 
-	let { body } = doc
+	let { body } = document_
 	if (body) {
 		const v = body.value
 		if (v.type === 'text' || v.type === 'reference' || v.type === 'values') {
-			body = { ...body, value: patchValueNode(v as ValueNode | ValuesNode, doc.metadata.parameters) }
+			body = { ...body, value: patchValueNode(v as ValueNode | ValuesNode, document_.metadata.parameters) }
 		}
 	}
 
-	return { ...doc, startLine, headers, body }
+	return { ...document_, startLine, headers, body }
 }
 
 type FetchError = Error & {
@@ -291,10 +288,11 @@ async function executeRequest(
 	const internals = definition.getInternals()
 
 	// Ensure protocolAst is available (may be absent when used without a file loader)
-	if (!internals.protocolAst) definition.buildProtocolAst(internals.tsAst)
-	const protocolAst = internals.protocolAst!
-	if (protocolAst.type === 'error') return new NodeError(protocolAst)
+	const rawProtocolAst = internals.protocolAst
+	if (rawProtocolAst.type === 'error') return new NodeError(rawProtocolAst as ErrorNode)
+	const protocolAst = rawProtocolAst as HttpDocument
 
+	// TODO, not sure if this is necessary, seems over-engineered
 	// Fill DataAccessor slots in metadata.parameters with the resolved values.
 	// We work on a shallow-cloned metadata so the cached protocolAst stays pristine.
 	const execMetadata = new Metadata()
@@ -303,13 +301,13 @@ async function executeRequest(
 	execMetadata.errors = protocolAst.metadata.errors
 
 	const resolved = internals.resolvedTemplate!
-	for (let i = 0; i < resolved.values.length; i++) {
-		if (execMetadata.parameters[i] === undefined && resolved.values[i] !== undefined) {
-			execMetadata.parameters[i] = resolved.values[i]
+	for (let index = 0; index < resolved.values.length; index++) {
+		if (execMetadata.parameters[index] === undefined && resolved.values[index] !== undefined) {
+			execMetadata.parameters[index] = resolved.values[index]
 		}
 	}
 
-	const templateAst = fillDocumentValueRefs({ ...protocolAst, metadata: execMetadata })
+	const templateAst = fillDocumentValueReferences({ ...protocolAst, metadata: execMetadata })
 	const fetchRequest = buildRequest(templateAst, internals.resolvedTemplate)
 	if (fetchRequest instanceof Error) throw fetchRequest
 
@@ -385,7 +383,7 @@ async function performFetch(
 		return await fetch(parsed.url, init)
 	}
 	catch (error) {
-		if (error instanceof TypeError && error.cause && Object.hasOwn(error.cause, 'code')) {
+		if (error instanceof TypeError && error.cause && Object.hasOwn(error.cause as object, 'code')) {
 			return error.cause as FetchError
 		}
 		throw error

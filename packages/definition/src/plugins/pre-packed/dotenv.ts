@@ -3,8 +3,9 @@ import path from 'node:path'
 
 import { parse } from 'dotenv'
 
-import type { ParameterType } from '../../parameters.js'
 import { plugin, SlingPlugin } from '../plugin.js'
+
+import type { ParameterType } from '../../parameters.js'
 
 export interface DotEnvOptions {
 	/** Directory to resolve `.env` files from. Defaults to `process.cwd()`. */
@@ -63,7 +64,7 @@ export function useDotEnv(...arguments_: [DotEnvOptions] | string[]): SlingPlugi
 
 		config: {
 			directory,
-			environments
+			environments,
 		},
 
 		setupEnvironment(context) {
@@ -88,7 +89,7 @@ export function useDotEnv(...arguments_: [DotEnvOptions] | string[]): SlingPlugi
 				context.envSets.set(environment, merged)
 				context.environments.push(environment)
 			}
-		}
+		},
 	})
 }
 

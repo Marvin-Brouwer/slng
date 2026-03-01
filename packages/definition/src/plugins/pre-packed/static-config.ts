@@ -1,5 +1,6 @@
-import type { ParameterType } from '../../parameters.js'
 import { plugin, SlingPlugin } from '../plugin.js'
+
+import type { ParameterType } from '../../parameters.js'
 
 /**
  * Provide static configuration values for one or more environments.
@@ -32,7 +33,6 @@ export function useConfig(environmentConfigs: Record<string, Record<string, Para
 		config: environmentConfigs,
 
 		setupEnvironment(context) {
-
 			for (const environment in environmentConfigs) {
 				const currentEnvironment = context.envSets.get(environment)
 

@@ -1,8 +1,8 @@
+import { httpNodes } from '@slng/definition/nodes'
+
 import { SimpleElement } from '../element-helper'
 import { assertNotError } from '../node-helper'
 import { resolveElements } from '../node-helper.component'
-
-import type { httpNodes } from '@slng/definition'
 
 export class HttpHeaders extends SimpleElement {
 	static tagName = 'header-display'

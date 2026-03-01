@@ -1,8 +1,7 @@
-import { plugin, SlingPlugin } from '../../plugin.js'
 import { JsonOptions, jsonPayloadProcessor } from '../../../payload/payload-processor.json.js'
+import { plugin, SlingPlugin } from '../../plugin.js'
 
 export function useJson(options: JsonOptions): SlingPlugin {
-
 	return plugin('sling:payload:json', {
 
 		config: options,

@@ -1,12 +1,12 @@
-import { HttpDocument } from './http/http.nodes.js'
 import { AstData } from './loader/file-loader.js'
 import { namedMask, Masked, MaskedDataAccessor } from './masking/mask'
 import { secret } from './masking/secret'
 import { sensitive } from './masking/sensitive'
 import { ErrorNode, SlingNode } from './nodes/nodes.js'
+import { PayloadProcessor } from './payload/payload-processor.js'
+import { ProtocolProcessor } from './protocol/protocol-processor.js'
 
 import type { ParameterType, SlingParameters } from './parameters.js'
-import { PayloadProcessor } from './payload/payload-processor.js'
 
 // TODO, these types should be closer to their implementation.
 // Errors and base types may have their own files in ./types/, at least a file per type.
@@ -157,6 +157,9 @@ export interface ParsedHttpRequest {
 export type SlingInternals = {
 	readonly version: 'v1'
 
+	/** The sling context, available for use by file-loader.ts when building protocolAst */
+	readonly context: SlingContext
+
 	/** File AST information for cross referencing in editor-plugins, added when loading the file */
 	readonly tsAst: AstData
 
@@ -165,13 +168,7 @@ export type SlingInternals = {
 	/** The resolved template parts, for re-rendering with masking. */
 	resolvedTemplate: ResolvedStringTemplate | undefined
 
-	/**
-	 * The parsed HTTP + payload AST built from the static template strings at load time.
-	 * Structural nodes carry source `loc` data. DataAccessor value slots are stored as
-	 * `undefined` in `metadata.parameters` and filled at execute time.
-	 * Set by {@link SlingDefinition.buildProtocolAst}.
-	 */
-	protocolAst: HttpDocument | ErrorNode | undefined
+	readonly protocolAst: SlingNode | ErrorNode
 }
 
 // ── Options ──────────────────────────────────────────────────
@@ -231,7 +228,7 @@ export interface SlingResponse {
 	/** Total duration in milliseconds. */
 	readonly duration: number
 
-	readonly responseAst: HttpDocument
+	readonly responseAst: SlingNode
 	readonly request: RequestReference
 }
 
@@ -244,7 +241,7 @@ export type RequestReference = {
 	/** The export name of the request definition that initiated the request */
 	readonly name: string
 	/** The resolved template parts, for re-rendering with masking. */
-	readonly templateAst: HttpDocument
+	readonly templateAst: SlingNode
 }
 
 /**
@@ -257,12 +254,6 @@ export interface SlingDefinition {
 	id(): string
 	/** Access the definition's internal data (parsed request, template parts, etc.). */
 	getInternals(): SlingInternals
-	/**
-	 * Parse the HTTP template from static strings and store the result as
-	 * {@link SlingInternals.protocolAst}. Called by the loader after setting
-	 * {@link SlingInternals.tsAst} so that source line numbers can be attached to nodes.
-	 */
-	buildProtocolAst(tsAst: AstData): void
 	/** Execute the request, resolving all lazy interpolations. */
 	execute: (options?: ExecuteOptions) => Promise<SlingResponse | HttpError>
 	/**
@@ -316,6 +307,7 @@ export interface SlingContext {
 	/** All loaded environment variables, keyed by environment name. */
 	readonly envSets: Map<string, Record<string, ParameterType | undefined>>
 	readonly payloadProcessors: Map<string, PayloadProcessor<SlingNode>>
+	readonly protocolProcessors: Map<string, ProtocolProcessor<SlingNode>>
 	/** Names of available environments. */
 	readonly environments: string[]
 	/** The currently active environment. */

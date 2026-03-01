@@ -5,6 +5,7 @@ import { sensitive } from './masking/sensitive.js'
 import { createSlingParameters } from './parameters.js'
 import { loadPlugins } from './plugins/plugin-loader.js'
 import { SlingPlugin } from './plugins/plugin.js'
+import { httpProtocolProcessor } from './protocol/http/http-protocol-processor.js'
 import { readHttpTemplate } from './template-reader.js'
 import {
 	type ConfiguredSling,
@@ -44,15 +45,16 @@ import {
  * ```
  */
 export async function sling(...plugins: SlingPlugin[]): Promise<ConfiguredSling> {
-
 	const context: SlingContext = {
 		envSets: new Map(),
 		payloadProcessors: new Map(),
+		protocolProcessors: new Map(),
 		environments: [],
 		activeEnvironment: undefined,
 	}
 
 	await loadPlugins(context, plugins)
+	context.protocolProcessors.set('http', httpProtocolProcessor)
 
 	const templateFunction = function slingTemplate(
 		strings: TemplateStringsArray,

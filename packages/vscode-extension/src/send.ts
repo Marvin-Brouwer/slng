@@ -1,5 +1,6 @@
 import { SlingResponse } from '@slng/definition'
 import { isSlingDefinition, loadDefinitionFile } from '@slng/definition/extension'
+import { httpNodes } from '@slng/definition/nodes'
 import * as vscode from 'vscode'
 
 export async function sendRequest(
@@ -55,10 +56,11 @@ export async function sendRequest(
 			// Negative status is fetch error
 			if (result.status <= 0) {
 				// TODO get body text or use result.statusText
-				vscode.window.showWarningMessage(JSON.stringify(result.responseAst.body.value))
+				// TODO maybe a more generic response model would be better
+				vscode.window.showWarningMessage(JSON.stringify((result.responseAst as httpNodes.HttpDocument).body.value))
 				channel.error(result.statusText, result)
 			}
-			// Negative status is fetch error
+			// 5xx is error response
 			if (Math.round(result.status / 100) === 5) {
 				vscode.window.showWarningMessage(`${result.status} ${result.statusText}`)
 				channel.error(result.statusText, result)

@@ -1,4 +1,4 @@
-import type { httpNodes, nodes } from '@slng/definition'
+import { nodes, httpNodes } from '@slng/definition/nodes'
 
 export function assertResponse(node: httpNodes.HttpNode): asserts node is httpNodes.ResponseNode {}
 export function assertRequest(node: httpNodes.HttpNode): asserts node is httpNodes.RequestNode {}

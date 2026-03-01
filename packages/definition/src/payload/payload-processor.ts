@@ -1,8 +1,9 @@
 import { Masked } from '../masking/mask'
+import { Metadata } from '../nodes/metadata'
+import { SlingNode, ValueNode, ValuesNode } from '../nodes/nodes'
 import { MimeType, PrimitiveValue, SlingContext } from '../types'
 
 import { textPayloadProcessor } from './payload-processor.text'
-import { Metadata, SlingNode, ValueNode, ValuesNode } from '../nodes/nodes'
 
 export type PayloadProcessor<TNode extends SlingNode = ValueNode | ValuesNode> = {
 	canProcess(mimeType: MimeType): boolean
@@ -10,11 +11,11 @@ export type PayloadProcessor<TNode extends SlingNode = ValueNode | ValuesNode> =
 }
 
 const defaultProcessor = textPayloadProcessor
-export function getProcessor<TNode extends SlingNode>(context: SlingContext, mimeType: MimeType | undefined){
+export function getProcessor<TNode extends SlingNode>(context: SlingContext, mimeType: MimeType | undefined) {
 	if (!mimeType) return defaultProcessor
 
 	const processor = [...context.payloadProcessors.values()]
-		.find((processor) => processor.canProcess(mimeType)) as PayloadProcessor<TNode>
+		.find(processor => processor.canProcess(mimeType)) as PayloadProcessor<TNode>
 
-	return processor ?? defaultProcessor;
+	return processor ?? defaultProcessor
 }

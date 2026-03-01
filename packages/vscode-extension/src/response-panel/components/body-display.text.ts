@@ -3,7 +3,7 @@ import { addComponent, createElement } from '../element-helper'
 import { BodyRenderer } from './body-display'
 import { MaskedValue } from './masked-value'
 
-import type { httpNodes, nodes } from '@slng/definition'
+import type { httpNodes, nodes } from '@slng/definition/nodes'
 
 function renderTextAst(container: HTMLElement, node: nodes.ValueNode | nodes.ValuesNode): HTMLElement {
 	switch (node.type) {
@@ -14,7 +14,8 @@ function renderTextAst(container: HTMLElement, node: nodes.ValueNode | nodes.Val
 		case 'reference': {
 			if (node.variant === 'mask') {
 				addComponent(container, MaskedValue, { mask: String(node.value), reference: node.reference })
-			} else if (node.value !== '') {
+			}
+			else if (node.value !== '') {
 				container.textContent += escapeHtml(String(node.value))
 			}
 			return container

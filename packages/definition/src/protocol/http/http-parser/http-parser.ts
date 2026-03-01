@@ -1,6 +1,7 @@
-import { isMask, Masked } from '../../masking/mask'
-import { error, ErrorNode, Metadata, reference, text, ValueNode, values, ValuesNode } from '../../nodes/nodes'
-import { PrimitiveValue } from '../../types'
+import { isMask, Masked } from '../../../masking/mask'
+import { Metadata } from '../../../nodes/metadata'
+import { error, ErrorNode, reference, text, ValueNode, values, ValuesNode } from '../../../nodes/nodes'
+import { MimeType, PrimitiveValue } from '../../../types'
 import { header, HeaderNode } from '../http.nodes'
 
 export type TemplateLines = TemplateLine[]
@@ -80,11 +81,11 @@ export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderN
 
 		if (isContentTypeHeader(nameNode.value)) {
 			if (valueNode.type === 'text')
-				metadata.contentType = valueNode.value
+				metadata.contentType = valueNode.value as MimeType
 			else if (valueNode.type === 'reference') {
-				const param = metadata.parameters[valueNode.reference]
-				if (isMask(param)) metadata.contentType = String(param.unmask())
-				else if (param !== undefined) metadata.contentType = String(param)
+				const parameter = metadata.parameters[valueNode.reference]
+				if (isMask(parameter)) metadata.contentType = String(parameter.unmask()) as MimeType
+				else if (parameter !== undefined) metadata.contentType = String(parameter) as MimeType
 			}
 		}
 	}

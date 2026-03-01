@@ -1,5 +1,5 @@
 import { isMask, Masked } from '../../masking/mask'
-import { SlingNode } from '../../sling-node'
+import { SlingNode } from '../../nodes/nodes'
 import { PrimitiveValue } from '../../types'
 
 export type LexerToken = ValueToken | PunctuationToken | MaskedToken
@@ -24,7 +24,7 @@ const isWhitespace = (character: string) => /\s/.test(character)
 const isPunctuation = (character: string): character is typeof punctuationCharacters[number] =>
 	punctuationCharacters.includes(character as typeof punctuationCharacters[number])
 
-type Pos = { line: number; column: number }
+type Pos = { line: number, column: number }
 
 function advance(pos: Pos, char: string): Pos {
 	return char === '\n'
@@ -38,7 +38,7 @@ function loc(start: Pos, end: Pos) {
 
 export function lexJson(
 	parts: (PrimitiveValue | Masked<PrimitiveValue>)[],
-	startLoc?: { line: number; column: number },
+	startLoc?: { line: number, column: number },
 ) {
 	const tokens = new Array<LexerToken>()
 	let stringMode = false

@@ -4,10 +4,10 @@ import { Metadata, ValueNode, ValuesNode } from '../nodes/nodes'
 export function resolveString(node: ValueNode | ValuesNode, metadata: Metadata): string {
 	if (node.type === 'text') return node.value
 	if (node.type === 'reference') {
-		const param = metadata.parameters[node.reference]
-		if (param === undefined) return ''
-		if (isMask(param)) return String(param.unmask())
-		return String(param)
+		const parameter = metadata.parameters[node.reference]
+		if (parameter === undefined) return ''
+		if (isMask(parameter)) return String(parameter.unmask())
+		return String(parameter)
 	}
 
 	return node.values.map(value => resolveString(value, metadata)).join('')

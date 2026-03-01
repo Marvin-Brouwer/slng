@@ -1,7 +1,8 @@
 import { resolveString } from '../display/node-helpers'
-import { HeaderNode, HttpDocument } from '../http/http.nodes'
 import { isPrimitiveMask } from '../masking/mask'
-import { ErrorNode, Metadata, NodeError } from '../nodes/nodes'
+import { Metadata } from '../nodes/metadata'
+import { ErrorNode, NodeError } from '../nodes/nodes'
+import { HeaderNode, HttpDocument } from '../protocol/http/http.nodes'
 import { ParsedHttpRequest, ResolvedStringTemplate } from '../types'
 
 export function buildRequest(document: HttpDocument, resolvedTemplate: ResolvedStringTemplate | undefined): ParsedHttpRequest | Error {

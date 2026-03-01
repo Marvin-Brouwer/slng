@@ -7,6 +7,9 @@ export { loadDefinitionFile, type AstData } from '../loader/file-loader.js'
 export { isSlingDefinition } from '../definition.js'
 export { isJsonContentType } from '../payload/payload-processor.json.js'
 
+export { NodeError } from '../nodes/nodes.js'
+export { Metadata } from '../nodes/metadata.js'
+
 export type {
 	SlingInternals,
 	SlingInterpolation,

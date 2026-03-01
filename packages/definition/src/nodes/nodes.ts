@@ -1,22 +1,10 @@
-import { isMask, Masked } from '../masking/mask'
-import { PrimitiveValue } from '../types'
+import type { PrimitiveValue } from '../types'
 import type { BaseNodeWithoutComments } from 'estree'
-
-export class Metadata {
-	public parameters: (PrimitiveValue | Masked<PrimitiveValue> | undefined)[] = []
-	public contentType: string | undefined
-	public errors: ErrorNode[] | undefined
-
-	public appendParameter(value: PrimitiveValue | Masked<PrimitiveValue> | undefined): number {
-		return this.parameters.push(value) - 1
-	}
-}
 
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 
 /** This is just {@link BaseNodeWithoutComments}, re-exported so extensions don't need to install `estree` */
 export interface SlingNode extends BaseNodeWithoutComments {}
-
 
 type CommandString = `sling.${string}`
 export interface ErrorNode extends SlingNode {
@@ -75,7 +63,7 @@ export const reference = (
 	variant,
 	value,
 	reference: index,
-	...(name !== undefined ? { name } : {}),
+	...(name === undefined ? {} : { name }),
 })
 
 export type Node

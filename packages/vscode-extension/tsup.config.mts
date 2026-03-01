@@ -11,7 +11,12 @@ export default defineConfig([
 		dts: true,
 		clean: true,
 		sourcemap: true,
-		external: ['vscode'],
+		platform: 'node',
+		removeNodeProtocol: false,
+		external: [
+			/^node:.*/,
+			'vscode',
+		],
 		define: {
 			__DEV__: JSON.stringify(isDevelopment),
 		},
@@ -24,7 +29,8 @@ export default defineConfig([
 		dts: true,
 		sourcemap: 'inline',
 		platform: 'browser',
-		treeshake: true,
+		removeNodeProtocol: false,
+		treeshake: { moduleSideEffects: 'no-external' },
 		cjsInterop: true,
 		shims: true,
 		publicDir: './src/response-panel/public',

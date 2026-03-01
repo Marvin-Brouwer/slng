@@ -8,13 +8,15 @@ const segmenter = new Intl.Segmenter()
 function displayWidth(segment: string): 1 | 2 {
 	const cp = segment.codePointAt(0) ?? 0
 	return (
-		(cp >= 0x1100 && cp <= 0x115F) || // Hangul
-		(cp >= 0x2E80 && cp <= 0x303E) || // CJK Radicals
-		(cp >= 0x3040 && cp <= 0x33FF) || // Japanese
-		(cp >= 0xAC00 && cp <= 0xD7A3) || // Hangul Syllables
-		(cp >= 0xFF01 && cp <= 0xFF60) || // Full-width Forms
-		(cp >= 0x4E00 && cp <= 0x9FFF)    // CJK Unified
-	) ? 2 : 1
+		(cp >= 0x11_00 && cp <= 0x11_5F) // Hangul
+		|| (cp >= 0x2E_80 && cp <= 0x30_3E) // CJK Radicals
+		|| (cp >= 0x30_40 && cp <= 0x33_FF) // Japanese
+		|| (cp >= 0xAC_00 && cp <= 0xD7_A3) // Hangul Syllables
+		|| (cp >= 0xFF_01 && cp <= 0xFF_60) // Full-width Forms
+		|| (cp >= 0x4E_00 && cp <= 0x9F_FF) // CJK Unified
+	)
+		? 2
+		: 1
 }
 
 function maskForSegment(segment: string): string {

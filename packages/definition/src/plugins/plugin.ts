@@ -1,6 +1,6 @@
 import { SlingContext } from '../types'
 
-export type EnvironmentContext = Pick<SlingContext, 'envSets' |  'environments'>
+export type EnvironmentContext = Pick<SlingContext, 'envSets' | 'environments'>
 export type ProcessorContext = Pick<SlingContext, 'payloadProcessors'>
 
 /**
@@ -17,12 +17,11 @@ export type PluginOptions<TConfig extends object> = PluginOptionsNoConfig & {
 	config: TConfig
 }
 
+function noop() {}
+
 export function plugin(name: `${string}:${string}`, options: PluginOptionsNoConfig): SlingPlugin
 export function plugin<TConfig extends object>(name: `${string}:${string}`, options: PluginOptions<TConfig>): SlingPlugin
-export function plugin<TConfig extends object | never>(name: `${string}:${string}`, options: PluginOptions<TConfig> | PluginOptionsNoConfig): SlingPlugin{
-
-	function noop() {}
-
+export function plugin<TConfig extends object>(name: `${string}:${string}`, options: PluginOptions<TConfig> | PluginOptionsNoConfig): SlingPlugin {
 	return {
 		name,
 		...options,

@@ -2,6 +2,7 @@ import { HttpError } from '@slng/definition'
 
 import type { LoadedDefinition } from './loader.js'
 import type { SlingResponse, ExecuteOptions } from '@slng/definition'
+import type { httpNodes } from '@slng/definition/nodes'
 
 type AnyValueNode
 	= | { type: 'text', value: string }
@@ -64,9 +65,10 @@ export async function runDefinitions(
 			const result = await definition.execute(executeOptions)
 			if (result instanceof HttpError) throw result
 			const response = result
-			const startLine = response.request.templateAst.startLine
+			const templateAst = response.request.templateAst as unknown as httpNodes.HttpDocument
+			const startLine = templateAst.startLine
 			const method = startLine.type === 'request' && startLine.method.type === 'text' ? startLine.method.value : '?'
-			const url = startLine.type === 'request' ? resolveValueNode(startLine.url) : '?'
+			const url = startLine.type === 'request' ? resolveValueNode(startLine.url as unknown as AnyValueNode) : '?'
 			printHeader(name, method, url, sourcePath)
 			printResponse(name, response, options.verbose)
 			results.push({ name, sourcePath, response })
@@ -126,21 +128,22 @@ function printResponse(
 		`  ${statusIcon} ${response.status} ${response.statusText} (${duration})`,
 	)
 
+	const responseAst = response.responseAst as unknown as httpNodes.HttpDocument
 	if (verbose) {
 		console.warn('')
 		console.warn('  Response Headers:')
-		for (const headerNode of response.responseAst.headers ?? []) {
+		for (const headerNode of responseAst.headers ?? []) {
 			if (headerNode.type !== 'header') continue
 			const name = headerNode.name.type === 'text' ? headerNode.name.value : '?'
-			const value = resolveValueNode(headerNode.value)
+			const value = resolveValueNode(headerNode.value as unknown as AnyValueNode)
 			console.warn(`    ${name}: ${value}`)
 		}
 	}
 
 	// Body always goes to stdout so it can be piped
-	const bodyNode = response.responseAst.body
+	const bodyNode = responseAst.body
 	if (bodyNode) {
-		const bodyText = resolveValueNode(bodyNode.value as AnyValueNode)
+		const bodyText = resolveValueNode(bodyNode.value as unknown as AnyValueNode)
 		try {
 			// Pretty-print JSON
 			const parsed: unknown = JSON.parse(bodyText)

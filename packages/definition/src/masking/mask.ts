@@ -1,4 +1,3 @@
-
 import { isTaggedSerialized, SERIALIZABLE_TAG, serializableSymbol } from '../serializable'
 import { DataAccessor, HttpError, InvalidJsonPathError, PrimitiveValue } from '../types'
 
@@ -109,7 +108,7 @@ function createAccessorMask(original: DataAccessor, mask: string): MaskedDataAcc
 
 function isAsyncMask(mask: Masked<unknown>) {
 	// We don't care about binding, it's just a type check
-	// eslint-disable-next-line @typescript-eslint/unbound-method
+
 	return mask.unmask.constructor.name === 'AsyncFunction'
 }
 

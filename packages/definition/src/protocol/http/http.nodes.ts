@@ -1,5 +1,7 @@
-import { ErrorNode, Metadata, Node, SlingNode, TextNode, ValueNode, ValuesNode } from '../nodes/nodes'
+import { MimeType } from '../../types'
 
+import type { Metadata } from '../../nodes/metadata'
+import type { ErrorNode, Node, SlingNode, TextNode, ValueNode, ValuesNode } from '../../nodes/nodes'
 
 export interface HttpDocument extends SlingNode {
 	type: 'http'
@@ -87,10 +89,10 @@ export const header = (name: TextNode | ErrorNode, value: ValueNode | ValuesNode
 
 export interface BodyNode<T extends SlingNode = SlingNode> extends SlingNode {
 	type: 'body'
-	contentType: string
+	contentType: MimeType
 	value: T
 }
-export const body = <T extends SlingNode = SlingNode>(contentType: string, value: T): BodyNode => ({
+export const body = <T extends SlingNode = SlingNode>(contentType: MimeType, value: T): BodyNode => ({
 	type: 'body',
 	contentType,
 	value,

@@ -95,8 +95,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 		}
 
 		const referencedResponse = this.context.state.get<SlingResponse>(reference)
-		if (!referencedResponse) this.view.webview.html = this.noSelectionView()
-		else this.view.webview.html = this.responseView(referencedResponse)
+		this.view.webview.html = referencedResponse ? this.responseView(referencedResponse) : this.noSelectionView()
 	}
 
 	private wrapHtml(html: string) {

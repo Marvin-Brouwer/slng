@@ -1,8 +1,8 @@
-import { Masked } from '../../_module'
-import { isPrimitiveMask } from '../../masking/mask'
-import { error, ErrorNode, Metadata, text, ValueNode, ValuesNode } from '../../nodes/nodes'
-import { getProcessor } from '../../payload/payload-processor'
-import { MimeType, PrimitiveValue, ResolvedStringTemplate, SlingContext, StringTemplate } from '../../types'
+import { isPrimitiveMask, Masked } from '../../../masking/mask'
+import { Metadata } from '../../../nodes/metadata'
+import { error, ErrorNode, text, ValueNode, ValuesNode } from '../../../nodes/nodes'
+import { getProcessor } from '../../../payload/payload-processor'
+import { PrimitiveValue, ResolvedStringTemplate, SlingContext, StringTemplate } from '../../../types'
 import {
 	allowedProtocols,
 	body,
@@ -189,11 +189,8 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 	)
 }
 
-
-
 export function parseHttpBody(context: SlingContext, metadata: Metadata, textBody: (PrimitiveValue | Masked<PrimitiveValue> | undefined)[]): BodyNode | undefined {
-
-	const processor = getProcessor<ValueNode | ValuesNode>(context, metadata.contentType as MimeType)
+	const processor = getProcessor<ValueNode | ValuesNode>(context, metadata.contentType)
 	const contentType = metadata.contentType ?? 'text/undefined'
 
 	// Filter undefined slots — DataAccessor values are unknown at parse time
@@ -217,7 +214,7 @@ export function parseHttpBody(context: SlingContext, metadata: Metadata, textBod
 export function parseHttpTemplate(
 	context: SlingContext,
 	template: StringTemplate,
-	literalLocation: { start: { line: number; column: number }; end: { line: number; column: number } },
+	literalLocation: { start: { line: number, column: number }, end: { line: number, column: number } },
 ): HttpDocument | ErrorNode | undefined {
 	const { strings, values } = template
 	const metadata = new Metadata()
@@ -234,9 +231,11 @@ export function parseHttpTemplate(
 	for (const value of values) {
 		if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
 			metadata.parameters.push(value)
-		} else if (isPrimitiveMask(value)) {
+		}
+		else if (isPrimitiveMask(value)) {
 			metadata.parameters.push(value)
-		} else {
+		}
+		else {
 			metadata.parameters.push(undefined)
 		}
 	}
@@ -289,27 +288,29 @@ export function parseHttpTemplate(
 		if (index < values.length) {
 			const value = values[index]
 			const isPrim = typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-			const partValue: PrimitiveValue | Masked<PrimitiveValue> | undefined =
-				isPrim ? value as PrimitiveValue
-				: isPrimitiveMask(value) ? value
-				: undefined
+			const partValue: PrimitiveValue | Masked<PrimitiveValue> | undefined
+				= isPrim
+					? value as PrimitiveValue
+					: (isPrimitiveMask(value)
+							? value
+							: undefined)
 			lines.at(-1)!.push({ part: partValue, valueIndex: index })
 		}
 	}
 
 	// 3. Segment the Lines
 	const startLineParts = lines.shift() || []
-	const startLineNum = lineSourceLines.shift() ?? sourceLine
+	const startLineNumber = lineSourceLines.shift() ?? sourceLine
 	const startLine = parseRequestStart(startLineParts, metadata)
 	if (startLine.type !== 'error') {
-		startLine.loc = pointLoc(startLineNum, Math.max(0, indent))
+		startLine.loc = pointLoc(startLineNumber, Math.max(0, indent))
 	}
 
 	const emptyLineIndex = lines.findIndex(l => l.length === 0 || (l.length === 1 && l[0].part === ''))
 	const headerLines = emptyLineIndex === -1 ? lines : lines.slice(0, emptyLineIndex)
 	const headerLineNums = emptyLineIndex === -1 ? lineSourceLines : lineSourceLines.slice(0, emptyLineIndex)
 	const bodyLines = emptyLineIndex === -1 ? [] : lines.slice(emptyLineIndex + 1)
-	const bodyLineNum = emptyLineIndex === -1 ? undefined : lineSourceLines[emptyLineIndex + 1]
+	const bodyLineNumber = emptyLineIndex === -1 ? undefined : lineSourceLines[emptyLineIndex + 1]
 
 	if (!startsWithNewline) {
 		metadata.errors = metadata.errors || []
@@ -329,21 +330,21 @@ export function parseHttpTemplate(
 
 	const headers = parseHeaders(headerLines, metadata)
 	if (headers) {
-		for (let i = 0; i < headers.length; i++) {
-			const lineNum = headerLineNums[i]
-			if (lineNum !== undefined) headers[i].loc = pointLoc(lineNum, Math.max(0, indent))
+		for (const [index, header] of headers.entries()) {
+			const lineNumber = headerLineNums[index]
+			if (lineNumber !== undefined) header.loc = pointLoc(lineNumber, Math.max(0, indent))
 		}
 	}
 
 	const textBody = collapseTemplate(bodyLines.slice(0, endsWithNewline ? bodyLines.length - 1 : bodyLines.length - 2))
 	const bodyNode = parseHttpBody(context, metadata, textBody)
-	if (bodyNode && bodyLineNum !== undefined) {
-		bodyNode.loc = pointLoc(bodyLineNum, Math.max(0, indent))
+	if (bodyNode && bodyLineNumber !== undefined) {
+		bodyNode.loc = pointLoc(bodyLineNumber, Math.max(0, indent))
 	}
 
-	const doc = document({ startLine, headers, body: bodyNode, metadata })
-	doc.loc = { start: literalLocation.start, end: literalLocation.end }
-	return doc
+	const document_ = document({ startLine, headers, body: bodyNode, metadata })
+	document_.loc = { start: literalLocation.start, end: literalLocation.end }
+	return document_
 }
 
 /** Build a zero-width SourceLocation pointing at (line, column). */

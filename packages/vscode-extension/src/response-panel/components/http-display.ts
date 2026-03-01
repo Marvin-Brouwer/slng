@@ -1,3 +1,5 @@
+import { httpNodes } from '@slng/definition/nodes'
+
 import { SimpleElement } from '../element-helper'
 import { assertNoErrors, assertNotError, assertRequest, assertResponse } from '../node-helper'
 import { resolveElements } from '../node-helper.component'
@@ -5,8 +7,6 @@ import { resolveElements } from '../node-helper.component'
 import { HttpBody } from './body-display'
 import { CopyButton } from './copy-button'
 import { HttpHeaders } from './header-display'
-
-import type { httpNodes } from '@slng/definition'
 
 const nbsp = '\u00A0'
 

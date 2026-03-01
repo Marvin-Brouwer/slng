@@ -1,9 +1,9 @@
+import { httpNodes, SlingNode } from '@slng/definition/nodes'
+
 import { SimpleElement } from '../element-helper'
 
 import { jsonBodyRenderer } from './body-display.json'
 import { textBodyRenderer } from './body-display.text'
-
-import type { httpNodes, SlingNode } from '@slng/definition'
 
 export interface BodyRenderer<T extends SlingNode> {
 	canProcess(mimeType: string): boolean

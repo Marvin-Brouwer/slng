@@ -1,10 +1,11 @@
+import { httpNodes, jsonNodes, SlingNode } from '@slng/definition/nodes'
+
 import { addComponent, addElement, createElement } from '../element-helper'
 import { escapeHtml } from '../node-helper'
 
 import { MaskedValue } from './masked-value'
 
 import type { BodyRenderer } from './body-display'
-import { httpNodes, jsonNodes, SlingNode } from '@slng/definition'
 
 type BodyNode<T extends SlingNode = SlingNode> = httpNodes.BodyNode<T>
 type JsonArrayNode = jsonNodes.JsonArrayNode

@@ -4,7 +4,7 @@ import { reference, text, values } from '../nodes/nodes'
 import { PayloadProcessor } from './payload-processor'
 
 export const textPayloadProcessor: PayloadProcessor = {
-	canProcess: (mimeType) => mimeType === 'text/plain',
+	canProcess: mimeType => mimeType === 'text/plain',
 	processPayload(metadata, parts) {
 		if (parts.length === 0) return
 
@@ -15,6 +15,6 @@ export const textPayloadProcessor: PayloadProcessor = {
 
 		if (bodyNodes.length === 1) return bodyNodes[0]
 
-		return  values(...bodyNodes)
-	}
+		return values(...bodyNodes)
+	},
 }
