@@ -1,6 +1,6 @@
 import { isMask, Masked } from '../../../masking/mask'
 import { Metadata } from '../../../nodes/metadata'
-import { error, ErrorNode, reference, text, ValueNode, values, ValuesNode } from '../../../nodes/nodes'
+import { ErrorNode, reference, text, ValueNode, values, ValuesNode } from '../../../nodes/nodes'
 import { MimeType, PrimitiveValue } from '../../../types'
 import { header, HeaderNode } from '../http.nodes'
 
@@ -24,7 +24,7 @@ export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderN
 
 		// Header name must start with a string
 		if (typeof nameTemplatePart.part !== 'string') {
-			headers.push(error({
+			headers.push(metadata.appendError({
 				reason: 'Header name must be a literal string.',
 			}))
 			continue
@@ -34,7 +34,7 @@ export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderN
 		const colonIndex = rawLineFragment.indexOf(':')
 
 		if (colonIndex === -1) {
-			headers.push(error({
+			headers.push(metadata.appendError({
 				reason: 'Header must contain a colon separator (name: value)',
 				suggestions: ['sling.append-header-key'],
 			}))
@@ -45,13 +45,13 @@ export function parseHeaders(lines: TemplateLines, metadata: Metadata): (HeaderN
 		// TODO implement meta header support
 		const rawName = rawLineFragment.slice(0, colonIndex).trim()
 		if (rawName.length === 0) {
-			headers.push(error({
+			headers.push(metadata.appendError({
 				reason: 'Empty header name',
 			}))
 			continue
 		}
 		if (!/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(rawName)) {
-			headers.push(error({
+			headers.push(metadata.appendError({
 				reason: 'Illegal header name, invalid characters',
 			}))
 			continue

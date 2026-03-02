@@ -47,39 +47,8 @@ function walkHttpDocument(
 	fallback: vscode.Range,
 	vscDocument: vscode.TextDocument,
 ): vscode.Diagnostic[] {
-	const diagnostics: vscode.Diagnostic[] = []
 	const documentRange = document.loc ? babelLocToRange(document.loc) : fallback
-
-	// Request line
-	const sl = document.startLine
-	if (sl.type === 'error') {
-		diagnostics.push(makeDiagnostic(sl, documentRange, vscDocument))
-	}
-	else if (sl.type === 'request') {
-		const slRange = sl.loc ? expandToLine(babelLocToRange(sl.loc), vscDocument) : documentRange
-		if (sl.method.type === 'error') diagnostics.push(makeDiagnostic(sl.method, slRange, vscDocument))
-		if (sl.url.type === 'error') diagnostics.push(makeDiagnostic(sl.url, slRange, vscDocument))
-		if (sl.protocol.type === 'error') diagnostics.push(makeDiagnostic(sl.protocol, slRange, vscDocument))
-	}
-
-	// Headers
-	for (const h of document.headers ?? []) {
-		if (h.type === 'error') {
-			diagnostics.push(makeDiagnostic(h, documentRange, vscDocument))
-		}
-		else {
-			const hRange = h.loc ? expandToLine(babelLocToRange(h.loc), vscDocument) : documentRange
-			if (h.name.type === 'error') diagnostics.push(makeDiagnostic(h.name, hRange, vscDocument))
-			if (h.value.type === 'error') diagnostics.push(makeDiagnostic(h.value, hRange, vscDocument))
-		}
-	}
-
-	// Metadata errors (e.g. missing leading/trailing newline)
-	for (const error of document.metadata.errors ?? []) {
-		diagnostics.push(makeDiagnostic(error, documentRange, vscDocument))
-	}
-
-	return diagnostics
+	return document.metadata.errors.map(error => makeDiagnostic(error, documentRange, vscDocument))
 }
 
 function babelLocToRange(loc: { start: { line: number, column: number }, end: { line: number, column: number } }): vscode.Range {

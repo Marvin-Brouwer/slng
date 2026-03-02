@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 
 import { isMask } from './masking/mask.js'
 import { Metadata } from './nodes/metadata.js'
-import { error, type ErrorNode, NodeError, text, type ValueNode, type ValuesNode } from './nodes/nodes.js'
+import { type ErrorNode, NodeError, text, type ValueNode, type ValuesNode } from './nodes/nodes.js'
 import { buildHttpResponse } from './protocol/http/http-builder/http-builder.js'
 import { body, document, HttpDocument, response } from './protocol/http/http.nodes'
 import { buildRequest } from './request/request-builder.js'
@@ -324,7 +324,7 @@ async function executeRequest(
 		if (fetchError.code === 'ENOTFOUND') fetchErrorMessage = `Hostname '${fetchError.hostname}' could not be found!`
 
 		const metadata = new Metadata()
-		metadata.errors = [error({ reason: fetchErrorMessage })]
+		metadata.appendError({ reason: fetchErrorMessage })
 		return {
 			status: fetchError.errno,
 			statusText: fetchError.code,

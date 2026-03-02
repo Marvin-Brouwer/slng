@@ -4,7 +4,7 @@ import { parse } from '@babel/parser'
 import _traverse, { Node } from '@babel/traverse'
 import { assertIdentifier, isDeclaration, isIdentifier, isTaggedTemplateExpression, isVariableDeclaration, SourceLocation } from '@babel/types'
 
-import { error, type ErrorNode, type SlingNode } from '../nodes/nodes.js'
+import { type ErrorNode, type SlingNode } from '../nodes/nodes.js'
 import { getProtocolProcessor } from '../protocol/protocol-processor.js'
 import { SlingDefinition } from '../types'
 
@@ -39,7 +39,7 @@ export async function loadDefinitionFile(filePath: string, content?: string) {
 			const processor = getProtocolProcessor(internals.context, internals.template)
 			mutable.protocolAst = 'processProtocol' in processor
 				? processor.processProtocol(internals.context, internals.template, astData.literalLocation)
-					?? error({ reason: 'Protocol processor returned no result' })
+					?? ({ type: 'error', reason: 'Protocol processor returned no result' } satisfies ErrorNode)
 				: processor
 		}
 

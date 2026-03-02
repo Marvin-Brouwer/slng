@@ -1,4 +1,4 @@
-import { error, SlingNode } from '../nodes/nodes'
+import { ErrorNode, SlingNode } from '../nodes/nodes'
 import { SlingContext, StringTemplate } from '../types'
 
 export type ProtocolProcessor<TNode extends SlingNode = SlingNode> = {
@@ -21,12 +21,8 @@ export type ProtocolProcessor<TNode extends SlingNode = SlingNode> = {
 }
 
 export function getProtocolProcessor<TNode extends SlingNode>(context: SlingContext, template: StringTemplate) {
-	if (!template) return error({
-		reason: 'No protocol defined',
-	})
+	if (!template) return { type: 'error', reason: 'No protocol defined' } satisfies ErrorNode
 	const processor = [...context.protocolProcessors.values()]
 		.find(processor => processor.canProcess(template)) as ProtocolProcessor<TNode> | undefined
-	return processor ?? error({
-		reason: 'No protocol detected',
-	})
+	return processor ?? ({ type: 'error', reason: 'No protocol detected' } satisfies ErrorNode)
 }

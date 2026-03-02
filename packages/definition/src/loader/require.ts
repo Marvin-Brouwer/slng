@@ -39,16 +39,16 @@ export function loadModuleFile<TModule>(filePath: string) {
 
 // TODO, not happy with the temp file, there has to be a way to load jiti evalModule with top level await
 export async function evalModuleFile<TModule>(filePath: string, content: string): Promise<TModule> {
-	const ext = path.extname(filePath)
-	const base = path.basename(filePath, ext)
-	const tempPath = path.join(path.dirname(filePath), `${base}.tmp${ext}`)
-	const tempUrl = pathToFileURL(tempPath).href
+	const extension = path.extname(filePath)
+	const base = path.basename(filePath, extension)
+	const temporaryPath = path.join(path.dirname(filePath), `${base}.tmp${extension}`)
+	const temporaryUrl = pathToFileURL(temporaryPath).href
 
-	await fs.promises.writeFile(tempPath, content, 'utf8')
+	await fs.promises.writeFile(temporaryPath, content, 'utf8')
 	try {
-		return await createJitiModule(tempPath).import<TModule>(tempUrl)
+		return await createJitiModule(temporaryPath).import<TModule>(temporaryUrl)
 	}
 	finally {
-		await fs.promises.unlink(tempPath).catch(() => { /* already deleted */ })
+		await fs.promises.unlink(temporaryPath).catch(() => { /* already deleted */ })
 	}
 }

@@ -1,6 +1,6 @@
 import { isPrimitiveMask, Masked } from '../../../masking/mask'
 import { Metadata } from '../../../nodes/metadata'
-import { error, ErrorNode, text, ValueNode, ValuesNode } from '../../../nodes/nodes'
+import { ErrorNode, text, ValueNode, ValuesNode } from '../../../nodes/nodes'
 import { getProcessor } from '../../../payload/payload-processor'
 import { PrimitiveValue, ResolvedStringTemplate, SlingContext, StringTemplate } from '../../../types'
 import {
@@ -20,7 +20,7 @@ export function parseHttpRequest(context: SlingContext, requestTemplate: Resolve
 	const metadata = new Metadata()
 
 	if (!values || (values.length === 0 && strings.join('').trim().length === 0))
-		return error({
+		return metadata.appendError({
 			reason: 'HTTP requests cannot be empty string',
 			autoFix: 'sling.initial-format',
 		})
@@ -84,19 +84,17 @@ export function parseHttpRequest(context: SlingContext, requestTemplate: Resolve
 	const bodyLines = emptyLineIndex === -1 ? [] : lines.slice(emptyLineIndex + 1)
 
 	if (!startsWithNewline) {
-		metadata.errors = metadata.errors || []
-		metadata.errors.push(error({
+		metadata.appendError({
 			reason: 'HTTP request template should start with a newline.',
 			autoFix: 'sling.insert_leading_newline',
-		}))
+		})
 	}
 
 	if (!endsWithNewline) {
-		metadata.errors = metadata.errors || []
-		metadata.errors.push(error({
+		metadata.appendError({
 			reason: 'HTTP request template should end with a newline.',
 			autoFix: 'sling.insert_trailing_newline',
-		}))
+		})
 	}
 
 	const headers = parseHeaders(headerLines, metadata)
@@ -140,7 +138,7 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 	}
 
 	if (tokens.length < 3) {
-		return error({
+		return metadata.appendError({
 			reason: `Invalid request line. Expected: Method URL Protocol`,
 			suggestions: ['sling.check_spacing'],
 		})
@@ -159,7 +157,7 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 	// 3. Resolve Nodes
 	const method = resolveSingleNode(methodPart, metadata)
 	if (method.type !== 'text') {
-		return error({
+		return metadata.appendError({
 			reason: 'Method must be a static string',
 		})
 	}
@@ -169,14 +167,14 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 
 	// 4. Validate Protocol
 	if (typeof protoPart.part !== 'string') {
-		return error({
+		return metadata.appendError({
 			reason: 'Protocol must be a literal string (e.g., HTTP/1.1)',
 		})
 	}
 
 	const [protoName, protoVersion] = protoPart.part.trim().split('/')
 	if (!protoName || !allowedProtocols.some(a => a.protocol === protoName.toUpperCase() && a.version == protoVersion)) {
-		return error({
+		return metadata.appendError({
 			reason: `Unsupported protocol: "${protoName}". Expected HTTP/1.1.`,
 			suggestions: ['sling.use_http_1_1'],
 		})
@@ -220,7 +218,7 @@ export function parseHttpTemplate(
 	const metadata = new Metadata()
 
 	if (values.length === 0 && strings.join('').trim().length === 0)
-		return error({
+		return metadata.appendError({
 			reason: 'HTTP requests cannot be empty string',
 			autoFix: 'sling.initial-format',
 		})
@@ -311,19 +309,17 @@ export function parseHttpTemplate(
 	const bodyLineNumber = emptyLineIndex === -1 ? undefined : lineSourceLines[emptyLineIndex + 1]
 
 	if (!startsWithNewline) {
-		metadata.errors = metadata.errors || []
-		metadata.errors.push(error({
+		metadata.appendError({
 			reason: 'HTTP request template should start with a newline.',
 			autoFix: 'sling.insert_leading_newline',
-		}))
+		})
 	}
 
 	if (!endsWithNewline) {
-		metadata.errors = metadata.errors || []
-		metadata.errors.push(error({
+		metadata.appendError({
 			reason: 'HTTP request template should end with a newline.',
 			autoFix: 'sling.insert_trailing_newline',
-		}))
+		})
 	}
 
 	const headers = parseHeaders(headerLines, metadata)

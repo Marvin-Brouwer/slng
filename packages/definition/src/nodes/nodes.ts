@@ -6,21 +6,12 @@ import type { BaseNodeWithoutComments } from 'estree'
 /** This is just {@link BaseNodeWithoutComments}, re-exported so extensions don't need to install `estree` */
 export interface SlingNode extends BaseNodeWithoutComments {}
 
-type CommandString = `sling.${string}`
+export type CommandString = `sling.${string}`
 export interface ErrorNode extends SlingNode {
 	type: 'error'
 	reason: string
 	suggestions?: CommandString[]
 	autoFix?: CommandString
-}
-export function error(constructor: { reason: string }): ErrorNode
-export function error(constructor: { reason: string, suggestions: CommandString[] }): ErrorNode
-export function error(constructor: { reason: string, autoFix: CommandString }): ErrorNode
-export function error(constructor: Omit<ErrorNode, 'type'>): ErrorNode {
-	return {
-		type: 'error',
-		...constructor,
-	}
 }
 export class NodeError extends Error {
 	constructor(public readonly errorNode: ErrorNode) {
