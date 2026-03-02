@@ -1,14 +1,12 @@
 import { MimeType } from '../../types'
 
-import type { Metadata } from '../../nodes/metadata'
-import type { ErrorNode, Node, SlingNode, TextNode, ValueNode, ValuesNode } from '../../nodes/nodes'
+import type { ErrorNode, Node, SlingDocument, SlingNode, TextNode, ValueNode, ValuesNode } from '../../nodes/nodes'
 
-export interface HttpDocument extends SlingNode {
+export interface HttpDocument extends SlingDocument {
 	type: 'http'
 	startLine: RequestNode | ResponseNode | ErrorNode
 	headers?: (HeaderNode | ErrorNode)[]
 	body?: BodyNode
-	metadata: Metadata
 }
 export const document = (properties: Omit<HttpDocument, 'type'>): HttpDocument => ({
 	type: 'http',

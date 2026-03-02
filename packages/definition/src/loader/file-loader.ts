@@ -37,10 +37,8 @@ export async function loadDefinitionFile(filePath: string, content?: string) {
 			mutable.tsAst = astData
 
 			const processor = getProtocolProcessor(internals.context, internals.template)
-			mutable.protocolAst = 'processProtocol' in processor
-				? processor.processProtocol(internals.context, internals.template, astData.literalLocation)
+			mutable.protocolAst = processor.processProtocol(internals.context, internals.template, astData.literalLocation)
 					?? ({ type: 'error', reason: 'Protocol processor returned no result' } satisfies ErrorNode)
-				: processor
 		}
 
 		return definitions

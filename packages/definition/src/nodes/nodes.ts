@@ -1,3 +1,5 @@
+import { Metadata } from './metadata'
+
 import type { PrimitiveValue } from '../types'
 import type { BaseNodeWithoutComments } from 'estree'
 
@@ -5,6 +7,9 @@ import type { BaseNodeWithoutComments } from 'estree'
 
 /** This is just {@link BaseNodeWithoutComments}, re-exported so extensions don't need to install `estree` */
 export interface SlingNode extends BaseNodeWithoutComments {}
+export interface SlingDocument extends SlingNode {
+	metadata: Metadata
+}
 
 export type CommandString = `sling.${string}`
 export interface ErrorNode extends SlingNode {

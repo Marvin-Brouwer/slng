@@ -3,6 +3,7 @@ import { Metadata } from '../../../nodes/metadata'
 import { ErrorNode, text, ValueNode, ValuesNode } from '../../../nodes/nodes'
 import { getProcessor } from '../../../payload/payload-processor'
 import { PrimitiveValue, ResolvedStringTemplate, SlingContext, StringTemplate } from '../../../types'
+import { validateDefaults } from '../../protocol-processor'
 import {
 	allowedProtocols,
 	body,
@@ -18,12 +19,6 @@ import { parseHeaders, resolveCompoundNode, resolveSingleNode, TemplateLine, Tem
 export function parseHttpRequest(context: SlingContext, requestTemplate: ResolvedStringTemplate): HttpDocument | ErrorNode | undefined {
 	const { strings, values } = requestTemplate
 	const metadata = new Metadata()
-
-	if (!values || (values.length === 0 && strings.join('').trim().length === 0))
-		return metadata.appendError({
-			reason: 'HTTP requests cannot be empty string',
-			autoFix: 'sling.initial-format',
-		})
 
 	// 1. Boundary Checks
 	const startsWithNewline = /^\s*\n/.test(strings[0])
@@ -217,11 +212,11 @@ export function parseHttpTemplate(
 	const { strings, values } = template
 	const metadata = new Metadata()
 
-	if (values.length === 0 && strings.join('').trim().length === 0)
-		return metadata.appendError({
-			reason: 'HTTP requests cannot be empty string',
-			autoFix: 'sling.initial-format',
-		})
+	const defaultValidations = validateDefaults(metadata, template)
+	if (defaultValidations) return document({
+		startLine: defaultValidations,
+		metadata,
+	})
 
 	// Pre-populate metadata.parameters in template value order.
 	// DataAccessor / MaskedDataAccessor → undefined slot (filled at execute time).
@@ -237,11 +232,6 @@ export function parseHttpTemplate(
 			metadata.parameters.push(undefined)
 		}
 	}
-
-	// 1. Boundary Checks
-	const startsWithNewline = /^\s*\n/.test(strings[0])
-	const lastString = strings.at(-1)!
-	const endsWithNewline = /\n\s*$/.test(lastString)
 
 	// 2. Interleave strings and values into lines, tracking source line numbers.
 	// sourceLine counts absolute line numbers starting from literalLocation.start.line.
@@ -308,20 +298,6 @@ export function parseHttpTemplate(
 	const bodyLines = emptyLineIndex === -1 ? [] : lines.slice(emptyLineIndex + 1)
 	const bodyLineNumber = emptyLineIndex === -1 ? undefined : lineSourceLines[emptyLineIndex + 1]
 
-	if (!startsWithNewline) {
-		metadata.appendError({
-			reason: 'HTTP request template should start with a newline.',
-			autoFix: 'sling.insert_leading_newline',
-		})
-	}
-
-	if (!endsWithNewline) {
-		metadata.appendError({
-			reason: 'HTTP request template should end with a newline.',
-			autoFix: 'sling.insert_trailing_newline',
-		})
-	}
-
 	const headers = parseHeaders(headerLines, metadata)
 	if (headers) {
 		for (const [index, header] of headers.entries()) {
@@ -330,6 +306,8 @@ export function parseHttpTemplate(
 		}
 	}
 
+	const lastString = template.strings.at(-1)!
+	const endsWithNewline = /\n\s*$/.test(lastString)
 	const textBody = collapseTemplate(bodyLines.slice(0, endsWithNewline ? bodyLines.length - 1 : bodyLines.length - 2))
 	const bodyNode = parseHttpBody(context, metadata, textBody)
 	if (bodyNode && bodyLineNumber !== undefined) {

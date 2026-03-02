@@ -1,5 +1,5 @@
 import { isSlingDefinition } from '@slng/definition/extension'
-import { httpNodes, nodes } from '@slng/definition/nodes'
+import { nodes } from '@slng/definition/nodes'
 import * as vscode from 'vscode'
 
 import type { ExtensionContext } from '../context.js'
@@ -30,8 +30,10 @@ export function updateDiagnostics(
 		if (protocolAst.type === 'error') {
 			all.push(makeDiagnostic(protocolAst as nodes.ErrorNode, fallback, vscDocument))
 		}
-		else if (protocolAst.type === 'http') {
-			all.push(...walkHttpDocument(protocolAst as httpNodes.HttpDocument, fallback, vscDocument))
+		else if ('metadata' in protocolAst) {
+			const document = protocolAst as nodes.SlingDocument
+			const range = document.loc ? babelLocToRange(document.loc) : fallback
+			all.push(...document.metadata.errors.map(error => makeDiagnostic(error, range, vscDocument)))
 		}
 	}
 
@@ -40,15 +42,6 @@ export function updateDiagnostics(
 
 export function clearDiagnostics(uri: vscode.Uri): void {
 	diagnosticCollection.delete(uri)
-}
-
-function walkHttpDocument(
-	document: httpNodes.HttpDocument,
-	fallback: vscode.Range,
-	vscDocument: vscode.TextDocument,
-): vscode.Diagnostic[] {
-	const documentRange = document.loc ? babelLocToRange(document.loc) : fallback
-	return document.metadata.errors.map(error => makeDiagnostic(error, documentRange, vscDocument))
 }
 
 function babelLocToRange(loc: { start: { line: number, column: number }, end: { line: number, column: number } }): vscode.Range {
