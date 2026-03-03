@@ -15,7 +15,6 @@ export const getUser = sling`
   Accept: application/json
 `
 
-// TODO react to file edits
 // TODO, validate no whitespace between anything but body
 // CodeLens: ▶ Send | 🐛 Debug
 export const createUser = sling`

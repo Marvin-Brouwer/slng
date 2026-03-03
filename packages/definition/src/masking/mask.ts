@@ -1,4 +1,3 @@
-import { isTaggedSerialized, SERIALIZABLE_TAG, serializableSymbol } from '../serializable'
 import { DataAccessor, HttpError, InvalidJsonPathError, PrimitiveValue } from '../types'
 
 const maskSymbol = Symbol.for('mask')
@@ -51,7 +50,6 @@ function createMask<T extends PrimitiveValue | DataAccessor>(original: T, mask: 
 		: createValueMask(original, mask, inspectMask)
 }
 
-const serializeId = '@slng/mask'
 function createValueMask<T extends PrimitiveValue>(original: T, mask: string, inspectMask: string) {
 	const key = 0x5F
 	const data = Buffer.from(JSON.stringify(original))
@@ -64,7 +62,6 @@ function createValueMask<T extends PrimitiveValue>(original: T, mask: string, in
 
 	return {
 		[maskSymbol]: true,
-		[serializableSymbol]: serializeId,
 		value: mask,
 		unmask() {
 			return unmaskValue(obfuscated)
@@ -77,16 +74,11 @@ function createValueMask<T extends PrimitiveValue>(original: T, mask: string, in
 		[nodeInspectCustom]() {
 			return inspectMask
 		},
-		/** Needs to be serializable for the vscode extension state */
 		toJSON() {
-			return {
-				[SERIALIZABLE_TAG]: serializeId,
-				data: [mask, Buffer.from(obfuscated).toString('base64'), inspectMask],
-			}
+			throw new Error('Masked values cannot be serialized')
 		},
 	} as Masked<T>
 }
-type SerializedMask = [mask: string, maskedValue: string, inspectMask: string]
 
 function createAccessorMask(original: DataAccessor, mask: string): MaskedDataAccessor {
 	return {
@@ -130,23 +122,3 @@ export async function resolveAsyncMask(maskedDataAccessor: MaskedDataAccessor) {
 	return createMask(maskedValueResult, maskedDataAccessor.value, (maskedDataAccessor as unknown as Record<symbol, () => string>)[nodeInspectCustom]())
 }
 
-export const maskTransformer = {
-	displayReplacer(_key: string, value: unknown): unknown {
-		if (isTaggedSerialized(value, serializeId)) {
-			const [mask] = value.data as SerializedMask
-			return mask
-		}
-		return value
-	},
-	reviver(_key: string, value: unknown): unknown {
-		if (isTaggedSerialized(value, serializeId)) {
-			const [mask, obfuscated, inspectMask] = value.data as SerializedMask
-			const key = 0x5F
-			const buffer = Buffer.from(obfuscated, 'base64')
-			const original = buffer.map(byte => byte ^ key).toString()
-			buffer.fill(0)
-			return createValueMask(JSON.parse(original), mask, inspectMask)
-		}
-		return value
-	},
-}

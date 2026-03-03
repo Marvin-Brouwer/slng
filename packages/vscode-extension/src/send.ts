@@ -1,12 +1,12 @@
 import { SlingResponse } from '@slng/definition'
-import { isSlingDefinition, loadDefinitionFile } from '@slng/definition/extension'
+import { isSlingDefinition, loadDefinitionFile, Logger } from '@slng/definition/extension'
 import { httpNodes } from '@slng/definition/nodes'
 import * as vscode from 'vscode'
 
 export async function sendRequest(
 	fileUri: vscode.Uri,
 	exportName: string,
-	channel: vscode.LogOutputChannel,
+	channel: Logger,
 ): Promise<SlingResponse | false> {
 	const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri)
 	if (!workspaceFolder) {

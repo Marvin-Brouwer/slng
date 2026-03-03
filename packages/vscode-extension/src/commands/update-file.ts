@@ -45,7 +45,7 @@ function updateFileCommand(context: ExtensionContext): vscode.Disposable {
 					hoverHelper: undefined,
 				}
 
-				const response = context.state.get<SlingResponse>(definition.id())
+				const response = context.responseCache.get(definition.id())
 				if (!response) return {
 					responseTag: undefined,
 					hoverHelper: undefined,

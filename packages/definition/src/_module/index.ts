@@ -1,4 +1,3 @@
-export * from '../serializable.js'
 export * from '../masking/mask.js'
 export { secret } from '../masking/secret.js'
 export { sensitive } from '../masking/sensitive.js'

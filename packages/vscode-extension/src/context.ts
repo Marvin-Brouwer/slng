@@ -1,73 +1,33 @@
-import { maskTransformer } from '@slng/definition'
+import { createLog, Logger } from '@slng/definition/extension'
 import * as vscode from 'vscode'
-
-export interface State {
-	includesKey(key: string): boolean
-	get<T>(key: string): T | undefined
-	put<T>(key: string, value: T): Promise<void>
-}
+import { SlingResponse } from '../../definition/src/types'
 
 export interface ExtensionContext {
-	log: vscode.LogOutputChannel
+	log: Logger
+	responseCache: Map<string, SlingResponse>
 	addSubscriptions(...subscriptions: vscode.Disposable[]): void
-	state: State
 }
 
-function createState(workspaceState: vscode.Memento): State {
-	return {
-		includesKey(key: string): boolean {
-			return workspaceState.keys().includes(key)
-		},
-		get<T>(key: string): T | undefined {
-			const raw = workspaceState.get<string>(key)
-			if (raw === undefined) return undefined
-			return JSON.parse(raw, (k, v: unknown) => maskTransformer.reviver(k, v)) as T
-		},
-		async put<T>(key: string, value: T) {
-			await workspaceState.update(key, JSON.stringify(value, undefined, 2))
-		},
-	}
-}
-
-export default function createContext(context: vscode.ExtensionContext): ExtensionContext {
+export default async function createContext(context: vscode.ExtensionContext): Promise<ExtensionContext> {
 	const logChannel = vscode.window.createOutputChannel('Sling', { log: true })
 
+	if (context.extensionMode === vscode.ExtensionMode.Development) {
+		// Show the logs on screen
+		logChannel.show(true)
+		// TODO remove once we fixed the issue where we can't launch vscode with a log level
+		logChannel.info('Current log level:', logChannel.logLevel.toString())
+		await new Promise(resolve => setTimeout(resolve, 1300))
+		while (logChannel.logLevel >= vscode.LogLevel.Info) {
+			await vscode.commands.executeCommand('workbench.action.setLogLevel')
+		}
+	}
+
+	// todo set and load selected env in and context.workspaceState
 	return {
-		log: createLog(logChannel),
+		log: createLog('sling', logChannel),
+		responseCache: new Map(),
 		addSubscriptions(...subscriptions: vscode.Disposable[]) {
 			context.subscriptions.push(...subscriptions)
 		},
-		state: createState(context.workspaceState),
 	}
-}
-
-function sanitize(arguments_: unknown[]): string {
-	return arguments_
-		.map((argument) => {
-			if (argument instanceof Error)
-				return argument.toString()
-			if (typeof argument === 'object')
-				return JSON.stringify(argument, (k: string, v: unknown) => maskTransformer.displayReplacer(k, v), 2)
-			return String(argument as string | number | boolean)
-		})
-		.join(' ')
-}
-
-export function createLog(channel: vscode.LogOutputChannel): vscode.LogOutputChannel {
-	return new Proxy(channel, {
-		get(target, property, receiver) {
-			switch (property) {
-				case 'trace':
-				case 'debug':
-				case 'info':
-				case 'warn':
-				case 'error': {
-					return (...arguments_: unknown[]) => target[property](sanitize(arguments_))
-				}
-				default: {
-					return Reflect.get(target, property, receiver) as unknown
-				}
-			}
-		},
-	})
 }

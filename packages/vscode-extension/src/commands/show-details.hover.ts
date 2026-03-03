@@ -1,16 +1,16 @@
 import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
+import { Logger } from '@slng/definition/extension'
 
 export const showDetailsFromHover = 'sling.showDetails.fromHover'
 
-function showDetailsFromHoverCommand(log: vscode.LogOutputChannel): vscode.Disposable {
+function showDetailsFromHoverCommand(log: Logger): vscode.Disposable {
 	return vscode.commands.registerCommand(showDetailsFromHover, (commandArguments) => {
 		const { line } = commandArguments as { line: number }
-		log.append('openDetails called ') // <-- add this for debugging
-		log.appendLine(JSON.stringify(commandArguments))
 		const editor = vscode.window.activeTextEditor
-		log.appendLine(editor ? 'editor' : 'no-editor')
+		log.info('openDetails called', commandArguments)
+		log.trace(editor ? 'editor' : 'no-editor')
 		if (editor) {
 			const range = new vscode.Range(line, 0, line, 0)
 			editor.revealRange(range, vscode.TextEditorRevealType.Default)

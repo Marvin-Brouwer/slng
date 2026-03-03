@@ -12,7 +12,7 @@ import { registerCodeLens } from './visual/codelens.js'
 import { registerDiagnostics } from './visual/diagnostics.js'
 
 export async function activate(vscodeContext: vscode.ExtensionContext) {
-	const context = createContext(vscodeContext)
+	const context = await createContext(vscodeContext)
 	context.log.info('Initializing', vscodeContext.extension.id)
 
 	const responsePanel = registerResponsePanel(
@@ -20,18 +20,10 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 		vscodeContext.extensionUri)
 
 	if (vscodeContext.extensionMode === vscode.ExtensionMode.Development) {
-		// Show the logs on screen
-		context.log.show(true)
 		// Reset to standard for developers
 		responsePanel.hide()
 		await Promise.all(vscodeContext.workspaceState.keys().map(key => vscodeContext.workspaceState.update(key, void 0)))
 
-		// TODO remove once we fixed the issue where we can't launch vscode with a log level
-		context.log.info('Current log level:', context.log.logLevel.toString())
-		await new Promise(resolve => setTimeout(resolve, 1300))
-		while (context.log.logLevel >= vscode.LogLevel.Info) {
-			await vscode.commands.executeCommand('workbench.action.setLogLevel')
-		}
 	}
 
 	registerCodeLens(context)

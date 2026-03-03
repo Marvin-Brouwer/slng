@@ -20,4 +20,12 @@ export class Metadata {
 		this.errors.push(node)
 		return node
 	}
+
+	/**
+	 * Because the metadata object should never be visible on the client's side
+	 * We serialize to `null`
+	 */
+	toJSON() {
+		return null
+	}
 }

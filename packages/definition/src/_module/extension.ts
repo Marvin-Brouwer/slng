@@ -9,6 +9,7 @@ export { isJsonContentType } from '../payload/payload-processor.json.js'
 
 export { NodeError } from '../nodes/nodes.js'
 export { Metadata } from '../nodes/metadata.js'
+export { type Logger, createLog } from '../logger.js'
 
 export type {
 	SlingInternals,

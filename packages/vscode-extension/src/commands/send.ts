@@ -20,7 +20,7 @@ export function registerSendCommand(context: ExtensionContext, responsePanel: Re
 				}
 
 				const reference = result.request.reference
-				await context.state.put(reference, result)
+				context.responseCache.set(reference, result)
 				await responsePanel.show(reference)
 
 				await updateFile()
