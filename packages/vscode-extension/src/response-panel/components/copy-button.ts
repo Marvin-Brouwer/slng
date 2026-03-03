@@ -4,22 +4,7 @@ import { Button } from '@vscode/webview-ui-toolkit'
 
 import { SimpleElement } from '../element-helper'
 
-/*
-
-//https://github.com/microsoft/vscode-webview-ui-toolkit
- In case we need communication between the client and extension:
- https://github.com/microsoft/vscode-extension-samples/blob/main/webview-sample/src/extension.ts#L209
- https://github.com/microsoft/vscode-extension-samples/blob/main/webview-sample/media/main.js
- However, most likely we will only use this to reveal secrets by button
- If we do, we must enable inline scripts to get access to the vscode API
- https://stackoverflow.com/a/74971047 import "vscode-webview"
-
- https://stackoverflow.com/questions/54632431/vscode-api-read-clipboard-text-content
- https://vshaxe.github.io/vscode-extern/vscode/Clipboard.html
-
- see for icon buton https://github.com/microsoft/vscode-webview-ui-toolkit/blob/main/src/button/README.md#start-icon
- for dropdown https://github.com/microsoft/vscode-webview-ui-toolkit/blob/main/src/dropdown/README.md
- */
+const vscodeApi = acquireVsCodeApi()
 
 // TODO convert to programmatic arguments over attributes
 // TODO copy headers (CSV) / copy body (JSON) instead of copy unmasked
@@ -152,9 +137,8 @@ export class CopyButton extends SimpleElement {
 			'text/plain': new Blob([plainText], { type: 'text/plain' }),
 			'text/html': new Blob([html], { type: 'text/html' }),
 		})
-		// TODO  use postmessage for a toast when const vscode = acquireVsCodeApi(); becomes available
 		await navigator.clipboard.write([item])
-			.then(() => console.log('Copied!'))
+			.then(() => vscodeApi.postMessage({ command: 'copied' }))
 			.catch(error => console.error('Copy failed:', error))
 	}
 }

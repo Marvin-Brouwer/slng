@@ -66,6 +66,14 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 		}
 		view.webview.html = this.noSelectionView()
 		this.initialized.resolve()
+
+		this.context.addSubscriptions(
+			view.webview.onDidReceiveMessage((message: { command: string }) => {
+				if (message.command === 'copied') {
+					void vscode.window.showInformationMessage('Copied to clipboard!')
+				}
+			}),
+		)
 	}
 
 	public hide() {
