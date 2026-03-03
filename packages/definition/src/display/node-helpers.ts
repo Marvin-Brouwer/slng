@@ -1,5 +1,6 @@
 import { isMask } from '../masking/mask'
-import { Metadata, ValueNode, ValuesNode } from '../nodes/nodes'
+import { Metadata } from '../nodes/metadata'
+import { ValueNode, ValuesNode } from '../nodes/nodes'
 
 export function resolveString(node: ValueNode | ValuesNode, metadata: Metadata): string {
 	if (node.type === 'text') return node.value

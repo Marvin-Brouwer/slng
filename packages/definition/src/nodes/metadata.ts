@@ -26,6 +26,7 @@ export class Metadata {
 	 * We serialize to `null`
 	 */
 	toJSON() {
+		// eslint-disable-next-line unicorn/no-null
 		return null
 	}
 }

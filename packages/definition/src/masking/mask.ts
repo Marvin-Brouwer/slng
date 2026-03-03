@@ -121,4 +121,3 @@ export async function resolveAsyncMask(maskedDataAccessor: MaskedDataAccessor) {
 	if (maskedValueResult instanceof Error) throw maskedValueResult
 	return createMask(maskedValueResult, maskedDataAccessor.value, (maskedDataAccessor as unknown as Record<symbol, () => string>)[nodeInspectCustom]())
 }
-

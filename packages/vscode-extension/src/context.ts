@@ -1,5 +1,6 @@
 import { createLog, Logger } from '@slng/definition/extension'
 import * as vscode from 'vscode'
+
 import { SlingResponse } from '../../definition/src/types'
 
 export interface ExtensionContext {

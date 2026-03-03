@@ -3,8 +3,7 @@ import copyIconSvg from '@vscode/codicons/src/icons/copy.svg'
 import { Button } from '@vscode/webview-ui-toolkit'
 
 import { SimpleElement } from '../element-helper'
-
-const vscodeApi = acquireVsCodeApi()
+import { vscodeApi } from '../vscode-api'
 
 // TODO convert to programmatic arguments over attributes
 // TODO copy headers (CSV) / copy body (JSON) instead of copy unmasked

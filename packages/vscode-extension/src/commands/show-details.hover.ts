@@ -1,7 +1,7 @@
+import { Logger } from '@slng/definition/extension'
 import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
-import { Logger } from '@slng/definition/extension'
 
 export const showDetailsFromHover = 'sling.showDetails.fromHover'
 

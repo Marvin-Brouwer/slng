@@ -1,4 +1,5 @@
-import { SlingResponse } from '@slng/definition'
+import { isPrimitiveMask, SlingResponse } from '@slng/definition'
+import { httpNodes } from '@slng/definition/nodes'
 import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
@@ -68,9 +69,29 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 		this.initialized.resolve()
 
 		this.context.addSubscriptions(
-			view.webview.onDidReceiveMessage((message: { command: string }) => {
+			view.webview.onDidReceiveMessage((message: { command: string, reference?: number, source?: 'response' | 'request' }) => {
 				if (message.command === 'copied') {
 					void vscode.window.showInformationMessage('Copied to clipboard!')
+				}
+				if (message.command === 'reveal' && message.reference !== undefined) {
+					const response = this.context.responseCache.get(this.currentReference ?? '')
+					if (!response) return
+
+					const document = message.source === 'request'
+						? response.request.templateAst as httpNodes.HttpDocument
+						: response.responseAst as httpNodes.HttpDocument
+					const value = document.metadata.parameters[message.reference]
+
+					if (!isPrimitiveMask(value)) {
+						this.context.log.error('Expected a primitive mask at reference', message.reference)
+						return
+					}
+
+					void this.view.webview.postMessage({
+						command: 'revealed',
+						reference: message.reference,
+						value: String(value.unmask()),
+					})
 				}
 			}),
 		)

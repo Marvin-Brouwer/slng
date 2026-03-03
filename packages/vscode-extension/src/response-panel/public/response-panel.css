@@ -139,3 +139,14 @@ body-display {
 	width: 100%;
 	min-width: 0;
 }
+
+masked-value {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	vertical-align: middle;
+}
+
+masked-value vscode-button {
+	color: currentColor;
+}

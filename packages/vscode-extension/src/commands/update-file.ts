@@ -1,4 +1,3 @@
-import { SlingResponse } from '@slng/definition'
 import { isSlingDefinition, loadDefinitionFile } from '@slng/definition/extension'
 import * as vscode from 'vscode'
 

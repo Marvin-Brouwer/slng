@@ -23,7 +23,6 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 		// Reset to standard for developers
 		responsePanel.hide()
 		await Promise.all(vscodeContext.workspaceState.keys().map(key => vscodeContext.workspaceState.update(key, void 0)))
-
 	}
 
 	registerCodeLens(context)

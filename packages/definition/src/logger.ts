@@ -1,4 +1,3 @@
-
 export type Logger = Pick<Console, 'trace' | 'debug' | 'info' | 'warn' | 'error'>
 
 export function createLog<T extends Logger>(name: string, baseLogger: T): Logger {
@@ -36,4 +35,3 @@ function sanitize(arguments_: unknown[]) {
 			return String(argument as string | number | boolean)
 		})
 }
-
