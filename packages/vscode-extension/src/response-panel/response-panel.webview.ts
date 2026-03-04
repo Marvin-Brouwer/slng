@@ -14,15 +14,15 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 	private view!: vscode.WebviewView
 	private scriptUri!: vscode.Uri
 	private styleUri!: vscode.Uri
-	private copyButtonStyleUri!: vscode.Uri
-	private readonly nonces = nonces('js', 'css', 'copy-button-css', 'json-display-css', 'toolkit-css')
+	private buttonsStyleUri!: vscode.Uri
+	private readonly nonces = nonces('js', 'css', 'buttons-css', 'json-display-css', 'toolkit-css')
 
 	private config: vscode.WorkspaceConfiguration
 	private readonly extensionUri: vscode.Uri
 	private readonly distPath: vscode.Uri
 	private readonly scriptPath: vscode.Uri
 	private readonly stylePath: vscode.Uri
-	private readonly copyButtonStylePath: vscode.Uri
+	private readonly buttonsStylePath: vscode.Uri
 
 	private currentReference: string | undefined
 
@@ -37,7 +37,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 		this.distPath = vscode.Uri.joinPath(extensionUri, 'dist')
 		this.scriptPath = vscode.Uri.joinPath(this.distPath, 'response-panel.global.js')
 		this.stylePath = vscode.Uri.joinPath(this.distPath, 'response-panel.css')
-		this.copyButtonStylePath = vscode.Uri.joinPath(this.distPath, 'copy-button.css')
+		this.buttonsStylePath = vscode.Uri.joinPath(this.distPath, 'buttons.css')
 
 		context.addSubscriptions(
 			vscode.window.onDidChangeActiveColorTheme(async () => {
@@ -54,7 +54,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 
 		this.scriptUri = view.webview.asWebviewUri(this.scriptPath)!
 		this.styleUri = view.webview.asWebviewUri(this.stylePath)!
-		this.copyButtonStyleUri = view.webview.asWebviewUri(this.copyButtonStylePath)!
+		this.buttonsStyleUri = view.webview.asWebviewUri(this.buttonsStylePath)!
 
 		view.webview.options = {
 			enableScripts: true,
@@ -143,7 +143,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 				font-src ${this.view.webview.cspSource};
 				style-src-elem ${this.view.webview.cspSource}
 					'nonce-${this.nonces('css')}'
-					'nonce-${this.nonces('copy-button-css')}'
+					'nonce-${this.nonces('buttons-css')}'
 					'nonce-${this.nonces('json-display-css')}'
 					'nonce-${this.nonces('toolkit-css')}';
 				style-src-attr 'unsafe-inline';
@@ -152,7 +152,7 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 				${__DEV__ ? `connect-src ${this.view.webview.cspSource};` : ''}
 			">
 			<link nonce="${this.nonces('css')}" rel="stylesheet" href="${this.styleUri.toString()}" />
-			<link nonce="${this.nonces('copy-button-css')}" rel="stylesheet" href="${this.copyButtonStyleUri.toString()}" />
+			<link nonce="${this.nonces('buttons-css')}" rel="stylesheet" href="${this.buttonsStyleUri.toString()}" />
 			${buildJsonColorOverrides(this.nonces('json-display-css'))}
 			<script nonce="${this.nonces('js')}" src="${this.scriptUri.toString()}"></script>
 		</head>

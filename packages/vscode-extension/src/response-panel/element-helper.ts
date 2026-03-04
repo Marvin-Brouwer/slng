@@ -56,6 +56,10 @@ export abstract class SimpleElement extends HTMLElement {
 		return addElement<TElement>(parent, element, properties)
 	}
 
+	appendComponent<TComponent extends SimpleElement>(component: (new () => TComponent) & SimpleElementConstructor, properties?: Partial<TComponent> | AttributeConstructor) {
+		return addComponent<TComponent>(this, component, properties)
+	}
+
 	appendComponentTo<TComponent extends SimpleElement>(parent: Element | ShadowRoot, component: (new () => TComponent) & SimpleElementConstructor, properties?: Partial<TComponent> | AttributeConstructor) {
 		return addComponent<TComponent>(parent, component, properties)
 	}

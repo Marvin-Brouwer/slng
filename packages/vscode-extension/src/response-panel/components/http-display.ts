@@ -7,6 +7,7 @@ import { resolveElements } from '../node-helper.component'
 import { HttpBody } from './body-display'
 import { CopyButton } from './copy-button'
 import { HttpHeaders } from './header-display'
+import { MaskToggle } from './mask-toggle'
 
 const nbsp = '\u00A0'
 
@@ -15,14 +16,18 @@ export class HttpResponseDisplay extends SimpleElement {
 	static tagName = 'http-response'
 
 	protected onMount(): void {
+
 		const responseDataDiv = this.createElement('div', {
 			id: 'response-data',
 		})
 
-		const copyPanel = this.appendElementTo(responseDataDiv, 'div', {
-			className: 'copy-panel',
+		const buttonPanel = this.createElement('div', {
+			className: 'button-panel',
 		})
-		this.appendComponentTo(copyPanel, CopyButton, {
+		this.appendComponentTo(buttonPanel, MaskToggle, {
+			container: responseDataDiv
+		})
+		this.appendComponentTo(buttonPanel, CopyButton, {
 			attributes: {
 				for: '#response-data',
 				type: 'response',
@@ -55,6 +60,7 @@ export class HttpResponseDisplay extends SimpleElement {
 		})
 
 		this.innerHTML = ''
+		this.append(buttonPanel)
 		this.append(responseDataDiv)
 	}
 }
@@ -64,13 +70,18 @@ export class HttpRequestDisplay extends SimpleElement {
 	static tagName = 'http-request'
 
 	protected onMount(): void {
+
 		const requestDataDiv = this.createElement('div', {
 			id: 'request-data',
 		})
-		const copyPanel = this.appendElementTo(requestDataDiv, 'div', {
-			className: 'copy-panel',
+
+		const buttonPanel = this.createElement('div', {
+			className: 'button-panel',
 		})
-		this.appendComponentTo(copyPanel, CopyButton, {
+		this.appendComponentTo(buttonPanel, MaskToggle, {
+			container: requestDataDiv
+		})
+		this.appendComponentTo(buttonPanel, CopyButton, {
 			attributes: {
 				for: '#request-data',
 				type: 'request',
@@ -103,6 +114,7 @@ export class HttpRequestDisplay extends SimpleElement {
 		})
 
 		this.innerHTML = ''
+		this.append(buttonPanel)
 		this.append(requestDataDiv)
 	}
 }

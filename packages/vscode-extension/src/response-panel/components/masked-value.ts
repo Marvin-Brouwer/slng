@@ -34,6 +34,7 @@ export class MaskedValue extends SimpleElement {
 		toggleButton.addEventListener('click', () => {
 			revealed = !revealed
 			if (revealed) {
+				this.setAttribute('data-revealed', 'true')
 				const source = this.closest('http-response') ? 'response' : 'request'
 				vscodeApi.postMessage({ command: 'reveal', reference: this.reference, source })
 				toggleButton.innerHTML = eyeClosedSvg
@@ -41,10 +42,12 @@ export class MaskedValue extends SimpleElement {
 				valueSpan.textContent = ''
 			}
 			else {
+				this.removeAttribute('data-revealed')
 				toggleButton.innerHTML = eyeSvg
 				toggleButton.title = 'Reveal value'
 				valueSpan.textContent = escapeHtml(this.mask)
 			}
+			this.dispatchEvent(new CustomEvent('masked-value-changed', { bubbles: true, composed: true }))
 		})
 
 		window.addEventListener('message', (event: MessageEvent<RevealedMessage>) => {
@@ -53,6 +56,9 @@ export class MaskedValue extends SimpleElement {
 				valueSpan.textContent = value
 			}
 		})
+
+		// Update togle button now HTML is present
+		this.dispatchEvent(new CustomEvent('masked-value-changed', { bubbles: true, composed: true }))
 	}
 }
 

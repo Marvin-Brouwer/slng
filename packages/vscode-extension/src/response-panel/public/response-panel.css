@@ -25,10 +25,10 @@
     min-height: 9.5ex;
 }
 
-.copy-panel {
+.button-panel {
 	position: absolute;
-    top: 1.4em;
-    right: 1em;
+	top: -3.2em;
+	right: 0;
 	z-index: 999;
 	user-select: none;
 }
