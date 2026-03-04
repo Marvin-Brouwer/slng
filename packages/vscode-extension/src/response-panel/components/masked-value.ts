@@ -38,7 +38,7 @@ export class MaskedValue extends SimpleElement {
 				vscodeApi.postMessage({ command: 'reveal', reference: this.reference, source })
 				toggleButton.innerHTML = eyeClosedSvg
 				toggleButton.title = 'Mask value'
-				valueSpan.textContent = '...'
+				valueSpan.textContent = ''
 			}
 			else {
 				toggleButton.innerHTML = eyeSvg
