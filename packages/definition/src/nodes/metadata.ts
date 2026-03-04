@@ -22,11 +22,12 @@ export class Metadata {
 	}
 
 	/**
-	 * Because the metadata object should never be visible on the client's side
-	 * We serialize to `null`
+	 * Because the parameters should never be visible on the client's side
+	 * We serialize to a custom set of properties
 	 */
 	toJSON() {
-		// eslint-disable-next-line unicorn/no-null
-		return null
+		return {
+			contentType: this.contentType?.split(';')[0]
+		}
 	}
 }

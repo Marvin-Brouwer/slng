@@ -18,6 +18,7 @@ export class HttpHeaders extends SimpleElement {
 			const name = headerNode.name.value
 			assertNotError(headerNode.value)
 
+			// TODO make : a separate element and hide on CSV copy.
 			const tr = this.appendElementTo(table, 'tr')
 			this.appendElementTo(tr, 'td', {
 				className: 'header-key',

@@ -18,6 +18,7 @@
 	border-top-right-radius: 0;
 	border-bottom-right-radius: 0;
 	background: var(--vscode-menu-background, var(--vscode-dropdown-background));
+	width: 100%;
 }
 .split-button vscode-button.dropdown-toggle {
 	border-top-left-radius: 0;
@@ -26,6 +27,10 @@
 	padding: 0;
 	width: 2em;
 	background: var(--vscode-menu-background, var(--vscode-dropdown-background));
+}
+.split-button vscode-button.main-button::part(control) {
+	justify-content: flex-start;
+	padding-left: calc(var(--button-padding-vertical) * 2);
 }
 .split-button vscode-button.dropdown-toggle::part(control) {
 	padding: 0 4px;
@@ -52,7 +57,7 @@
 }
 vscode-button.dropdown-item {
 	display: block;
-	width: 100%;
+	width: 100% - 2em;
 	padding: 0;
 	background: var(--vscode-menu-background, var(--vscode-dropdown-background));
 	display: flex;
@@ -60,17 +65,18 @@ vscode-button.dropdown-item {
 vscode-button.dropdown-item::part(control) {
 	padding: var(--button-padding-vertical) calc(var(--button-padding-vertical) * 2);
 	display: flex;
+	justify-content: flex-start;
 }
 
 copy-button {
 	display: inline-block;
 	position: relative;
-	width: 8em;
+	width: 12.1em;
 	margin-right: 1px;
 }
 mask-toggle {
 	display: inline-block;
 	position: relative;
-	width: 10em;
+	width: 9.5em;
 	margin-right: .5em;
 }

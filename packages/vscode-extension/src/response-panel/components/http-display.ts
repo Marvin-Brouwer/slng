@@ -20,6 +20,7 @@ export class HttpResponseDisplay extends SimpleElement {
 		const responseDataDiv = this.createElement('div', {
 			id: 'response-data',
 		})
+		const response = JSON.parse(this.textContent) as httpNodes.HttpDocument
 
 		const buttonPanel = this.createElement('div', {
 			className: 'button-panel',
@@ -28,13 +29,12 @@ export class HttpResponseDisplay extends SimpleElement {
 			container: responseDataDiv
 		})
 		this.appendComponentTo(buttonPanel, CopyButton, {
-			attributes: {
-				for: '#response-data',
-				type: 'response',
-			},
+			type: 'response',
+			container: responseDataDiv,
+			// TODO add content-type
+			contentType: response.metadata.contentType
 		})
 
-		const response = JSON.parse(this.textContent) as httpNodes.HttpDocument
 		assertResponse(response.startLine)
 
 		assertNotError(response.startLine.protocol)
@@ -75,6 +75,8 @@ export class HttpRequestDisplay extends SimpleElement {
 			id: 'request-data',
 		})
 
+		const request = JSON.parse(this.textContent) as httpNodes.HttpDocument
+
 		const buttonPanel = this.createElement('div', {
 			className: 'button-panel',
 		})
@@ -82,13 +84,12 @@ export class HttpRequestDisplay extends SimpleElement {
 			container: requestDataDiv
 		})
 		this.appendComponentTo(buttonPanel, CopyButton, {
-			attributes: {
-				for: '#request-data',
-				type: 'request',
-			},
+			type: 'request',
+			container: requestDataDiv,
+			// TODO add content-type
+			contentType: request.metadata.contentType
 		})
 
-		const request = JSON.parse(this.textContent) as httpNodes.HttpDocument
 		assertRequest(request.startLine)
 
 		assertNotError(request.startLine.method)

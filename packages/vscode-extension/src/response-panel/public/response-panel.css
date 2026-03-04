@@ -141,7 +141,7 @@ body-display {
 }
 
 masked-value {
-	display: inline-flex;
+	display: content;
 	align-items: center;
 	gap: 2px;
 	vertical-align: middle;
@@ -149,4 +149,8 @@ masked-value {
 
 masked-value vscode-button {
 	color: currentColor;
+	align-items: center;
+	gap: 2px;
+	vertical-align: middle;
+	user-select: none;
 }

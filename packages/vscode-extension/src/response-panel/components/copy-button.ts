@@ -4,38 +4,42 @@ import { Button } from '@vscode/webview-ui-toolkit'
 
 import { SimpleElement } from '../element-helper'
 import { vscodeApi } from '../vscode-api'
+import { HttpBody } from './body-display'
+import { HttpHeaders } from './header-display'
 
 // TODO convert to programmatic arguments over attributes
 // TODO copy headers (CSV) / copy body (JSON) instead of copy unmasked
 export class CopyButton extends SimpleElement {
 	static tagName = 'copy-button'
 
+	public container!: HTMLElement
+	public type!: string
+	public contentType?: string
+
 	protected onMount(): void {
-		const type = this.getAttribute('type') ?? 'value'
-		const valueSelector = this.getAttribute('for') ?? undefined
+		if (!this.container || !this.type) throw new Error('Expected this element to be created programatically')
 
 		const splitContainer = this.appendElement('div', {
 			className: 'split-button',
 			role: 'group',
-			ariaLabel: `Copy ${type}`,
+			ariaLabel: `Copy ${this.type}`,
 		})
 
 		const mainButton = this.appendElementTo<Button>(splitContainer, 'vscode-button', {
-			textContent: 'Copy',
+			textContent: `Copy ${this.type}`,
 			type: 'button',
 			appearance: 'secondary',
 			className: 'main-button',
 
-			title: `Copy the ${type} with sensitive values masked`,
-			ariaLabel: `Copy ${type} to clipboard`,
+			title: `Copy the full ${this.type}`,
+			ariaLabel: `Copy full ${this.type} to clipboard`,
 		})
 		this.appendElementTo(mainButton, 'span', {
 			slot: 'start',
 			innerHTML: copyIconSvg,
 		})
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		mainButton.addEventListener('click', async (_event) => {
-			await this.copyDefault(this.resolveValueElement(valueSelector))
+		mainButton.addEventListener('click', (_event) => {
+			this.copyDefault(this.container)
 			this.closeDropdown(dropdownMenu, dropdownToggle)
 		})
 
@@ -65,21 +69,40 @@ export class CopyButton extends SimpleElement {
 			}
 		})
 
-		const copyUnmaskedButton = this.appendElementTo<Button>(dropdownMenu, 'vscode-button', {
+		const copyHeadersButton = this.appendElementTo<Button>(dropdownMenu, 'vscode-button', {
 			className: 'dropdown-item',
-			textContent: 'Copy unmasked',
+			textContent: 'Copy headers (csv)',
 			appearance: 'secondary',
 
-			title: `Copy the ${type} with sensitive values UNMASKED`,
+			title: `Copy the ${this.type} headers`,
 			role: 'menuitem',
-			ariaLabel: `Copy ${type} to clipboard with masked values revealed`,
+			ariaLabel: `Copy ${this.type}'s headers to clipboard`,
 		})
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		copyUnmaskedButton.addEventListener('click', async (event) => {
+		copyHeadersButton.addEventListener('click', (event) => {
 			event.stopPropagation()
-			await this.copyUnmasked(this.resolveValueElement(valueSelector))
+			const headerTableElement = this.container.querySelector<HTMLTableElement>(`${HttpHeaders.tagName} table`)
+
+			this.copyPart(headerTableElement, 'text/csv', this.tableToCsv(headerTableElement))
 			this.closeDropdown(dropdownMenu, dropdownToggle)
 		})
+
+		if (this.contentType) {
+			const copyBodyButton = this.appendElementTo<Button>(dropdownMenu, 'vscode-button', {
+				className: 'dropdown-item',
+				textContent: `Copy body (${this.contentType.split('/')[1]})`,
+				appearance: 'secondary',
+
+				title: `Copy the ${this.type} body`,
+				role: 'menuitem',
+				ariaLabel: `Copy ${this.type}'s body to clipboard`,
+			})
+			copyBodyButton.addEventListener('click', (event) => {
+				event.stopPropagation()
+				const bodyElement = this.container.getElementsByTagName(HttpBody.tagName)[0] as HTMLElement
+				this.copyPart(bodyElement, this.contentType, bodyElement.textContent)
+				this.closeDropdown(dropdownMenu, dropdownToggle)
+			})
+		}
 
 		// Close dropdown when clicking outside
 		document.addEventListener('click', () => {
@@ -106,39 +129,28 @@ export class CopyButton extends SimpleElement {
 		dropdownToggle.setAttribute('aria-expanded', 'false')
 	}
 
-	private async copyDefault(element: HTMLElement) {
+	private copyDefault(element: HTMLElement) {
 		if (!element) return
-		console.log('Copy button clicked!')
-		await this.copyElementText(element)
-	}
-
-	private async copyUnmasked(element: HTMLElement) {
-		if (!element) return
-		console.log('Copy unmasked button clicked!')
-		await this.copyElementText(element)
-	}
-
-	private resolveValueElement(valueSelector: string): HTMLElement | undefined {
-		return document.querySelector(valueSelector) ?? undefined
-	}
-
-	/**
-	 * Copy the text content of an element to the clipboard (VS Code webview friendly)
-	 * @param el - HTMLElement to copy from
-	 */
-	private async copyElementText(element: HTMLElement) {
-		if (!element) return
-		element.focus()
+		const buttons = element.querySelectorAll<HTMLElement>('masked-value vscode-button')
+		for (const btn of buttons) btn.style.display = 'none'
 		// eslint-disable-next-line unicorn/prefer-dom-node-text-content -- innerText preserves visual line breaks
 		const plainText = (element.innerText || '').replaceAll('\u00A0\t', ' ')
-		const html = element.innerHTML
-		const item = new ClipboardItem({
-			'text/plain': new Blob([plainText], { type: 'text/plain' }),
-			'text/html': new Blob([html], { type: 'text/html' }),
-		})
-		await navigator.clipboard.write([item])
-			.then(() => vscodeApi.postMessage({ command: 'copied' }))
-			.catch(error => console.error('Copy failed:', error))
+		for (const btn of buttons) btn.style.display = ''
+		vscodeApi.postMessage({ command: 'copy', content: plainText })
+	}
+
+	private tableToCsv(table: HTMLTableElement): string {
+		return Array.from(table.rows).map(row =>
+			Array.from(row.cells).map(cell => {
+				const value = cell.innerText.replaceAll('"', '""')
+				return /[,"\n\r]/.test(value) ? `"${value}"` : value
+			}).join(',')
+		).join('\n')
+	}
+
+	private copyPart(_element: HTMLElement, _contentType: string, content?: string) {
+		if (!content) return
+		vscodeApi.postMessage({ command: 'copy', content })
 	}
 }
 
