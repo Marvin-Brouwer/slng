@@ -343,9 +343,6 @@ async function executeRequest(
 
 	const responseAst = await buildHttpResponse(context, fetchResponse)
 
-	// TODO, we don't want the console to expand the headers or body, however,
-	// using toJSON will also fail in the vscode extensionState object, since it's apparently serialized.
-	// Maybe create a custom formatter for the loggers and tag the values somehow?
 	const slingResponse: SlingResponse = {
 		status: fetchResponse.status,
 		statusText: fetchResponse.statusText,

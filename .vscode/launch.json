@@ -6,16 +6,14 @@
 			"type": "extensionHost",
 			"request": "launch",
 			"showAsyncStacks": true,
-			// TODO we disabled this to remove the 4 console windows on startup
-			// Figure out if we even need this flag
-			// "autoAttachChildProcesses": true,
 			"windows": {
 				"internalConsoleOptions": "neverOpen"
 			},
 			"args": [
-				// TODO figure out a way to have vscode actually work with the correct log level
-				"--log-level trace",
-				"--log slng.@sling/vscode:debug",
+				"--log",
+				"trace",
+				"--log",
+				"slng.@sling/vscode:trace",
 				"--disable-updates",
 				"--disable-workspace-trust",
 				"--profile-temp",

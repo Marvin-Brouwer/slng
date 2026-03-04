@@ -19,9 +19,8 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 		context,
 		vscodeContext.extensionUri)
 
-	if (vscodeContext.extensionMode === vscode.ExtensionMode.Development) {
+	if (__DEV__ && vscodeContext.extensionMode === vscode.ExtensionMode.Development) {
 		// Reset to standard for developers
-		responsePanel.hide()
 		await Promise.all(vscodeContext.workspaceState.keys().map(key => vscodeContext.workspaceState.update(key, void 0)))
 	}
 
@@ -46,34 +45,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 				await launchDebugSession(fileUri, exportName, lineNumber)
 			},
 		),
-
 	)
-	const statusIcon = vscode.window.createTextEditorDecorationType({
-		// TODO icons for sending, success and error
-		gutterIconPath: vscode.Uri.file(
-			path.join(vscodeContext.extensionPath, 'media', 'info.svg'),
-		),
-		gutterIconSize: 'contain',
-	})
-
-	// TODO how useful would the status icon be?
-	const editor = vscode.window.activeTextEditor
-	if (editor) {
-		let definitionLine = editor.document.lineAt(6)
-
-		editor.setDecorations(statusIcon, [
-			{
-				range: definitionLine.range,
-			},
-		])
-
-		definitionLine = editor.document.lineAt(12)
-		editor.setDecorations(statusIcon, [
-			{
-				range: definitionLine.range,
-			},
-		])
-	}
 
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined
 	vscode.window.onDidChangeActiveTextEditor(runExtension, undefined, vscodeContext.subscriptions)

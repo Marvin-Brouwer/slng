@@ -98,10 +98,6 @@ export class ResponsePanel implements vscode.WebviewViewProvider {
 		)
 	}
 
-	public hide() {
-		this.context.log.warn('TODO', 'Figure out if closing is possible')
-	}
-
 	// TODO do we want to show more information when no response? Maybe a send button?
 	public async show(reference: string | undefined) {
 		this.context.log.info('update', reference)

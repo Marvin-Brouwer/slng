@@ -38,7 +38,7 @@ export async function loadDefinitionFile(filePath: string, content?: string) {
 
 			const processor = getProtocolProcessor(internals.context, internals.template)
 			mutable.protocolAst = processor.processProtocol(internals.context, internals.template, astData.literalLocation)
-					?? ({ type: 'error', reason: 'Protocol processor returned no result' } satisfies ErrorNode)
+				?? ({ type: 'error', reason: 'Protocol processor returned no result' } satisfies ErrorNode)
 		}
 
 		return definitions
@@ -71,7 +71,6 @@ function parseDefinitionFile(filePath: string, exportNames: string[], content?: 
 
 					// Check if it's a Tagged Template Literal: sling`...`
 					if (isTaggedTemplateExpression(init) && isIdentifier(init.tag)
-						// todo do we want to be name strict?
 						&& init.tag.name === 'sling') {
 						assertIdentifier(decl.id)
 						const exportName = decl.id.name

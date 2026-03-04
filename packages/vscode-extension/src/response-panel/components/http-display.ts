@@ -31,7 +31,6 @@ export class HttpResponseDisplay extends SimpleElement {
 		this.appendComponentTo(buttonPanel, CopyButton, {
 			type: 'response',
 			container: responseDataDiv,
-			// TODO add content-type
 			contentType: response.metadata.contentType
 		})
 
@@ -86,7 +85,6 @@ export class HttpRequestDisplay extends SimpleElement {
 		this.appendComponentTo(buttonPanel, CopyButton, {
 			type: 'request',
 			container: requestDataDiv,
-			// TODO add content-type
 			contentType: request.metadata.contentType
 		})
 

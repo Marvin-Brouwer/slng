@@ -7,8 +7,6 @@ import { vscodeApi } from '../vscode-api'
 import { HttpBody } from './body-display'
 import { HttpHeaders } from './header-display'
 
-// TODO convert to programmatic arguments over attributes
-// TODO copy headers (CSV) / copy body (JSON) instead of copy unmasked
 export class CopyButton extends SimpleElement {
 	static tagName = 'copy-button'
 
