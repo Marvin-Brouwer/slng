@@ -50,7 +50,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 	vscode.window.onDidChangeActiveTextEditor(runExtension, undefined, vscodeContext.subscriptions)
 	vscode.workspace.onDidSaveTextDocument(
 		async (document) => {
-			if (!document.fileName.endsWith('.mts')) return
+			if (!document.fileName.endsWith('.mts') && !document.fileName.endsWith('.ts')) return
 			await runExtension(vscode.window.activeTextEditor)
 		},
 		undefined,
@@ -58,7 +58,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 	)
 	context.addSubscriptions(
 		vscode.workspace.onDidChangeTextDocument((event) => {
-			if (!event.document.fileName.endsWith('.mts')) return
+			if (!event.document.fileName.endsWith('.mts') && !event.document.fileName.endsWith('.ts')) return
 			clearTimeout(debounceTimer)
 			// eslint-disable-next-line  @typescript-eslint/no-misused-promises
 			debounceTimer = setTimeout(async () => await runExtension(vscode.window.activeTextEditor), 500)

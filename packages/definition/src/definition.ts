@@ -35,6 +35,7 @@ interface CachedResponse {
 export function createDefinition(
 	template: StringTemplate,
 	context: SlingContext,
+	protocolKey: string,
 ): SlingDefinition {
 	// Response cache (shared across execute/json calls)
 	let cached: CachedResponse | undefined
@@ -42,6 +43,7 @@ export function createDefinition(
 	const internals: SlingInternals = {
 		version: 'v1',
 		context,
+		protocolKey,
 		tsAst: undefined!, // added by the runtime
 		template,
 		resolvedTemplate: undefined!, // added on request

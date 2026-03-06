@@ -3,21 +3,16 @@ import * as vscode from 'vscode'
 import { sendCommand } from '../commands/send'
 import { ExtensionContext } from '../context'
 
-/**
- * Regex to find exported sling template definitions.
- *
- * Matches patterns like:
- * - `export const foo = sling\``
- * - `export let foo = sling\``
- * - `export var foo = sling\``
- *
- * Captures the export name.
- */
+// Matches the default import identifier from a slng.config file.
+// e.g. `import s from '../slng.config.ts'` → captures `s`
+const SLNG_CONFIG_IMPORT_RE = /import\s+(\w+)\s+from\s+['"][^'"]*slng\.config[^'"]*['"]/
 
-// TODO we have the AST now, find the "import sling from '../slng.config.mjs'
-// and use that instead of regex
-const SLING_EXPORT_RE
-	= /export\s+(?:const|let|var)\s+(\w+)\s*=\s*sling\s*`/g
+function buildExportRe(identifier: string): RegExp {
+	return new RegExp(
+		`export\\s+(?:const|let|var)\\s+(\\w+)\\s*=\\s*${identifier}\\.\\w+\\s*\``,
+		'g',
+	)
+}
 
 export class SlingCodeLensProvider implements vscode.CodeLensProvider {
 	private readonly _onDidChange = new vscode.EventEmitter<void>()
@@ -27,18 +22,22 @@ export class SlingCodeLensProvider implements vscode.CodeLensProvider {
 		document: vscode.TextDocument,
 		_token: vscode.CancellationToken,
 	): vscode.CodeLens[] {
-		// Only apply to .mts files
-		if (!document.fileName.endsWith('.mts')) {
+		// Only apply to .mts and .ts files
+		if (!document.fileName.endsWith('.mts') && !document.fileName.endsWith('.ts')) {
 			return []
 		}
 
 		const text = document.getText()
+
+		const importMatch = SLNG_CONFIG_IMPORT_RE.exec(text)
+		if (!importMatch) return []
+
+		const exportRe = buildExportRe(importMatch[1])
 		const lenses: vscode.CodeLens[] = []
 
 		let match: RegExpExecArray | null
-		SLING_EXPORT_RE.lastIndex = 0
 
-		while ((match = SLING_EXPORT_RE.exec(text)) !== null) {
+		while ((match = exportRe.exec(text)) !== null) {
 			const exportName = match[1]
 			const position = document.positionAt(match.index)
 			const range = new vscode.Range(position, position)
@@ -74,7 +73,7 @@ export function registerCodeLens(context: ExtensionContext) {
 
 	context.addSubscriptions(
 		vscode.languages.registerCodeLensProvider(
-			{ language: 'typescript', pattern: '**/*.mts' },
+			{ language: 'typescript', pattern: '**/*.{ts,mts}' },
 			codeLensProvider,
 		),
 		// Refresh CodeLens on file save

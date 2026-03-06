@@ -1,12 +1,12 @@
 // based on https://httpyac.github.io/guide/examples.html#argocd
 
-import sling from '../slng.config.mjs'
-import constants from '../slng.constants.mjs'
+import s from '../slng.config.mts'
+import constants from '../slng.constants.mts'
 
-const username = sling.sensitive(sling.parameters.getRequired('USERNAME'), 3)
-const password = sling.secret(sling.parameters.getRequired('PASSWORD'))
+const username = s.sensitive(s.parameters.getRequired('USERNAME'), 3)
+const password = s.secret(s.parameters.getRequired('PASSWORD'))
 
-export const session = sling`
+export const session = s.http`
   POST ${constants.host}/argocd/api/v1/session
   {
     "username": "${username}",

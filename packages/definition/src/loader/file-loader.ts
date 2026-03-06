@@ -2,10 +2,9 @@ import * as fs from 'node:fs'
 
 import { parse } from '@babel/parser'
 import _traverse, { Node } from '@babel/traverse'
-import { assertIdentifier, isDeclaration, isIdentifier, isTaggedTemplateExpression, isVariableDeclaration, SourceLocation } from '@babel/types'
+import { assertIdentifier, isDeclaration, isIdentifier, isMemberExpression, isTaggedTemplateExpression, isVariableDeclaration, SourceLocation } from '@babel/types'
 
 import { type ErrorNode, type SlingNode } from '../nodes/nodes.js'
-import { getProtocolProcessor } from '../protocol/protocol-processor.js'
 import { TemplateChunks } from '../template-chunks.js'
 import { type SlingDefinition, type StringTemplate } from '../types'
 
@@ -44,7 +43,11 @@ export async function loadDefinitionFile(filePath: string, content?: string) {
 			const mutable = internals as { tsAst: AstData, protocolAst: SlingNode | ErrorNode }
 			mutable.tsAst = astData
 
-			const processor = getProtocolProcessor(internals.context, internals.template)
+			const processor = internals.context.protocolProcessors.get(internals.protocolKey)
+			if (!processor) {
+				mutable.protocolAst = { type: 'error', reason: `Unknown protocol: '${internals.protocolKey}'` } satisfies ErrorNode
+				continue
+			}
 			const chunks = flattenTemplate(internals.template, paramMaps[definitionName], astData.literalLocation.start)
 			mutable.protocolAst = processor.processProtocol(internals.context, chunks, astData.literalLocation)
 				?? ({ type: 'error', reason: 'Protocol processor returned no result' } satisfies ErrorNode)
@@ -79,9 +82,11 @@ function parseDefinitionFile(filePath: string, exportNames: string[], content?: 
 				for (const decl of declaration.declarations) {
 					const init = decl.init
 
-					// Check if it's a Tagged Template Literal: sling`...`
-					if (isTaggedTemplateExpression(init) && isIdentifier(init.tag)
-						&& init.tag.name === 'sling') {
+					// Check if it's a Tagged Template Literal: s.http`...`
+					if (isTaggedTemplateExpression(init)
+						&& isMemberExpression(init.tag)
+						&& isIdentifier(init.tag.object)
+						&& isIdentifier(init.tag.property)) {
 						assertIdentifier(decl.id)
 						const exportName = decl.id.name
 

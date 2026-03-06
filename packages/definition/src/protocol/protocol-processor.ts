@@ -1,10 +1,9 @@
 import { Metadata } from '../nodes/metadata'
-import { SlingDocument, SlingNode } from '../nodes/nodes'
+import { SlingNode } from '../nodes/nodes'
 import { TemplateChunks } from '../template-chunks'
-import { SlingContext, StringChunk, StringTemplate } from '../types'
+import { SlingContext, StringChunk } from '../types'
 
 export type ProtocolProcessor<TNode extends SlingNode = SlingNode> = {
-	canProcess(template: StringTemplate): boolean
 	processProtocol(
 		context: SlingContext,
 		chunks: TemplateChunks,
@@ -56,31 +55,3 @@ export function validateDefaults(metadata: Metadata, chunks: TemplateChunks) {
 	}
 }
 
-const fallbackProcessor: ProtocolProcessor<SlingDocument> = {
-	canProcess() { return true },
-	processProtocol(_context, chunks, _literalLocation) {
-		const metadata = new Metadata()
-		const defaultValidations = validateDefaults(metadata, chunks)
-		if (defaultValidations) return {
-			type: 'unsupported',
-			metadata,
-		}
-
-		metadata.appendError({
-			reason: 'No usable protocol detected',
-		})
-
-		return {
-			type: 'unsupported',
-			metadata,
-		}
-	},
-}
-
-export function getProtocolProcessor<TNode extends SlingNode>(context: SlingContext, template: StringTemplate) {
-	if (!template) return fallbackProcessor
-
-	const processor = [...context.protocolProcessors.values()]
-		.find(processor => processor.canProcess(template)) as ProtocolProcessor<TNode> | undefined
-	return processor ?? fallbackProcessor
-}

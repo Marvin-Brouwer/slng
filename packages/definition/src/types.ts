@@ -181,6 +181,9 @@ export type SlingInternals = {
 	/** The sling context, available for use by file-loader.ts when building protocolAst */
 	readonly context: SlingContext
 
+	/** The protocol key used to select the processor (e.g. `'http'`). */
+	readonly protocolKey: string
+
 	/** File AST information for cross referencing in editor-plugins, added when loading the file */
 	readonly tsAst: AstData
 
@@ -336,9 +339,9 @@ export interface SlingContext {
 }
 
 /**
- * A configured sling tagged template function.
+ * A tagged template builder for a specific protocol.
  *
- * Use as: `http\`GET https://...\``
+ * Use as: `s.http\`GET https://...\``
  */
 export type SlingTemplateBuilder = (
 	strings: TemplateStringsArray,
@@ -346,14 +349,17 @@ export type SlingTemplateBuilder = (
 ) => SlingDefinition
 
 /**
- * A configured sling tagged template function.
+ * A configured sling instance.
  *
- * Use as: `http\`GET https://...\``
+ * Access protocol-specific builders via their named properties, e.g. `s.http\`GET https://...\``.
  */
-export type ConfiguredSling = SlingTemplateBuilder & {
+export type ConfiguredSling = {
 	/** The resolved configuration context. */
 	readonly context: SlingContext
 	readonly parameters: SlingParameters
+
+	/** Build a HTTP/* request definition. */
+	readonly http: SlingTemplateBuilder
 
 	namedMask: typeof namedMask
 	secret: typeof secret

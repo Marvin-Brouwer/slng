@@ -6,11 +6,13 @@
 		"lib": [
 			"ES2022"
 		],
-"esModuleInterop": true,
+		"esModuleInterop": true,
 		"skipLibCheck": true,
 		"resolveJsonModule": true,
 		"isolatedModules": true,
-		"allowSyntheticDefaultImports": true
+		"allowSyntheticDefaultImports": true,
+		"allowImportingTsExtensions": true,
+		"noEmit": true
 	},
 	"exclude": [
 		"node_modules",

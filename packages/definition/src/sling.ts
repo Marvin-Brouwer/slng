@@ -11,7 +11,7 @@ import {
 	type ConfiguredSling,
 	type SlingContext,
 	type SlingInterpolation,
-	SlingTemplateBuilder,
+	type SlingTemplateBuilder,
 } from './types.js'
 
 /**
@@ -20,27 +20,26 @@ import {
  * Accepts zero or more plugins that modify the sling context
  * (e.g. loading environment variables).
  *
- * Returns a tagged template function that defines HTTP requests.
+ * Returns an object with protocol-specific tagged template builders.
  *
  * @example
  * ```ts
- * // slng.config.mts
- * import sling, { useDotEnv } from '@slng/definition'
+ * // slng.config.ts
+ * import sling, { useDotEnv } from '@slng/definition/config'
  *
- * export default sling(
- *   useDotEnv('local', 'staging'),
+ * export default await sling(
+ *   useDotEnv({ directory: import.meta.dirname, environments: ['local', 'staging'] }),
  * )
  * ```
  *
  * @example
  * ```ts
- * // some-api/requests.mts
- * import sling from '../slng.config.mjs'
+ * // some-api/requests.ts
+ * import s from '../slng.config.js'
  *
- * export const getUsers = sling`
+ * export const getUsers = s.http`
  *   GET https://api.example.com/users HTTP/1.1
- *
- *   Authorization: Bearer ${process.env.TOKEN}
+ *   Accept: application/json
  * `
  * ```
  */
@@ -56,49 +55,24 @@ export async function sling(...plugins: SlingPlugin[]): Promise<ConfiguredSling>
 	await loadPlugins(context, plugins)
 	context.protocolProcessors.set('http', httpProtocolProcessor)
 
-	const templateFunction = function slingTemplate(
-		strings: TemplateStringsArray,
-		...values: SlingInterpolation[]
-	) {
-		const template = readHttpTemplate(strings, values)
-		return createDefinition(template, context)
-	} as SlingTemplateBuilder
+	function makeProtocolBuilder(protocolKey: string): SlingTemplateBuilder {
+		return function (strings: TemplateStringsArray, ...values: SlingInterpolation[]) {
+			const template = readHttpTemplate(strings, values)
+			return createDefinition(template, context, protocolKey)
+		}
+	}
 
-	// Attach parameters
-	Object.defineProperty(templateFunction, 'context', {
-		value: context,
-		writable: false,
-		enumerable: true,
-	})
-
-	// Parameters are derived from the active environment via a getter so
-	// they automatically reflect environment switches at any point in time.
-	Object.defineProperty(templateFunction, 'parameters', {
-		get() {
+	return {
+		get context() { return context },
+		get parameters() {
 			if (!context.activeEnvironment || !context.envSets.has(context.activeEnvironment)) {
 				return createSlingParameters()
 			}
 			return createSlingParameters(context.envSets.get(context.activeEnvironment))
 		},
-		enumerable: true,
-	})
-
-	// Attach helpers
-	Object.defineProperty(templateFunction, 'namedMask', {
-		value: namedMask,
-		writable: false,
-		enumerable: true,
-	})
-	Object.defineProperty(templateFunction, 'secret', {
-		value: secret,
-		writable: false,
-		enumerable: true,
-	})
-	Object.defineProperty(templateFunction, 'sensitive', {
-		value: sensitive,
-		writable: false,
-		enumerable: true,
-	})
-
-	return templateFunction as ConfiguredSling
+		http: makeProtocolBuilder('http'),
+		namedMask,
+		secret,
+		sensitive,
+	} as ConfiguredSling
 }

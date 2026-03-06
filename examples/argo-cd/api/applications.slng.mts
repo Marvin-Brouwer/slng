@@ -1,18 +1,18 @@
 // based on https://httpyac.github.io/guide/examples.html#argocd
 
-import sling from '../slng.config.mjs'
-import constants from '../slng.constants.mjs'
+import s from '../slng.config.mts'
+import constants from '../slng.constants.mts'
 
-import { session } from './session.slng.mjs'
+import { session } from './session.slng.mts'
 
-export const getApplications = sling`
+export const getApplications = s.http`
   GET ${constants.host}/argocd/api/v1/applications
-  Authorization: Bearer ${sling.secret(session.json('token'))}
+  Authorization: Bearer ${s.secret(session.json('token'))}
 `
 
-export const createApplication = sling`
+export const createApplication = s.http`
   POST ${constants.host}/argocd/api/v1/applications
-  Authorization: Bearer ${sling.secret(session.json('token'))}
+  Authorization: Bearer ${s.secret(session.json('token'))}
 
   {
     "metadata": {
