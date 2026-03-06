@@ -9,64 +9,97 @@ export interface JsonNode extends SlingNode {
 export interface JsonNullNode extends JsonNode {
 	type: 'json:null'
 }
-export const _null = (): JsonNullNode => ({
+export const _null = (loc?: SlingNode['loc']): JsonNullNode => ({
 	type: 'json:null',
+	loc,
 })
 export interface JsonUnknownNode extends JsonNode {
 	type: 'json:unknown'
 	value: unknown
 }
-export const unknown = (value: unknown): JsonUnknownNode => ({
+export const unknown = (value: unknown, loc?: SlingNode['loc']): JsonUnknownNode => ({
 	type: 'json:unknown',
 	value,
+	loc,
 })
-export interface JsonValueNode<T> extends JsonNode {
-	value: T
-	variant: 'key' | 'value'
+
+/** Inner leaf node holding a raw string or number literal inside a json:string or json:number. */
+export interface JsonValueContentNode extends JsonNode {
+	type: 'json:value'
+	value: string | number
+	variant?: 'key' | 'value'
 }
-export const string = (value: string, variant: 'key' | 'value'): JsonValueNode<string> => ({
-	type: 'json:string',
-	variant,
+export const valueContent = (
+	value: string | number,
+	variant?: 'key' | 'value',
+	loc?: SlingNode['loc'],
+): JsonValueContentNode => ({
+	type: 'json:value',
 	value,
+	...(variant === undefined ? {} : { variant }),
+	loc,
 })
-export const number = (value: number, variant: 'key' | 'value'): JsonValueNode<number> => ({
-	type: 'json:number',
-	variant,
-	value,
-})
-export const boolean = (value: boolean): JsonValueNode<boolean> => ({
-	type: 'json:boolean',
-	variant: 'value',
-	value,
-})
+
 export interface JsonMaskedNode extends JsonNode {
 	type: `json:masked:${string}`
 	reference: number
 	mask: string
 }
-export const jsonMask = (metadata: Metadata, value: Masked<PrimitiveValue>): JsonMaskedNode => ({
+export const jsonMask = (metadata: Metadata, value: Masked<PrimitiveValue>, loc?: SlingNode['loc']): JsonMaskedNode => ({
 	type: `json:masked:${typeof value.unmask()}`,
 	reference: metadata.appendParameter(value),
 	mask: value.value,
+	loc,
 })
+
+export interface JsonStringNode extends JsonNode {
+	type: 'json:string'
+	variant: 'key' | 'value'
+	parts: (JsonPunctuationNode | JsonValueContentNode | JsonMaskedNode)[]
+}
+export const string = (
+	parts: (JsonPunctuationNode | JsonValueContentNode | JsonMaskedNode)[],
+	variant: 'key' | 'value' = 'value',
+	loc?: SlingNode['loc'],
+): JsonStringNode => ({
+	type: 'json:string',
+	variant,
+	parts,
+	loc,
+})
+
+export interface JsonNumberNode extends JsonNode {
+	type: 'json:number'
+	variant: 'key' | 'value'
+	parts: (JsonValueContentNode | JsonMaskedNode)[]
+}
+export const number = (
+	parts: (JsonValueContentNode | JsonMaskedNode)[],
+	variant: 'key' | 'value' = 'value',
+	loc?: SlingNode['loc'],
+): JsonNumberNode => ({
+	type: 'json:number',
+	variant,
+	parts,
+	loc,
+})
+
+export interface JsonBooleanNode extends JsonNode {
+	type: 'json:boolean'
+	variant: 'value'
+	value: boolean
+}
+export const boolean = (value: boolean, loc?: SlingNode['loc']): JsonBooleanNode => ({
+	type: 'json:boolean',
+	variant: 'value',
+	value,
+	loc,
+})
+
 export interface JsonArrayNode extends JsonNode {
 	type: 'json:array'
 	items: JsonAstNode[]
 }
-export interface JsonCompositeValueNode<T extends string | number> extends JsonNode {
-	type: `json:composite:${'string' | 'number'}`
-	variant: 'key' | 'value'
-	parts: (JsonValueNode<T> | JsonMaskedNode)[]
-}
-export const composite = <T extends string | number>(
-	type: 'string' | 'number',
-	parts: (JsonValueNode<T> | JsonMaskedNode)[],
-	variant: 'key' | 'value' = 'value',
-): JsonCompositeValueNode<T> => ({
-	type: `json:composite:${type}`,
-	variant,
-	parts,
-})
 export const array = (items: JsonAstNode[]): JsonArrayNode => ({
 	type: 'json:array',
 	items,
@@ -84,18 +117,26 @@ export interface JsonWhitespaceNode extends JsonNode {
 	type: 'json:whitespace'
 	value: string
 }
-export const whitespace = (value: string): JsonWhitespaceNode => ({
+export const whitespace = (value: string, loc?: SlingNode['loc']): JsonWhitespaceNode => ({
 	type: 'json:whitespace',
 	value,
+	loc,
 })
 
 export interface JsonPunctuationNode extends JsonNode {
 	type: 'json:punctuation'
-	value: ',' | ':'
+	value: ',' | ':' | '{' | '}' | '[' | ']' | '"'
+	variant?: 'key' | 'value'
 }
-export const punctuation = (value: ',' | ':'): JsonPunctuationNode => ({
+export const punctuation = (
+	value: ',' | ':' | '{' | '}' | '[' | ']' | '"',
+	variant?: 'key' | 'value',
+	loc?: SlingNode['loc'],
+): JsonPunctuationNode => ({
 	type: 'json:punctuation',
 	value,
+	...(variant === undefined ? {} : { variant }),
+	loc,
 })
 
 export interface JsonCommentNode extends JsonNode {
@@ -126,14 +167,13 @@ export const document = (value: JsonAstNode[]): JsonDocument => ({
 export type JsonAstNode
 	= JsonNullNode
 	| JsonUnknownNode
-	| JsonValueNode<string>
-	| JsonValueNode<number>
-	| JsonValueNode<boolean>
+	| JsonStringNode
+	| JsonNumberNode
+	| JsonBooleanNode
 	| JsonMaskedNode
-	| JsonCompositeValueNode<string>
-	| JsonCompositeValueNode<number>
 	| JsonArrayNode
 	| JsonObjectNode
 	| JsonWhitespaceNode
 	| JsonCommentNode
 	| JsonPunctuationNode
+	| JsonValueContentNode

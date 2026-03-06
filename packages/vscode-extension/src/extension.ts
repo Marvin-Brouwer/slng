@@ -1,5 +1,3 @@
-import path from 'node:path'
-
 import * as vscode from 'vscode'
 
 import { registerSendCommand } from './commands/send.js'
@@ -10,9 +8,10 @@ import { launchDebugSession } from './debug/launcher.js'
 import { registerResponsePanel } from './response-panel/response-panel.webview.js'
 import { registerCodeLens } from './visual/codelens.js'
 import { registerDiagnostics } from './visual/diagnostics.js'
+import { disposeHttpHighlighting, refreshJsonHighlighting } from './visual/http-highlighting.js'
 
 export async function activate(vscodeContext: vscode.ExtensionContext) {
-	const context = await createContext(vscodeContext)
+	const context = createContext(vscodeContext)
 	context.log.info('Initializing', vscodeContext.extension.id)
 
 	const responsePanel = registerResponsePanel(
@@ -64,6 +63,11 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 			// eslint-disable-next-line  @typescript-eslint/no-misused-promises
 			debounceTimer = setTimeout(async () => await runExtension(vscode.window.activeTextEditor), 500)
 		}),
+		vscode.window.onDidChangeActiveColorTheme(() => {
+			refreshJsonHighlighting()
+			// eslint-disable-next-line @typescript-eslint/no-floating-promises
+			runExtension(vscode.window.activeTextEditor)
+		}),
 		{ dispose: () => clearTimeout(debounceTimer) },
 	)
 	await runExtension(vscode.window.activeTextEditor)
@@ -72,5 +76,5 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 }
 
 export function deactivate(): void {
-	// Cleanup handled by disposables
+	disposeHttpHighlighting()
 }

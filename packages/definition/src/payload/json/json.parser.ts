@@ -3,10 +3,10 @@ import { SlingNode } from '../../nodes/nodes'
 
 import { LexerToken, MaskedToken, PunctuationToken, ValueToken } from './json.lexer'
 import {
-	_null, array, boolean, commentBlock, commentLine, composite, jsonMask, number, object, punctuation, string, unknown, whitespace,
+	_null, array, boolean, commentBlock, commentLine, jsonMask, number, object, punctuation, string, unknown, valueContent, whitespace,
 } from './json.nodes'
 
-import type { JsonAstNode, JsonMaskedNode, JsonObjectNode, JsonValueNode } from './json.nodes'
+import type { JsonAstNode, JsonMaskedNode, JsonObjectNode, JsonStringNode, JsonValueContentNode } from './json.nodes'
 
 type ParserState = {
 	cursor: number
@@ -40,7 +40,7 @@ function parseNode(state: ParserState, variant: 'key' | 'value' = 'value'): Json
 	switch (token.type) {
 		case 'json-token:whitespace': {
 			advance(state)
-			return whitespace(token.value)
+			return whitespace(token.value, token.loc)
 		}
 
 		case 'json-token:comment-body':
@@ -64,19 +64,18 @@ function parseNode(state: ParserState, variant: 'key' | 'value' = 'value'): Json
 
 		case 'json-token:literal': {
 			advance(state)
-			return parseLiteralValue(token.value, variant)
+			return parseLiteralValue(token.value, variant, token.loc)
 		}
 
 		case 'json-token:masked': {
 			advance(state)
-			// Registering with metadata as discussed previously
-			return jsonMask(state.metadata, (token as MaskedToken).value)
+			return wrapMaskedNode(state, token as MaskedToken, variant)
 		}
 
 		case ':':
 		case ',': {
 			advance(state)
-			return punctuation(token.type)
+			return punctuation(token.type, undefined, token.loc)
 		}
 
 		default: {
@@ -86,8 +85,33 @@ function parseNode(state: ParserState, variant: 'key' | 'value' = 'value'): Json
 	}
 }
 
+/**
+ * Wraps a bare masked token (outside a string literal) in the appropriate container.
+ * - masked string → json:string { parts: [punct'"', masked, punct'"'] }
+ * - masked number → json:number { parts: [masked] }
+ * - masked boolean/other → bare masked node
+ */
+function wrapMaskedNode(state: ParserState, token: MaskedToken, variant: 'key' | 'value'): JsonAstNode {
+	const maskedNode = jsonMask(state.metadata, token.value, token.loc)
+	const maskedType = maskedNode.type // 'json:masked:string' | 'json:masked:number' | ...
+
+	if (maskedType === 'json:masked:string') {
+		const openQuote = punctuation('"', variant, token.loc ? { start: token.loc.start, end: token.loc.start } : undefined)
+		const closeQuote = punctuation('"', variant, token.loc ? { start: token.loc.end, end: token.loc.end } : undefined)
+		return string([openQuote, maskedNode, closeQuote], variant, token.loc)
+	}
+
+	if (maskedType === 'json:masked:number') {
+		return number([maskedNode], variant, token.loc)
+	}
+
+	// boolean and other masked types — return bare masked node
+	return maskedNode
+}
+
 function parseObject(state: ParserState): JsonObjectNode {
-	advance(state) // Skip '{'
+	const openBrace = peek(state) // '{'
+	advance(state)
 	const children: JsonAstNode[] = []
 	let position: 'key' | 'value' = 'key'
 
@@ -97,14 +121,14 @@ function parseObject(state: ParserState): JsonObjectNode {
 
 		if (isPunctuationToken(token, ':')) {
 			advance(state)
-			children.push(punctuation(':'))
+			children.push(punctuation(':', undefined, token.loc))
 			position = 'value'
 			continue
 		}
 
 		if (isPunctuationToken(token, ',')) {
 			advance(state)
-			children.push(punctuation(','))
+			children.push(punctuation(',', undefined, token.loc))
 			position = 'key'
 			continue
 		}
@@ -113,13 +137,22 @@ function parseObject(state: ParserState): JsonObjectNode {
 		if (node) children.push(node)
 	}
 
-	advance(state) // Skip '}'
+	const closeBrace = peek(state) // '}'
+	advance(state)
 
-	return object(children)
+	if (openBrace?.loc) children.unshift(setLoc(punctuation('{'), openBrace.loc))
+	if (closeBrace?.loc && closeBrace.type !== 'EOF') children.push(setLoc(punctuation('}'), closeBrace.loc))
+
+	const node = object(children)
+	if (openBrace?.loc && closeBrace?.loc && closeBrace.type !== 'EOF') {
+		node.loc = { start: openBrace.loc.start, end: closeBrace.loc.end }
+	}
+	return node
 }
 
 function parseArray(state: ParserState) {
-	advance(state) // Skip '['
+	const openBracket = peek(state) // '['
+	advance(state)
 	const items: JsonAstNode[] = []
 
 	while (state.cursor < state.tokens.length) {
@@ -130,25 +163,35 @@ function parseArray(state: ParserState) {
 		if (node) items.push(node)
 	}
 
-	advance(state) // Skip ']'
-	return array(items)
+	const closeBracket = peek(state) // ']'
+	advance(state)
+
+	if (openBracket?.loc) items.unshift(setLoc(punctuation('['), openBracket.loc))
+	if (closeBracket?.loc && closeBracket.type !== 'EOF') items.push(setLoc(punctuation(']'), closeBracket.loc))
+
+	const node = array(items)
+	if (openBracket?.loc && closeBracket?.loc && closeBracket.type !== 'EOF') {
+		node.loc = { start: openBracket.loc.start, end: closeBracket.loc.end }
+	}
+	return node
 }
 
-function parseString(state: ParserState, variant: 'key' | 'value' = 'value') {
+function parseString(state: ParserState, variant: 'key' | 'value' = 'value'): JsonStringNode {
+	const openQuote = peek(state)
 	advance(state) // Skip opening '"'
-	const parts: (JsonValueNode<string> | JsonMaskedNode)[] = []
+	const parts: (JsonValueContentNode | JsonMaskedNode)[] = []
 
 	while (state.cursor < state.tokens.length) {
 		const token = peek(state)
 		if (isPunctuationToken(token, '"') || isEnd(token)) break
 
 		if (isValueToken(token, 'json-token:string-content')) {
-			parts.push(string(token.value, variant))
+			parts.push(setLoc(valueContent(token.value, variant), token.loc))
 			advance(state)
 			continue
 		}
 		if (token.type === 'json-token:masked') {
-			parts.push(jsonMask(state.metadata, token.value))
+			parts.push(setLoc(jsonMask(state.metadata, token.value), token.loc))
 			advance(state)
 			continue
 		}
@@ -157,11 +200,24 @@ function parseString(state: ParserState, variant: 'key' | 'value' = 'value') {
 		advance(state)
 	}
 
+	const closeQuote = peek(state)
 	advance(state) // Skip closing '"'
 
-	if (parts.length === 0) return string('', variant)
-	if (parts.length === 1 && parts[0].type === 'json:string') return parts[0]
-	return composite('string', parts, variant)
+	const openQuotePunct = setLoc(punctuation('"', variant), openQuote.loc)
+	const closeQuotePunct = closeQuote.type === 'EOF'
+		? undefined
+		: setLoc(punctuation('"', variant), closeQuote.loc)
+
+	const allParts: JsonStringNode['parts'] = [
+		openQuotePunct,
+		...parts,
+		...(closeQuotePunct ? [closeQuotePunct] : []),
+	]
+	const result = string(allParts, variant)
+	if (openQuote.loc && closeQuotePunct?.loc) {
+		result.loc = { start: openQuote.loc.start, end: closeQuotePunct.loc.end }
+	}
+	return result
 }
 
 function parseComment(state: ParserState) {
@@ -187,27 +243,42 @@ function parseComment(state: ParserState) {
 		}
 	}
 
-	return variant === 'line' ? commentLine(value) : commentBlock(value)
+	const endToken = state.tokens[state.cursor - 1]
+	const node = variant === 'line' ? commentLine(value) : commentBlock(value)
+	if (startToken?.loc && endToken?.loc) {
+		node.loc = { start: startToken.loc.start, end: endToken.loc.end }
+	}
+	return node
 }
 
-function parseLiteralValue(value: string, variant: 'key' | 'value' = 'value'): JsonAstNode {
-	if (value === 'true') return boolean(true)
-	if (value === 'false') return boolean(false)
-	if (value === 'null') return _null()
+function parseLiteralValue(value: string, variant: 'key' | 'value' = 'value', loc?: SlingNode['loc']): JsonAstNode {
+	if (value === 'true') return boolean(true, loc)
+	if (value === 'false') return boolean(false, loc)
+	if (value === 'null') return _null(loc)
 	// Illegal value fallback
-	if (value === 'undefined') return _null()
+	if (value === 'undefined') return _null(loc)
 
 	const numberValue = Number(value)
-	if (!Number.isNaN(numberValue)) return number(numberValue, variant)
+	if (!Number.isNaN(numberValue)) {
+		const content = setLoc(valueContent(numberValue, variant), loc)
+		return setLoc(number([content], variant), loc)
+	}
 
 	// Unknown values are handled here, this SHOULD never happen
-	return unknown(value)
+	return unknown(value, loc)
+}
+
+function setLoc<T extends SlingNode>(node: T, loc: SlingNode['loc']): T {
+	node.loc = loc
+	return node
 }
 
 function isCommentPunctuation(token: LexerToken): token is PunctuationToken {
 	return token.type === '//' || token.type === '/*' || token.type === '*/'
 }
 
+function isPunctuationToken<T extends PunctuationToken['type']>(token: LexerToken, type: T): token is PunctuationToken & { type: T }
+function isPunctuationToken(token: LexerToken): token is PunctuationToken
 function isPunctuationToken(token: LexerToken, type?: PunctuationToken['type']): token is PunctuationToken {
 	if (!type) return !Object.hasOwn(token, 'value')
 	return type === token.type

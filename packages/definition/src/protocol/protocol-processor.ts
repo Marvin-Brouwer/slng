@@ -1,12 +1,13 @@
 import { Metadata } from '../nodes/metadata'
 import { SlingDocument, SlingNode } from '../nodes/nodes'
-import { SlingContext, StringTemplate } from '../types'
+import { TemplateChunks } from '../template-chunks'
+import { SlingContext, StringChunk, StringTemplate } from '../types'
 
 export type ProtocolProcessor<TNode extends SlingNode = SlingNode> = {
 	canProcess(template: StringTemplate): boolean
 	processProtocol(
 		context: SlingContext,
-		template: StringTemplate,
+		chunks: TemplateChunks,
 		literalLocation: { start: { line: number, column: number }, end: { line: number, column: number } },
 	): TNode | undefined
 	// TODO, perhaps executeProtocol should go here
@@ -21,17 +22,24 @@ export type ProtocolProcessor<TNode extends SlingNode = SlingNode> = {
 	// Eventually, anyone can add a content type, but not a new protocol, so maybe it's too overengineered and having the display in the extension is fine.
 }
 
-export function validateDefaults(metadata: Metadata, template: StringTemplate) {
-	if (!template.values || (template.values.length === 0 && template.strings.join('').trim().length === 0))
+export function validateDefaults(metadata: Metadata, chunks: TemplateChunks) {
+	const chunkArray = chunks.chunks
+	const hasReferences = chunkArray.some(c => c.type === 'chunk:reference')
+	const allStringContent = chunkArray
+		.filter((c): c is StringChunk => c.type === 'chunk:string')
+		.map(c => c.value)
+		.join('')
+
+	if (!hasReferences && allStringContent.trim().length === 0)
 		return metadata.appendError({
 			reason: 'Sling protocols cannot be empty string',
 			autoFix: 'sling.initial-format',
 		})
 
-	// 1. Boundary Checks
-	const startsWithNewline = /^\s*\n/.test(template.strings[0])
-	const lastString = template.strings.at(-1)!
-	const endsWithNewline = /\n\s*$/.test(lastString)
+	const firstChunk = chunkArray[0]
+	const startsWithNewline = firstChunk?.type === 'chunk:string' && /^\s*\n/.test(firstChunk.value)
+	const lastChunk = chunkArray.at(-1)
+	const endsWithNewline = lastChunk?.type === 'chunk:string' && /\n\s*$/.test(lastChunk.value)
 
 	if (!startsWithNewline) {
 		metadata.appendError({
@@ -50,9 +58,9 @@ export function validateDefaults(metadata: Metadata, template: StringTemplate) {
 
 const fallbackProcessor: ProtocolProcessor<SlingDocument> = {
 	canProcess() { return true },
-	processProtocol(_context, template, _literalLocation) {
+	processProtocol(_context, chunks, _literalLocation) {
 		const metadata = new Metadata()
-		const defaultValidations = validateDefaults(metadata, template)
+		const defaultValidations = validateDefaults(metadata, chunks)
 		if (defaultValidations) return {
 			type: 'unsupported',
 			metadata,

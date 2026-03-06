@@ -27,7 +27,7 @@ export class Metadata {
 	 */
 	toJSON() {
 		return {
-			contentType: this.contentType?.split(';')[0]
+			contentType: this.contentType?.split(';')[0],
 		}
 	}
 }

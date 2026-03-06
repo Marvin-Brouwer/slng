@@ -3,6 +3,7 @@ import * as vscode from 'vscode'
 
 import { ExtensionContext } from '../context'
 import { clearDiagnostics, updateDiagnostics } from '../visual/diagnostics.js'
+import { clearHttpHighlighting, updateHttpHighlighting } from '../visual/http-highlighting.js'
 
 const updateFileCid = 'sling.update-file'
 
@@ -30,11 +31,13 @@ function updateFileCommand(context: ExtensionContext): vscode.Disposable {
 		if (definitions instanceof Error) {
 			context.log.error('Error while parsing definition', definitions)
 			clearDiagnostics(activeEditor.document.uri)
+			clearHttpHighlighting(activeEditor)
 			return
 		}
 		if (!definitions) return
 
 		updateDiagnostics(activeEditor.document.uri, activeEditor.document, definitions)
+		updateHttpHighlighting(activeEditor, definitions)
 
 		const decorations = Object
 			.values(definitions)

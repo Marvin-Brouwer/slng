@@ -1,5 +1,6 @@
 import { Metadata } from '../../../_module/extension'
 import { text } from '../../../nodes/nodes'
+import { TemplateChunks } from '../../../template-chunks'
 import { MimeType, SlingContext } from '../../../types'
 import { parseHttpBody } from '../http-parser/http-parser.request'
 import { document, header, HttpDocument, response } from '../http.nodes'
@@ -13,7 +14,7 @@ export async function buildHttpResponse(context: SlingContext, fetchResponse: Re
 	metadata.contentType = fetchResponse.headers.get('content-type')?.split(';')[0] as MimeType | undefined
 	const bodyString = await fetchResponse.text()
 
-	const bodyNode = parseHttpBody(context, metadata, [bodyString])
+	const bodyNode = parseHttpBody(context, metadata, new TemplateChunks([{ type: 'chunk:string', value: bodyString }]))
 
 	return document({
 		startLine,

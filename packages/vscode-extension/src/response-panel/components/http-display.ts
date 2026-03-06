@@ -16,7 +16,6 @@ export class HttpResponseDisplay extends SimpleElement {
 	static tagName = 'http-response'
 
 	protected onMount(): void {
-
 		const responseDataDiv = this.createElement('div', {
 			id: 'response-data',
 		})
@@ -26,12 +25,12 @@ export class HttpResponseDisplay extends SimpleElement {
 			className: 'button-panel',
 		})
 		this.appendComponentTo(buttonPanel, MaskToggle, {
-			container: responseDataDiv
+			container: responseDataDiv,
 		})
 		this.appendComponentTo(buttonPanel, CopyButton, {
 			type: 'response',
 			container: responseDataDiv,
-			contentType: response.metadata.contentType
+			contentType: response.metadata.contentType,
 		})
 
 		assertResponse(response.startLine)
@@ -69,7 +68,6 @@ export class HttpRequestDisplay extends SimpleElement {
 	static tagName = 'http-request'
 
 	protected onMount(): void {
-
 		const requestDataDiv = this.createElement('div', {
 			id: 'request-data',
 		})
@@ -80,12 +78,12 @@ export class HttpRequestDisplay extends SimpleElement {
 			className: 'button-panel',
 		})
 		this.appendComponentTo(buttonPanel, MaskToggle, {
-			container: requestDataDiv
+			container: requestDataDiv,
 		})
 		this.appendComponentTo(buttonPanel, CopyButton, {
 			type: 'request',
 			container: requestDataDiv,
-			contentType: request.metadata.contentType
+			contentType: request.metadata.contentType,
 		})
 
 		assertRequest(request.startLine)

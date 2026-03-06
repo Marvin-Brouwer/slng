@@ -1,13 +1,13 @@
-import { Masked } from '../masking/mask'
 import { Metadata } from '../nodes/metadata'
 import { SlingNode, ValueNode, ValuesNode } from '../nodes/nodes'
-import { MimeType, PrimitiveValue, SlingContext } from '../types'
+import { TemplateChunks } from '../template-chunks'
+import { MimeType, SlingContext } from '../types'
 
 import { textPayloadProcessor } from './payload-processor.text'
 
 export type PayloadProcessor<TNode extends SlingNode = ValueNode | ValuesNode> = {
 	canProcess(mimeType: MimeType): boolean
-	processPayload(metadata: Metadata, parts: (PrimitiveValue | Masked<PrimitiveValue>)[]): TNode | undefined
+	processPayload(metadata: Metadata, chunks: TemplateChunks): TNode | undefined
 	// TODO add displayElement: (HtmlElementConstructor & { node: TNode }) so the rendering can be done per payload processor
 }
 

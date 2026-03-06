@@ -1,6 +1,6 @@
-import { Masked } from '../masking/mask'
 import { Metadata } from '../nodes/metadata'
-import { MimeType, PrimitiveValue } from '../types'
+import { TemplateChunks } from '../template-chunks'
+import { MimeType } from '../types'
 
 import { lexJson } from './json/json.lexer'
 import { document, JsonDocument } from './json/json.nodes'
@@ -14,8 +14,8 @@ export function isJsonContentType(contentType: MimeType | undefined): boolean {
 	return contentType === 'application/json' || contentType.endsWith('+json')
 }
 
-export function convertToJsonAst(metadata: Metadata, parts: (PrimitiveValue | Masked<PrimitiveValue>)[]): JsonDocument {
-	const tokens = lexJson(parts)
+export function convertToJsonAst(metadata: Metadata, chunks: TemplateChunks): JsonDocument {
+	const tokens = lexJson(chunks)
 	const ast = parseJsonTokens(tokens, metadata)
 	return document(ast)
 }
@@ -36,7 +36,7 @@ export type JsonOptions = {
 
 export const jsonPayloadProcessor = (_options: JsonOptions): PayloadProcessor<JsonDocument> => ({
 	canProcess: isJsonContentType,
-	processPayload(metadata, parts) {
-		return convertToJsonAst(metadata, parts)
+	processPayload(metadata, chunks) {
+		return convertToJsonAst(metadata, chunks)
 	},
 })

@@ -2,7 +2,8 @@ import { isPrimitiveMask, Masked } from '../../../masking/mask'
 import { Metadata } from '../../../nodes/metadata'
 import { ErrorNode, text, ValueNode, ValuesNode } from '../../../nodes/nodes'
 import { getProcessor } from '../../../payload/payload-processor'
-import { PrimitiveValue, ResolvedStringTemplate, SlingContext, StringTemplate } from '../../../types'
+import { TemplateChunks } from '../../../template-chunks'
+import { PrimitiveValue, ResolvedStringTemplate, SlingContext, TemplateChunk } from '../../../types'
 import { validateDefaults } from '../../protocol-processor'
 import {
 	allowedProtocols,
@@ -94,7 +95,8 @@ export function parseHttpRequest(context: SlingContext, requestTemplate: Resolve
 
 	const headers = parseHeaders(headerLines, metadata)
 	const textBody = collapseTemplate(bodyLines.slice(0, endsWithNewline ? bodyLines.length - 1 : bodyLines.length - 2))
-	const body = parseHttpBody(context, metadata, textBody)
+	const filteredBody = textBody.filter((p): p is PrimitiveValue | Masked<PrimitiveValue> => p !== undefined)
+	const body = parseHttpBody(context, metadata, partsToChunks(filteredBody))
 
 	return document({
 		startLine,
@@ -111,6 +113,12 @@ function collapseTemplate(template: TemplateLines) {
 		return ['\n', ...lineParts]
 	})
 }
+
+const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'] as const
+const ALLOWED_PROTOCOL_VERSIONS = allowedProtocols.map(a => `${a.protocol}/${a.version}`).join(', ')
+
+/** RFC 3986 allowed characters for a URI (excluding percent-encoding sequences which are already matched by %). */
+const URL_VALID_CHARS = /^[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=%]+$/
 
 function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode | ErrorNode {
 	const tokens: TemplateLine = []
@@ -157,8 +165,19 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 		})
 	}
 
+	// Validate method against known HTTP methods
+	if (!HTTP_METHODS.includes(method.value.toUpperCase() as typeof HTTP_METHODS[number])) {
+		return metadata.appendError({
+			reason: `Unknown HTTP method: "${method.value}". Expected one of: ${HTTP_METHODS.join(', ')}.`,
+		})
+	}
+	const normalizedMethod = text(method.value.toUpperCase())
+
 	// URL can be complex (ValueNode), so we use the compound resolver
 	const url = resolveCompoundNode(urlParts, metadata)
+
+	// Validate static URL parts for illegal characters (parameter inserts are exempt)
+	validateUrlParts(url, metadata)
 
 	// 4. Validate Protocol
 	if (typeof protoPart.part !== 'string') {
@@ -170,58 +189,85 @@ function parseRequestStart(parts: TemplateLine, metadata: Metadata): RequestNode
 	const [protoName, protoVersion] = protoPart.part.trim().split('/')
 	if (!protoName || !allowedProtocols.some(a => a.protocol === protoName.toUpperCase() && a.version == protoVersion)) {
 		return metadata.appendError({
-			reason: `Unsupported protocol: "${protoName}". Expected HTTP/1.1.`,
+			reason: `Unsupported protocol version: "${protoPart.part.trim()}". Supported: ${ALLOWED_PROTOCOL_VERSIONS}.`,
 			suggestions: ['sling.use_http_1_1'],
 		})
 	}
 
 	return request(
-		method, url,
+		normalizedMethod, url,
 		protoName,
 		protoVersion,
 	)
 }
 
-export function parseHttpBody(context: SlingContext, metadata: Metadata, textBody: (PrimitiveValue | Masked<PrimitiveValue> | undefined)[]): BodyNode | undefined {
+function validateUrlParts(url: ValuesNode | ValueNode, metadata: Metadata): void {
+	if (url.type === 'text') {
+		if (url.value && !URL_VALID_CHARS.test(url.value)) {
+			metadata.appendError({
+				reason: `URL contains illegal characters: "${url.value}". Use percent-encoding for special characters.`,
+			})
+		}
+	}
+	else if (url.type === 'values') {
+		for (const part of url.values) {
+			if (part.type === 'text' && part.value && !URL_VALID_CHARS.test(part.value)) {
+				metadata.appendError({
+					reason: `URL contains illegal characters: "${part.value}". Use percent-encoding for special characters.`,
+				})
+			}
+		}
+	}
+}
+
+export function parseHttpBody(context: SlingContext, metadata: Metadata, bodyChunks: TemplateChunks): BodyNode | undefined {
 	const processor = getProcessor<ValueNode | ValuesNode>(context, metadata.contentType)
 	const contentType = metadata.contentType ?? 'text/undefined'
-
-	// Filter undefined slots — DataAccessor values are unknown at parse time
-	const filteredBody = textBody.filter((p): p is PrimitiveValue | Masked<PrimitiveValue> => p !== undefined)
-	const valueNodes = processor.processPayload(metadata, filteredBody)
-
+	const valueNodes = processor.processPayload(metadata, bodyChunks)
 	return body(contentType, valueNodes ?? text(''))
 }
 
+/** Convert a flat list of resolved parts to TemplateChunks (no loc info; for execution-time use). */
+function partsToChunks(parts: (PrimitiveValue | Masked<PrimitiveValue>)[]): TemplateChunks {
+	const chunks: TemplateChunk[] = []
+	let index = 0
+	for (const part of parts) {
+		if (typeof part === 'string' || typeof part === 'number' || typeof part === 'boolean') {
+			chunks.push({ type: 'chunk:string', value: String(part) })
+		}
+		else {
+			chunks.push({ type: 'chunk:reference', value: part, index: index })
+		}
+		index++
+	}
+	return new TemplateChunks(chunks)
+}
+
 /**
- * Parse an HTTP request from a {@link StringTemplate} at definition load time.
+ * Parse an HTTP request from a {@link TemplateChunks} at definition load time.
  *
  * Unlike {@link parseHttpRequest} (which requires a fully-resolved template),
- * this function accepts the raw template before async DataAccessors are resolved.
+ * this function accepts the raw template chunks before async DataAccessors are resolved.
  * It pre-populates {@link Metadata.parameters} with all template values so that
  * DataAccessor slots (stored as `undefined`) can be filled at execute time.
  *
- * Source line numbers are computed from `literalLocation` and attached to
- * structural nodes (RequestNode, HeaderNode, BodyNode, HttpDocument).
+ * Source line numbers are read from chunk `loc` and attached to structural nodes.
  */
 export function parseHttpTemplate(
 	context: SlingContext,
-	template: StringTemplate,
+	chunks: TemplateChunks,
 	literalLocation: { start: { line: number, column: number }, end: { line: number, column: number } },
 ): HttpDocument | ErrorNode | undefined {
-	const { strings, values } = template
 	const metadata = new Metadata()
 
-	const defaultValidations = validateDefaults(metadata, template)
-	if (defaultValidations) return document({
-		startLine: defaultValidations,
-		metadata,
-	})
+	const defaultValidations = validateDefaults(metadata, chunks)
+	if (defaultValidations) return document({ startLine: defaultValidations, metadata })
 
-	// Pre-populate metadata.parameters in template value order.
+	// Pre-populate metadata.parameters from reference chunks in template value order.
 	// DataAccessor / MaskedDataAccessor → undefined slot (filled at execute time).
-	// The index in metadata.parameters matches the index in template.values.
-	for (const value of values) {
+	for (const chunk of chunks) {
+		if (chunk.type !== 'chunk:reference') continue
+		const { value } = chunk
 		if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
 			metadata.parameters.push(value)
 		}
@@ -233,60 +279,58 @@ export function parseHttpTemplate(
 		}
 	}
 
-	// 2. Interleave strings and values into lines, tracking source line numbers.
-	// sourceLine counts absolute line numbers starting from literalLocation.start.line.
-	// lineSourceLines[i] = source line where lines[i] begins.
+	// Split at blank line (header/body boundary)
+	const split = chunks.splitAtStringPattern(/\n\n/)
+	const headerChunks = split ? split[0] : chunks
+	const bodyChunks = split ? split[1] : new TemplateChunks([])
+
+	// Build TemplateLines from header chunks, tracking source line numbers
 	const lines: TemplateLines = [[]]
 	let sourceLine = literalLocation.start.line
 	const lineSourceLines: number[] = [sourceLine]
 	let indent = -1
+	let afterReference = false
 
-	for (const [index, string_] of strings.entries()) {
-		if (string_ !== undefined) {
-			const split = string_.split('\n')
-			for (let sIndex = 0; sIndex < split.length; sIndex++) {
-				const rawText = split[sIndex]
+	for (const chunk of headerChunks) {
+		if (chunk.type === 'chunk:reference') {
+			const { value, index } = chunk
+			const isPrim = typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+			const partValue: PrimitiveValue | Masked<PrimitiveValue> | undefined
+				= isPrim ? value as PrimitiveValue : (isPrimitiveMask(value) ? value : undefined)
+			lines.at(-1)!.push({ part: partValue, valueIndex: index })
+			afterReference = true
+		}
+		else {
+			const stringSplit = chunk.value.split('\n')
+			for (let sIndex = 0; sIndex < stringSplit.length; sIndex++) {
+				const rawText = stringSplit[sIndex]
 
 				if (sIndex > 0) {
 					sourceLine++
-					// Update the source line for the last (current) lines[] entry
 					lineSourceLines[lines.length - 1] = sourceLine
 				}
 
-				if (indent < 0 && rawText.trim() && (index === 0 || sIndex > 0)) {
+				if (indent < 0 && rawText.trim() && (!afterReference || sIndex > 0)) {
 					indent = rawText.length - rawText.trimStart().length
 				}
 
-				const isContinuation = index > 0 && sIndex === 0
-				const stripped = isContinuation
-					? rawText
-					: rawText.slice(Math.max(0, indent))
+				const isContinuation = afterReference && sIndex === 0
+				const stripped = isContinuation ? rawText : rawText.slice(Math.max(0, indent))
 
 				if (indent < 0 && !stripped && !isContinuation) continue
 
 				lines.at(-1)!.push({ part: stripped })
 
-				if (sIndex < split.length - 1) {
+				if (sIndex < stringSplit.length - 1) {
 					lines.push([])
-					lineSourceLines.push(sourceLine) // placeholder; updated at next sIndex > 0
+					lineSourceLines.push(sourceLine)
 				}
 			}
-		}
-
-		if (index < values.length) {
-			const value = values[index]
-			const isPrim = typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-			const partValue: PrimitiveValue | Masked<PrimitiveValue> | undefined
-				= isPrim
-					? value as PrimitiveValue
-					: (isPrimitiveMask(value)
-							? value
-							: undefined)
-			lines.at(-1)!.push({ part: partValue, valueIndex: index })
+			afterReference = false
 		}
 	}
 
-	// 3. Segment the Lines
+	// Segment header lines
 	const startLineParts = lines.shift() || []
 	const startLineNumber = lineSourceLines.shift() ?? sourceLine
 	const startLine = parseRequestStart(startLineParts, metadata)
@@ -295,8 +339,6 @@ export function parseHttpTemplate(
 	const emptyLineIndex = lines.findIndex(l => l.length === 0 || (l.length === 1 && l[0].part === ''))
 	const headerLines = emptyLineIndex === -1 ? lines : lines.slice(0, emptyLineIndex)
 	const headerLineNums = emptyLineIndex === -1 ? lineSourceLines : lineSourceLines.slice(0, emptyLineIndex)
-	const bodyLines = emptyLineIndex === -1 ? [] : lines.slice(emptyLineIndex + 1)
-	const bodyLineNumber = emptyLineIndex === -1 ? undefined : lineSourceLines[emptyLineIndex + 1]
 
 	const headers = parseHeaders(headerLines, metadata)
 	if (headers) {
@@ -306,12 +348,12 @@ export function parseHttpTemplate(
 		}
 	}
 
-	const lastString = template.strings.at(-1)!
-	const endsWithNewline = /\n\s*$/.test(lastString)
-	const textBody = collapseTemplate(bodyLines.slice(0, endsWithNewline ? bodyLines.length - 1 : bodyLines.length - 2))
-	const bodyNode = parseHttpBody(context, metadata, textBody)
-	if (bodyNode && bodyLineNumber !== undefined) {
-		bodyNode.loc = pointLoc(bodyLineNumber, Math.max(0, indent))
+	// Parse body — loc comes directly from the body chunks
+	const firstBodyChunk = bodyChunks.chunks[0]
+	const bodyStartLoc = firstBodyChunk?.loc?.start
+	const bodyNode = parseHttpBody(context, metadata, bodyChunks)
+	if (bodyNode && bodyStartLoc) {
+		bodyNode.loc = pointLoc(bodyStartLoc.line, bodyStartLoc.column)
 	}
 
 	const document_ = document({ startLine, headers, body: bodyNode, metadata })

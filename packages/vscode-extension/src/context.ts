@@ -9,7 +9,7 @@ export interface ExtensionContext {
 	addSubscriptions(...subscriptions: vscode.Disposable[]): void
 }
 
-export default async function createContext(context: vscode.ExtensionContext): Promise<ExtensionContext> {
+export default function createContext(context: vscode.ExtensionContext): ExtensionContext {
 	const logChannel = vscode.window.createOutputChannel('Sling', { log: true })
 
 	if (__DEV__ && context.extensionMode === vscode.ExtensionMode.Development) {

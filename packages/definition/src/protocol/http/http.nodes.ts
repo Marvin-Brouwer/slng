@@ -28,6 +28,7 @@ export interface ResponseNode extends SlingNode {
 }
 export const allowedProtocols = [
 	{ protocol: 'HTTP', version: '1.1' },
+	{ protocol: 'HTTP', version: '2.0' },
 ]
 export interface ProtocolNode extends SlingNode {
 	type: 'protocol'

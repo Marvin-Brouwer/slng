@@ -137,6 +137,27 @@ export type StringTemplate = {
 	readonly strings: ReadonlyArray<string>
 	readonly values: ReadonlyArray<SlingInterpolation>
 }
+
+/** A static string segment from a template literal, with its source location. */
+export interface StringChunk extends SlingNode {
+	type: 'chunk:string'
+	value: string
+}
+
+/**
+ * An interpolated expression (`${...}`) from a template literal.
+ * `loc.start` is the position right after `${`, `loc.end` is the position right after `}`.
+ * `index` is the position in the original `template.values` array.
+ * `name` is set when the expression is a simple identifier (e.g. `${apiKey}` → `"apiKey"`).
+ */
+export interface ReferenceChunk extends SlingNode {
+	type: 'chunk:reference'
+	value: SlingInterpolation
+	index: number
+	name?: string
+}
+
+export type TemplateChunk = StringChunk | ReferenceChunk
 // ── HTTP types ───────────────────────────────────────────────
 
 /**

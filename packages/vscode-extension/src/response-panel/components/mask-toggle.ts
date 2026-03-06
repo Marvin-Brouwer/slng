@@ -5,6 +5,8 @@ import { Button } from '@vscode/webview-ui-toolkit'
 
 import { SimpleElement } from '../element-helper'
 
+import { MaskedValue } from './masked-value'
+
 export class MaskToggle extends SimpleElement {
 	static tagName = 'mask-toggle'
 
@@ -83,9 +85,9 @@ export class MaskToggle extends SimpleElement {
 		dropdownToggle.disabled = true
 
 		const updateButtonStates = () => {
-			const allMaskedValues = this.container.querySelectorAll('masked-value')
-			const anyRevealed = Array.from(allMaskedValues).some(el => el.hasAttribute('data-revealed'))
-			const anyMasked = Array.from(allMaskedValues).some(el => !el.hasAttribute('data-revealed'))
+			const allMaskedValues = this.container.querySelectorAll<MaskedValue>('masked-value')
+			const anyRevealed = [...allMaskedValues].some(element => Object.hasOwn(element.dataset, 'revealed'))
+			const anyMasked = [...allMaskedValues].some(element => !Object.hasOwn(element.dataset, 'revealed'))
 			mainButton.disabled = !anyRevealed
 			unmaskAllButton.disabled = !anyMasked
 			dropdownToggle.disabled = !anyMasked
@@ -109,15 +111,15 @@ export class MaskToggle extends SimpleElement {
 
 	private maskAll() {
 		const revealedValues = this.container.querySelectorAll<HTMLElement>('masked-value[data-revealed]')
-		for (const el of revealedValues) {
-			el.querySelector<HTMLElement>('vscode-button')?.click()
+		for (const element of revealedValues) {
+			element.querySelector<HTMLElement>('vscode-button')?.click()
 		}
 	}
 
 	private unmaskAll() {
 		const maskedValues = this.container.querySelectorAll<HTMLElement>('masked-value:not([data-revealed])')
-		for (const el of maskedValues) {
-			el.querySelector<HTMLElement>('vscode-button')?.click()
+		for (const element of maskedValues) {
+			element.querySelector<HTMLElement>('vscode-button')?.click()
 		}
 	}
 

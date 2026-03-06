@@ -1,18 +1,22 @@
-import { isMask } from '../masking/mask'
+import { isPrimitiveMask } from '../masking/mask'
 import { reference, text, values } from '../nodes/nodes'
 
 import { PayloadProcessor } from './payload-processor'
 
 export const textPayloadProcessor: PayloadProcessor = {
 	canProcess: mimeType => mimeType === 'text/plain',
-	processPayload(metadata, parts) {
-		if (parts.length === 0) return
+	processPayload(metadata, chunks) {
+		const bodyNodes = []
+		for (const chunk of chunks) {
+			if (chunk.type === 'chunk:reference') {
+				if (isPrimitiveMask(chunk.value)) bodyNodes.push(reference(metadata.appendParameter(chunk.value), 'mask', chunk.value.value))
+			}
+			else if (chunk.value) {
+				bodyNodes.push(text(chunk.value))
+			}
+		}
 
-		const bodyNodes = parts.map((part) => {
-			if (isMask(part)) return reference(metadata.appendParameter(part), 'mask', part.value)
-			return text(part)
-		})
-
+		if (bodyNodes.length === 0) return
 		if (bodyNodes.length === 1) return bodyNodes[0]
 
 		return values(...bodyNodes)

@@ -1,5 +1,6 @@
-import { isMask, Masked } from '../../masking/mask'
+import { isPrimitiveMask, Masked } from '../../masking/mask'
 import { SlingNode } from '../../nodes/nodes'
+import { TemplateChunks } from '../../template-chunks'
 import { PrimitiveValue } from '../../types'
 
 export type LexerToken = ValueToken | PunctuationToken | MaskedToken
@@ -26,9 +27,9 @@ const isPunctuation = (character: string): character is typeof punctuationCharac
 
 type Pos = { line: number, column: number }
 
-function advance(pos: Pos, char: string): Pos {
+function advance(pos: Pos, char: string, lineStartColumn = 0): Pos {
 	return char === '\n'
-		? { line: pos.line + 1, column: 0 }
+		? { line: pos.line + 1, column: lineStartColumn }
 		: { line: pos.line, column: pos.column + 1 }
 }
 
@@ -36,27 +37,39 @@ function loc(start: Pos, end: Pos) {
 	return { start, end }
 }
 
-export function lexJson(
-	parts: (PrimitiveValue | Masked<PrimitiveValue>)[],
-	startLoc?: { line: number, column: number },
-) {
+export function lexJson(chunks: TemplateChunks) {
 	const tokens = new Array<LexerToken>()
 	let stringMode = false
 	let lineCommentMode = false
 	let blockCommentMode = false
 	let escapeCount = 0
-	let pos: Pos = startLoc ? { ...startLoc } : { line: 1, column: 0 }
+	let pos: Pos = { line: 1, column: 0 }
+	let lineStartColumn = 0
+	let posInitialized = false
 
-	for (const part of parts) {
-		if (isMask(part)) {
+	for (const chunk of chunks) {
+		if (chunk.type === 'chunk:reference') {
 			// Masked values are always values, even inside comments/strings
 			// because they are native objects injected into the template.
-			const start = { ...pos }
-			tokens.push({ type: 'json-token:masked', value: part, loc: loc(start, start) })
+			if (isPrimitiveMask(chunk.value)) {
+				const start = chunk.loc?.start ?? { ...pos }
+				const end = chunk.loc?.end ?? { ...pos }
+				pos = { ...end }
+				tokens.push({ type: 'json-token:masked', value: chunk.value, loc: loc(start, end) })
+			}
 			continue
 		}
 
-		const characters = String(part)
+		// Initialize or update pos from chunk location
+		if (chunk.loc?.start) {
+			pos = { ...chunk.loc.start }
+			if (!posInitialized) {
+				lineStartColumn = chunk.loc.start.column
+				posInitialized = true
+			}
+		}
+
+		const characters = chunk.value
 		let index = 0
 
 		while (index < characters.length) {
@@ -74,8 +87,8 @@ export function lexJson(
 			// Exit Block Comment (on */)
 			if (blockCommentMode && currentCharacter === '*' && nextCharacter === '/') {
 				const start = { ...pos }
-				pos = advance(pos, currentCharacter)
-				pos = advance(pos, nextCharacter)
+				pos = advance(pos, currentCharacter, lineStartColumn)
+				pos = advance(pos, nextCharacter, lineStartColumn)
 				tokens.push({ type: '*/', loc: loc(start, { ...pos }) })
 				blockCommentMode = false
 				index += 2
@@ -86,7 +99,7 @@ export function lexJson(
 			if (stringMode && currentCharacter === '"' && escapeCount % 2 === 0) {
 				stringMode = false
 				const start = { ...pos }
-				pos = advance(pos, currentCharacter)
+				pos = advance(pos, currentCharacter, lineStartColumn)
 				tokens.push({ type: '"', loc: loc(start, { ...pos }) })
 				escapeCount = 0
 				index++
@@ -98,8 +111,8 @@ export function lexJson(
 				if (currentCharacter === '/' && nextCharacter === '/') {
 					lineCommentMode = true
 					const start = { ...pos }
-					pos = advance(pos, currentCharacter)
-					pos = advance(pos, nextCharacter)
+					pos = advance(pos, currentCharacter, lineStartColumn)
+					pos = advance(pos, nextCharacter, lineStartColumn)
 					tokens.push({ type: '//', loc: loc(start, { ...pos }) })
 					index += 2
 					continue
@@ -107,8 +120,8 @@ export function lexJson(
 				if (currentCharacter === '/' && nextCharacter === '*') {
 					blockCommentMode = true
 					const start = { ...pos }
-					pos = advance(pos, currentCharacter)
-					pos = advance(pos, nextCharacter)
+					pos = advance(pos, currentCharacter, lineStartColumn)
+					pos = advance(pos, nextCharacter, lineStartColumn)
 					tokens.push({ type: '/*', loc: loc(start, { ...pos }) })
 					index += 2
 					continue
@@ -116,7 +129,7 @@ export function lexJson(
 				if (currentCharacter === '"') {
 					stringMode = true
 					const start = { ...pos }
-					pos = advance(pos, currentCharacter)
+					pos = advance(pos, currentCharacter, lineStartColumn)
 					tokens.push({ type: '"', loc: loc(start, { ...pos }) })
 					escapeCount = 0
 					index++
@@ -152,7 +165,7 @@ export function lexJson(
 					if (blockCommentMode && accumulatorCurrentCharacter === '*' && accumulatorNextCharacter === '/') break
 
 					accumulator += accumulatorCurrentCharacter
-					pos = advance(pos, accumulatorCurrentCharacter)
+					pos = advance(pos, accumulatorCurrentCharacter, lineStartColumn)
 					index++
 				}
 
@@ -171,7 +184,7 @@ export function lexJson(
 				const start = { ...pos }
 				let ws = ''
 				while (index < characters.length && isWhitespace(characters[index])) {
-					pos = advance(pos, characters[index])
+					pos = advance(pos, characters[index], lineStartColumn)
 					ws += characters[index]
 					index++
 				}
@@ -181,7 +194,7 @@ export function lexJson(
 
 			if (isPunctuation(currentCharacter)) {
 				const start = { ...pos }
-				pos = advance(pos, currentCharacter)
+				pos = advance(pos, currentCharacter, lineStartColumn)
 				tokens.push({ type: currentCharacter, loc: loc(start, { ...pos }) })
 				index++
 				continue
@@ -191,7 +204,7 @@ export function lexJson(
 			const start = { ...pos }
 			let literal = ''
 			while (index < characters.length && !isPunctuation(characters[index]) && !isWhitespace(characters[index])) {
-				pos = advance(pos, characters[index])
+				pos = advance(pos, characters[index], lineStartColumn)
 				literal += characters[index]
 				index++
 			}

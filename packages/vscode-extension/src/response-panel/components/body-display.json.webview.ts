@@ -174,7 +174,7 @@ export function buildJsonColorOverrides(nonce: string): string {
  * Read the active VS Code theme and resolve the actual JSON syntax colors.
  * Falls back gracefully — returns an empty object if the theme can't be read.
  */
-function resolveJsonTokenColors(): JsonTokenColors {
+export function resolveJsonTokenColors(): JsonTokenColors {
 	const result: JsonTokenColors = {}
 
 	try {

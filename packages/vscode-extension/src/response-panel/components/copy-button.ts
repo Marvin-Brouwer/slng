@@ -4,6 +4,7 @@ import { Button } from '@vscode/webview-ui-toolkit'
 
 import { SimpleElement } from '../element-helper'
 import { vscodeApi } from '../vscode-api'
+
 import { HttpBody } from './body-display'
 import { HttpHeaders } from './header-display'
 
@@ -96,7 +97,7 @@ export class CopyButton extends SimpleElement {
 			})
 			copyBodyButton.addEventListener('click', (event) => {
 				event.stopPropagation()
-				const bodyElement = this.container.getElementsByTagName(HttpBody.tagName)[0] as HTMLElement
+				const bodyElement = this.container.querySelector<HTMLElement>(HttpBody.tagName)
 				this.copyPart(bodyElement, this.contentType, bodyElement.textContent)
 				this.closeDropdown(dropdownMenu, dropdownToggle)
 			})
@@ -130,19 +131,20 @@ export class CopyButton extends SimpleElement {
 	private copyDefault(element: HTMLElement) {
 		if (!element) return
 		const buttons = element.querySelectorAll<HTMLElement>('masked-value vscode-button')
-		for (const btn of buttons) btn.style.display = 'none'
+		for (const button of buttons) button.style.display = 'none'
 		// eslint-disable-next-line unicorn/prefer-dom-node-text-content -- innerText preserves visual line breaks
-		const plainText = (element.innerText || '').replaceAll('\u00A0\t', ' ')
-		for (const btn of buttons) btn.style.display = ''
+		const textContent = element.innerText
+		const plainText = (textContent || '').replaceAll('\u00A0\t', ' ')
+		for (const button of buttons) button.style.display = ''
 		vscodeApi.postMessage({ command: 'copy', content: plainText })
 	}
 
 	private tableToCsv(table: HTMLTableElement): string {
-		return Array.from(table.rows).map(row =>
-			Array.from(row.cells).map(cell => {
-				const value = cell.innerText.replaceAll('"', '""')
+		return [...table.rows].map(row =>
+			[...row.cells].map((cell) => {
+				const value = cell.textContent.replaceAll('"', '""')
 				return /[,"\n\r]/.test(value) ? `"${value}"` : value
-			}).join(',')
+			}).join(','),
 		).join('\n')
 	}
 
