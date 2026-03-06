@@ -6,6 +6,7 @@ import { SlingResponse } from '../../definition/src/types'
 export interface ExtensionContext {
 	log: Logger
 	responseCache: Map<string, SlingResponse>
+	activeDefinitions: Map<string, Record<string, unknown>>
 	addSubscriptions(...subscriptions: vscode.Disposable[]): void
 }
 
@@ -21,6 +22,7 @@ export default function createContext(context: vscode.ExtensionContext): Extensi
 	return {
 		log: createLog('sling', logChannel),
 		responseCache: new Map(),
+		activeDefinitions: new Map(),
 		addSubscriptions(...subscriptions: vscode.Disposable[]) {
 			context.subscriptions.push(...subscriptions)
 		},

@@ -113,28 +113,72 @@ function parseObject(state: ParserState): JsonObjectNode {
 	const openBrace = peek(state) // '{'
 	advance(state)
 	const children: JsonAstNode[] = []
-	let position: 'key' | 'value' = 'key'
+	type Phase = 'key' | 'colon' | 'value' | 'after-value'
+	let phase: Phase = 'key'
+	let hasEntries = false
+	let lastCommaLoc: JsonAstNode['loc'] | undefined
+	let lastNodeLoc: JsonAstNode['loc'] | undefined
 
 	while (state.cursor < state.tokens.length) {
 		const token = peek(state)
-		if (isPunctuationToken(token, '}') || isEnd(token)) break
+
+		if (isEnd(token)) {
+			state.metadata.appendError({ reason: 'Unterminated object, expected "}"', loc: openBrace?.loc })
+			break
+		}
+
+		if (isPunctuationToken(token, '}')) {
+			if (phase === 'key' && hasEntries) {
+				state.metadata.appendError({ reason: 'Trailing comma is not allowed', loc: lastCommaLoc })
+			}
+			break
+		}
+
+		if (isTransparent(token)) {
+			const node = parseNode(state, phase === 'key' ? 'key' : 'value')
+			if (node) children.push(node)
+			continue
+		}
 
 		if (isPunctuationToken(token, ':')) {
+			if (phase !== 'colon') {
+				state.metadata.appendError({ reason: 'Unexpected ":"', loc: token.loc })
+			}
 			advance(state)
 			children.push(punctuation(':', undefined, token.loc))
-			position = 'value'
+			phase = 'value'
 			continue
 		}
 
 		if (isPunctuationToken(token, ',')) {
+			if (phase !== 'after-value') {
+				state.metadata.appendError({ reason: 'Unexpected ","', loc: token.loc })
+			}
 			advance(state)
 			children.push(punctuation(',', undefined, token.loc))
-			position = 'key'
+			lastCommaLoc = token.loc
+			phase = 'key'
 			continue
 		}
 
-		const node = parseNode(state, position)
-		if (node) children.push(node)
+		// Content token (key, value, nested structure)
+		if (phase === 'after-value') {
+			state.metadata.appendError({ reason: 'Expected "," or "}" after object value', loc: lastNodeLoc })
+			phase = 'key'
+		}
+		if (phase === 'colon') {
+			state.metadata.appendError({ reason: 'Expected ":" after object key', loc: lastNodeLoc })
+			phase = 'value'
+		}
+
+		const nodeVariant: 'key' | 'value' = phase === 'key' ? 'key' : 'value'
+		const node = parseNode(state, nodeVariant)
+		if (node) {
+			children.push(node)
+			lastNodeLoc = node.loc
+			phase = nodeVariant === 'key' ? 'colon' : 'after-value'
+			hasEntries = true
+		}
 	}
 
 	const closeBrace = peek(state) // '}'
@@ -154,13 +198,56 @@ function parseArray(state: ParserState) {
 	const openBracket = peek(state) // '['
 	advance(state)
 	const items: JsonAstNode[] = []
+	type Phase = 'value' | 'after-value'
+	let phase: Phase = 'value'
+	let hasEntries = false
+	let lastCommaLoc: JsonAstNode['loc'] | undefined
+	let lastNodeLoc: JsonAstNode['loc'] | undefined
 
 	while (state.cursor < state.tokens.length) {
 		const token = peek(state)
-		if (isPunctuationToken(token, ']') || isEnd(token)) break
+
+		if (isEnd(token)) {
+			state.metadata.appendError({ reason: 'Unterminated array, expected "]"', loc: openBracket?.loc })
+			break
+		}
+
+		if (isPunctuationToken(token, ']')) {
+			if (phase === 'value' && hasEntries) {
+				state.metadata.appendError({ reason: 'Trailing comma is not allowed', loc: lastCommaLoc })
+			}
+			break
+		}
+
+		if (isTransparent(token)) {
+			const node = parseNode(state)
+			if (node) items.push(node)
+			continue
+		}
+
+		if (isPunctuationToken(token, ',')) {
+			if (phase !== 'after-value') {
+				state.metadata.appendError({ reason: 'Unexpected ","', loc: token.loc })
+			}
+			advance(state)
+			items.push(punctuation(',', undefined, token.loc))
+			lastCommaLoc = token.loc
+			phase = 'value'
+			continue
+		}
+
+		// Content token
+		if (phase === 'after-value') {
+			state.metadata.appendError({ reason: 'Expected "," or "]" after array item', loc: lastNodeLoc })
+		}
 
 		const node = parseNode(state)
-		if (node) items.push(node)
+		if (node) {
+			items.push(node)
+			lastNodeLoc = node.loc
+			phase = 'after-value'
+			hasEntries = true
+		}
 	}
 
 	const closeBracket = peek(state) // ']'
@@ -202,6 +289,10 @@ function parseString(state: ParserState, variant: 'key' | 'value' = 'value'): Js
 
 	const closeQuote = peek(state)
 	advance(state) // Skip closing '"'
+
+	if (closeQuote.type === 'EOF') {
+		state.metadata.appendError({ reason: 'Unterminated string literal', loc: openQuote.loc })
+	}
 
 	const openQuotePunct = setLoc(punctuation('"', variant), openQuote.loc)
 	const closeQuotePunct = closeQuote.type === 'EOF'
@@ -289,4 +380,10 @@ function isValueToken(token: LexerToken, type: ValueToken['type']): token is Val
 
 function isEnd(token: LexerToken): token is (SlingNode & { type: 'EOF' }) {
 	return token.type == 'EOF'
+}
+
+function isTransparent(token: LexerToken): boolean {
+	return token.type === 'json-token:whitespace'
+		|| token.type === '//'
+		|| token.type === '/*'
 }

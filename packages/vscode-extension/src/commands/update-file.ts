@@ -36,6 +36,7 @@ function updateFileCommand(context: ExtensionContext): vscode.Disposable {
 		}
 		if (!definitions) return
 
+		context.activeDefinitions.set(activeEditor.document.uri.fsPath, definitions)
 		updateDiagnostics(activeEditor.document.uri, activeEditor.document, definitions)
 		updateHttpHighlighting(activeEditor, definitions)
 

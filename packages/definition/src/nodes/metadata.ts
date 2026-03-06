@@ -12,9 +12,9 @@ export class Metadata {
 		return this.parameters.push(value) - 1
 	}
 
-	public appendError(constructor: { reason: string }): ErrorNode
-	public appendError(constructor: { reason: string, suggestions: CommandString[] }): ErrorNode
-	public appendError(constructor: { reason: string, autoFix: CommandString }): ErrorNode
+	public appendError(constructor: { reason: string, loc?: ErrorNode['loc'] }): ErrorNode
+	public appendError(constructor: { reason: string, loc?: ErrorNode['loc'], suggestions: CommandString[] }): ErrorNode
+	public appendError(constructor: { reason: string, loc?: ErrorNode['loc'], autoFix: CommandString }): ErrorNode
 	public appendError(constructor: Omit<ErrorNode, 'type'>): ErrorNode {
 		const node: ErrorNode = { type: 'error', ...constructor }
 		this.errors.push(node)

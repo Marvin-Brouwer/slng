@@ -11,7 +11,10 @@ import { PayloadProcessor } from './payload-processor'
 
 export function isJsonContentType(contentType: MimeType | undefined): boolean {
 	if (!contentType) return false
-	return contentType === 'application/json' || contentType.endsWith('+json')
+	if (contentType === 'application/json' || contentType.endsWith('+json')) return true
+	if (contentType === 'application/jsonc' || contentType.endsWith('+jsonc')) return true
+
+	return false
 }
 
 export function convertToJsonAst(metadata: Metadata, chunks: TemplateChunks): JsonDocument {
