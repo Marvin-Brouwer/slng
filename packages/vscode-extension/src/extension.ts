@@ -8,7 +8,7 @@ import { launchDebugSession } from './debug/launcher.js'
 import { registerResponsePanel } from './response-panel/response-panel.webview.js'
 import { registerCodeLens } from './visual/codelens.js'
 import { registerDiagnostics } from './visual/diagnostics.js'
-import { disposeHttpHighlighting, refreshJsonHighlighting } from './visual/http-highlighting.js'
+import { refreshJsonHighlighting, disposeHttpHighlighting } from './visual/http-highlighting.js'
 
 export async function activate(vscodeContext: vscode.ExtensionContext) {
 	const context = createContext(vscodeContext)
@@ -69,6 +69,7 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 			runExtension(vscode.window.activeTextEditor)
 		}),
 		{ dispose: () => clearTimeout(debounceTimer) },
+		{ dispose: disposeHttpHighlighting },
 	)
 	await runExtension(vscode.window.activeTextEditor)
 
@@ -76,5 +77,5 @@ export async function activate(vscodeContext: vscode.ExtensionContext) {
 }
 
 export function deactivate(): void {
-	disposeHttpHighlighting()
+	// Deactivation is handled with the dispose() pattern
 }

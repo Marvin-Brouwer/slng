@@ -13,6 +13,11 @@ const httpBoldDecoration = vscode.window.createTextEditorDecorationType({
 
 const httpNormalDecoration = vscode.window.createTextEditorDecorationType({
 	color: new vscode.ThemeColor('editor.foreground'),
+	fontStyle: 'italic'
+})
+
+const httpDefaultDecoration = vscode.window.createTextEditorDecorationType({
+	color: new vscode.ThemeColor('editor.foreground'),
 })
 
 // ── JSON body decorations (theme-aware, recreated on theme change) ────────────
@@ -31,12 +36,13 @@ let _jsonDecorations: JsonDecorations | undefined
 function getJsonDecorations(): JsonDecorations {
 	if (_jsonDecorations) return _jsonDecorations
 	const colors = resolveJsonTokenColors()
+	const editorFg = new vscode.ThemeColor('editor.foreground')
 	_jsonDecorations = {
-		key: vscode.window.createTextEditorDecorationType({ color: colors.key }),
-		string: vscode.window.createTextEditorDecorationType({ color: colors.string }),
-		number: vscode.window.createTextEditorDecorationType({ color: colors.number }),
-		keyword: vscode.window.createTextEditorDecorationType({ color: colors.keyword }),
-		punctuation: vscode.window.createTextEditorDecorationType({ color: colors.punctuation }),
+		key: vscode.window.createTextEditorDecorationType({ color: colors.key ?? editorFg }),
+		string: vscode.window.createTextEditorDecorationType({ color: colors.string ?? editorFg }),
+		number: vscode.window.createTextEditorDecorationType({ color: colors.number ?? editorFg }),
+		keyword: vscode.window.createTextEditorDecorationType({ color: colors.keyword ?? editorFg }),
+		punctuation: vscode.window.createTextEditorDecorationType({ color: colors.punctuation ?? editorFg }),
 		brackets: (colors.bracketColors ?? []).map(c =>
 			vscode.window.createTextEditorDecorationType({ color: c })),
 	}
@@ -191,6 +197,7 @@ export function updateHttpHighlighting(
 ): void {
 	const boldRanges: vscode.Range[] = []
 	const normalRanges: vscode.Range[] = []
+	const defaultRanges: vscode.Range[] = []
 	const jsonRanges: JsonRanges = { key: [], string: [], number: [], keyword: [], punctuation: [], brackets: [] }
 
 	for (const definition of Object.values(definitions)) {
@@ -202,6 +209,16 @@ export function updateHttpHighlighting(
 		if (!document.loc) continue
 
 		const { startLine, headers, body } = document
+
+		// 0. Backticks — editor default color
+		if (document.loc) {
+			const openLine = document.loc.start.line - 1
+			const openCol = document.loc.start.column
+			defaultRanges.push(new vscode.Range(openLine, openCol, openLine, openCol + 1))
+			const closeLine = (document.loc.end as { line: number }).line - 1
+			const closeCol = (document.loc.end as { column: number }).column - 1
+			defaultRanges.push(new vscode.Range(closeLine, closeCol, closeLine, closeCol + 1))
+		}
 
 		// 1. Start line — all literal text is bold
 		if (startLine.type === 'request' && startLine.loc) {
@@ -221,15 +238,22 @@ export function updateHttpHighlighting(
 				const lineText = editor.document.lineAt(line).text
 				const colonIndex = lineText.indexOf(':')
 				if (colonIndex === -1) continue
-				boldRanges.push(new vscode.Range(line, headerNode.loc.start.column, line, colonIndex))
+				boldRanges.push(new vscode.Range(line, headerNode.loc.start.column, line, colonIndex + 1))
 				normalRanges.push(...getLiteralRanges(lineText, line, colonIndex + 1))
 			}
 		}
 
 		// 3. Body highlighting by content type
 		if (body && body.loc) {
-			if (body.contentType === 'text/plain') {
-				// text/plain: override all literal text to default foreground
+			if (body.value?.type?.startsWith('json:')) {
+				// JSON (and JSON-like) body: walk AST nodes with positions
+				const jsonDocument = body.value as jsonNodes.JsonDocument
+				if (jsonDocument.value) {
+					walkJsonNodes(jsonDocument.value, 0, jsonRanges)
+				}
+			}
+			else {
+				// text/plain (or missing/unsupported content type): override all literal text to default foreground
 				const bodyStart = body.loc.start.line - 1
 				const documentEndLine = (document.loc.end as { line: number }).line - 1 // 0-based backtick line
 				for (let line = bodyStart; line < documentEndLine; line++) {
@@ -237,18 +261,12 @@ export function updateHttpHighlighting(
 					normalRanges.push(...getLiteralRanges(editor.document.lineAt(line).text, line))
 				}
 			}
-			else if (body.value?.type?.startsWith('json:')) {
-				// JSON (and JSON-like) body: walk AST nodes with positions
-				const jsonDocument = body.value as jsonNodes.JsonDocument
-				if (jsonDocument.value) {
-					walkJsonNodes(jsonDocument.value, 0, jsonRanges)
-				}
-			}
 		}
 	}
 
 	editor.setDecorations(httpBoldDecoration, boldRanges)
 	editor.setDecorations(httpNormalDecoration, normalRanges)
+	editor.setDecorations(httpDefaultDecoration, defaultRanges)
 
 	// Apply JSON decorations
 	const jsonDecs = getJsonDecorations()
@@ -265,6 +283,7 @@ export function updateHttpHighlighting(
 export function clearHttpHighlighting(editor: vscode.TextEditor): void {
 	editor.setDecorations(httpBoldDecoration, [])
 	editor.setDecorations(httpNormalDecoration, [])
+	editor.setDecorations(httpDefaultDecoration, [])
 	if (_jsonDecorations) {
 		editor.setDecorations(_jsonDecorations.key, [])
 		editor.setDecorations(_jsonDecorations.string, [])
@@ -283,5 +302,6 @@ export function refreshJsonHighlighting(): void {
 export function disposeHttpHighlighting(): void {
 	httpBoldDecoration.dispose()
 	httpNormalDecoration.dispose()
+	httpDefaultDecoration.dispose()
 	disposeJsonDecorations()
 }

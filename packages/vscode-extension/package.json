@@ -60,13 +60,6 @@
 				}
 			]
 		},
-		"grammars": [
-			{
-				"scopeName": "source.sling",
-				"path": "./syntaxes/sling.json",
-				"injectTo": ["source.ts"]
-			}
-		],
 		"views": {
 			"resultsContainer": [
 				{
